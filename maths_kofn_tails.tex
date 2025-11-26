@@ -1,0 +1,1510 @@
+\documentclass[12pt,a4paper]{article}
+
+% ============================
+% Encodage, langue, mise en page
+% ============================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+% ============================
+% Maths et mise en forme
+% ============================
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{mathrsfs}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage{hyperref}
+
+% ============================
+% Environnements mathématiques
+% ============================
+\numberwithin{equation}{section}
+
+% Style pour les environnements (sans italique)
+\theoremstyle{definition}
+\newtheorem{theorem}{Théorème}[section]
+\newtheorem{lemma}[theorem]{Lemme}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollaire}
+\newtheorem{definition}[theorem]{Définition}
+\newtheorem{propriete}[theorem]{Propriété}
+\newtheorem{remark}[theorem]{Remarque}
+
+% ============================
+% Raccourcis usuels
+% ============================
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\F}{\mathbb{F}}
+
+\newcommand{\Ell}{\mathscr{E}}
+\newcommand{\bin}{\{0,1\}}
+\newcommand{\concat}{\,\Vert\,}
+\newcommand{\xor}{\oplus}
+
+\DeclareMathOperator{\HKDF}{HKDF}
+\DeclareMathOperator{\PBKDF}{PBKDF2}
+\DeclareMathOperator{\HMAC}{HMAC}
+\DeclareMathOperator{\AESGCM}{AES-GCM}
+\DeclareMathOperator{\RSAOAEP}{RSA-OAEP}
+\DeclareMathOperator{\MGF}{MGF1}
+
+% ============================
+% Métadonnées
+% ============================
+\title{Schéma $k$-sur-$n$ sous Tails :\\
+formulation mathématique rigoureuse}
+\author{ }
+\date{ }
+
+% ============================
+\begin{document}
+\maketitle
+
+\begin{abstract}
+On formalise ici, dans un cadre entièrement mathématique, un schéma
+$k$-sur-$n$ pour la gestion d'un secret maître, basé sur :
+\begin{itemize}[leftmargin=2em]
+  \item le partage de secret de Shamir sur un corps fini ;
+  \item la dérivation de clés par HKDF et PBKDF2 ;
+  \item une signature Ed25519 (courbe elliptique sur un corps fini) ;
+  \item un chiffrement hybride RSA--AES en mode authentifié (AES-GCM).
+\end{itemize}
+Les objets sont définis dans leur structure algébrique naturelle, et
+les liens avec les scripts informatiques sont donnés en fin de document.
+\end{abstract}
+
+\tableofcontents
+
+%=========================================================
+
+%=========================================================
+\section*{Table des notations}
+\addcontentsline{toc}{section}{Table des notations}
+
+\begin{center}
+\footnotesize
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{>{$}l<{$} p{0.8\textwidth}}
+\toprule
+\bin^t & Mots binaires de longueur $t$ \\
+\bin^* & Mots binaires de longueur finie (union sur $t\ge 0$) \\
+\lVert x\rVert & Longueur en bits de $x\in\bin^*$ \\
+x\concat y & Concaténation de mots binaires \\
+x\xor y & XOR bit-à-bit ($x,y$ de même longueur) \\
+\mathrm{val}_{\mathrm{be}}(b) & Encodage big-endian $b\in\bin^t \to \{0,\dots,2^t-1\}$ \\
+\mathrm{val}_{\mathrm{le}}(b) & Encodage little-endian $b\in\bin^t \to \{0,\dots,2^t-1\}$ \\
+S \in \bin^{256} & Secret maître (32 octets) \\
+s_0 & Entier $\mathrm{val}_{\mathrm{be}}(S)\in\{0,\dots,2^{256}-1\}$ \\
+P = 2^{521} - 1 & Premier de Mersenne, cardinal de $\F_P$ \\
+\F_P & Corps fini à $P$ éléments \\
+\F_P[X] & Polynômes à coefficients dans $\F_P$ \\
+\mathcal{P}_{<k} & Polynômes de degré $<k$ dans $\F_P[X]$ \\
+(x_i,y_i) & Part de Shamir du participant $i$ ($\in\F_P^2$) \\
+q = 2^{255} - 19 & Cardinal du corps de base de Ed25519 \\
+E(\F_q) & Groupe des points de la courbe elliptique \\
+B \in E(\F_q) & Point de base d'ordre premier $\ell$ \\
+\ell & Ordre premier de $B$ ($\approx 2^{252}$) \\
+\Z_\ell & Anneau $\{0,\dots,\ell-1\}$ modulo $\ell$ \\
+a \in \Z_\ell & Clé privée Ed25519 \\
+A = aB & Clé publique Ed25519 \\
+(n,e,d) & Paramètres RSA : module, exposants public/privé \\
+h & Fonction de hachage $h:\bin^* \to \bin^d$ \\
+\HMAC_h & MAC HMAC basé sur $h$ \\
+\HKDF_h & Dérivation de clé HKDF (RFC 5869) \\
+\PBKDF_h & Dérivation par mot de passe (PBKDF2, RFC 8018) \\
+\MGF_h & Génération de masque MGF1 (RFC 8017) \\
+\RSAOAEP & RSA avec rembourrage OAEP (RFC 8017) \\
+\AESGCM_K & AES-GCM sous clé symétrique $K$ \\
+\mathrm{IKM} & Input Keying Material (ici $S$) \\
+\mathrm{saltEd} & Sel HKDF constant pour $K_{\mathrm{Ed}}$ \\
+W & Sel HKDF aléatoire par cérémonie pour $K_{\mathrm{RSA}}$ \\
+\mathrm{info}_{\mathrm{Ed}} & Contexte HKDF pour Ed25519 \\
+\mathrm{info}_{\mathrm{RSA}} & Contexte HKDF pour RSA \\
+P_i & Mot de passe du participant $i$ \\
+S_i & Sel PBKDF2 individuel \\
+K_i & Clé symétrique pour chiffrer la part $i$ \\
+K_{\mathrm{Ed}} & Graine Ed25519 dérivée de $S$ \\
+K_{\mathrm{RSA}} & Clé pour chiffrer la clé privée RSA \\
+K_{\mathrm{AES}} & Clé de session AES \\
+N,\,N_i & Nonces AES-GCM \\
+\perp & Symbole d'échec/rejet \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\newpage
+
+%=========================================================
+\section{Cadre algébrique de base}
+
+\subsection{Mots binaires et encodage}
+
+\begin{definition}[Mots binaires]
+Pour $t\in\N$, on note
+\[
+  \bin^t = \{0,1\}^t
+\]
+l'ensemble des suites $(b_{t-1},\dots,b_0)$ de bits, avec la convention que $\bin^0 = \{\varepsilon\}$ contient le mot vide. On pose
+\[
+  \bin^* = \bigcup_{t\ge 0}\bin^t,
+\]
+et pour $x\in\bin^*$, on note $\lVert x\rVert$ sa longueur (en bits).
+\end{definition}
+
+\begin{definition}[Concaténation et XOR]
+La concaténation est l'application
+\[
+  \concat : \bin^a \times \bin^b \to \bin^{a+b}
+\]
+qui à $(x,y)$ associe la suite obtenue en juxtaposant $x$ et $y$.
+
+Le XOR est l'application
+\[
+  \xor : \bin^t \times \bin^t \to \bin^t
+\]
+définie par $(x,y) \mapsto (x_0 \oplus y_0, \dots, x_{t-1} \oplus y_{t-1})$, où $\oplus$ désigne l'addition dans $\F_2$.
+\end{definition}
+
+\begin{definition}[Encodage big-endian]
+Pour $t\in\N$ et $b=(b_{t-1},\dots,b_0)\in\bin^t$, on définit
+\[
+  \mathrm{val}_{\mathrm{be}}(b) = \sum_{j=0}^{t-1} b_j\,2^{t-1-j}
+  \in \{0,\dots,2^t-1\}.
+\]
+Cet encodage fournit une bijection canonique entre $\bin^t$ et
+$\{0,\dots,2^t-1\}$.
+\end{definition}
+
+\begin{definition}[Encodage little-endian]
+Pour $t\in\N$ et $b=(b_{t-1},\dots,b_0)\in\bin^t$, on définit
+\[
+  \mathrm{val}_{\mathrm{le}}(b) = \sum_{j=0}^{t-1} b_j\,2^{j}
+  \in \{0,\dots,2^t-1\}.
+\]
+Cet encodage est utilisé dans les standards Ed25519.
+\end{definition}
+
+\begin{remark}[Convention d'écriture]
+Dans la suite du document :
+\begin{itemize}
+\item L'encodage big-endian est utilisé pour le partage de Shamir et les représentations internes dans $\F_P$
+\item L'encodage little-endian est utilisé pour Ed25519 (scalaires et points)
+\item Le contexte déterminera clairement quel encodage est employé
+\end{itemize}
+\end{remark}
+
+\subsection{Corps finis et polynômes}
+
+\begin{definition}[Corps fini et polynômes]
+Soit $P$ un nombre premier. On note
+\[
+  \F_P = \Z/P\Z
+\]
+le corps fini à $P$ éléments, et
+\[
+  \F_P[X]
+\]
+l'anneau des polynômes à coefficients dans $\F_P$. On pose
+\[
+  \mathcal{P}_{<k}
+  = \{f\in\F_P[X] \mid \deg(f)<k\}.
+\]
+\end{definition}
+
+\begin{lemma}[Nombre de racines]
+Soit $f\in\F_P[X]$ un polynôme non nul de degré $d\ge 0$. Alors $f$ admet
+au plus $d$ racines dans $\F_P$.
+\end{lemma}
+
+\begin{proof}
+Par récurrence sur $d$. Le cas $d=0$ est immédiat (un polynôme constant non nul n'a aucune racine). Pour $d\ge 1$, si $f$ a une racine $a\in\F_P$, alors par division euclidienne dans $\F_P[X]$, on peut écrire $f(X) = (X-a)g(X)$ avec $g\in\F_P[X]$ de degré $d-1$. En effet, la division de $f$ par $(X-a)$ donne un quotient $g$ et un reste $r$ de degré $<1$, donc constant. En évaluant en $X=a$, on obtient $f(a)=0 = 0\cdot g(a) + r$, donc $r=0$.
+
+Soit maintenant $b\neq a$ une autre racine de $f$. Alors $0=f(b)=(b-a)g(b)$. Comme $b-a\neq 0$ et que $\F_P$ est un corps (donc intègre), on en déduit $g(b)=0$. Ainsi, toutes les racines de $f$ distinctes de $a$ sont des racines de $g$. Par hypothèse de récurrence, $g$ a au plus $d-1$ racines, donc $f$ a au plus $d$ racines.
+\end{proof}
+
+\subsection{Théorèmes arithmétiques fondamentaux}
+
+\begin{definition}[Indicatrice d'Euler]
+L'indicatrice d'Euler $\varphi(n)$ est définie pour tout entier $n \geq 1$ comme le nombre d'entiers compris entre $1$ et $n$ qui sont premiers avec $n$ :
+\[
+\varphi(n) = \#\{k \in \{1, 2, \dots, n\} \mid \gcd(k, n) = 1\}
+\]
+\end{definition}
+
+\begin{theorem}[Théorème d'Euler]
+\label{thm:euler}
+Si $a$ et $n$ sont premiers entre eux, alors :
+\[
+a^{\varphi(n)} \equiv 1 \pmod{n}
+\]
+\end{theorem}
+
+\begin{proof}[Preuve utilisant la théorie des groupes]
+L'ensemble des éléments inversibles de l'anneau $\Z/n\Z$ est noté $(\Z/n\Z)^\times$. 
+Par l'identité de Bézout, un élément $a \in \{0,1,\dots,n-1\}$ est inversible modulo $n$ si et seulement si $\gcd(a,n)=1$.
+Ainsi, le groupe multiplicatif $(\Z/n\Z)^\times$ a pour ordre $\varphi(n)$. 
+Par le théorème de Lagrange, l'ordre de tout élément du groupe divise l'ordre du groupe. 
+Donc, pour tout $a$ inversible modulo $n$, on a $a^{\varphi(n)} \equiv 1 \pmod{n}$.
+\end{proof}
+
+\begin{theorem}[Petit théorème de Fermat]
+\label{thm:fermat}
+Si $p$ est premier et $a$ n'est pas divisible par $p$, alors :
+\[
+a^{p-1} \equiv 1 \pmod{p}
+\]
+\end{theorem}
+
+\begin{proof}
+C'est un cas particulier du théorème d'Euler, car pour $p$ premier, $\varphi(p) = p-1$.
+\end{proof}
+
+\begin{theorem}[Théorème de Gauss (lemme d'Euclide)]
+\label{thm:gauss-div}
+Soient $a, b, c$ des entiers. Si $a$ et $b$ sont premiers entre eux et $a$ divise $bc$, alors $a$ divise $c$.
+\end{theorem}
+
+\begin{proof}
+Puisque $\gcd(a,b) = 1$, par l'identité de Bézout, il existe des entiers $u,v$ tels que :
+\[
+au + bv = 1
+\]
+Multiplions cette égalité par $c$ :
+\[
+auc + bvc = c
+\]
+Par hypothèse, $a$ divise $bc$, donc $a$ divise $bvc$. De plus, $a$ divise évidemment $auc$. Donc $a$ divise la somme $auc + bvc = c$.
+\end{proof}
+
+%=========================================================
+\section{Secret maître et schéma de Shamir}
+
+\subsection{Secret maître}
+
+\begin{definition}[Secret maître]
+On fixe un entier
+\[
+  P = 2^{521} - 1
+\]
+et le corps $\F_P$. Le secret maître est un mot binaire
+\[
+  S\in\bin^{256}
+\]
+tiré uniformément. On définit
+\[
+  s_0 = \mathrm{val}_{\mathrm{be}}(S) \in \{0,\dots,2^{256}-1\},\qquad
+  s = s_0 \bmod P \in \F_P.
+\]
+Comme $P > 2^{256}-1$, on a $s = s_0$ dans $\F_P$, ce qui garantit que l'application $S \mapsto s$ est une injection de $\bin^{256}$ dans $\F_P$.
+\end{definition}
+
+Ainsi, $S$ est la représentation binaire utilisée pour la dérivation de
+clés, et $s\in\F_P$ est la représentation dans le corps fini utilisée pour
+le partage de secret.
+
+\subsection{Schéma $(k,n)$ de Shamir}
+
+\begin{definition}[Partage de Shamir]
+Soient des entiers $n,k$ vérifiant $2\le k\le n$ et $n < P$. On définit le schéma
+$(k,n)$ de Shamir sur $\F_P$ comme suit.
+\begin{itemize}[leftmargin=2em]
+  \item À partir de $s\in\F_P$, on choisit indépendamment et uniformément
+        $a_1,\dots,a_{k-1}\in\F_P$.
+  \item On définit
+  \[
+    f(X) = s + a_1X + a_2X^2 + \dots + a_{k-1}X^{k-1}\in\mathcal{P}_{<k}.
+  \]
+  \item Pour $i\in\{1,\dots,n\}$, on fixe $x_i=i\in\F_P$ (en identifiant l'entier $i$ à son image dans $\F_P$) et on pose
+  \[
+    y_i = f(x_i)\in\F_P.
+  \]
+  \item La part $i$-ème est le couple $(x_i,y_i)\in\F_P^2$.
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Algorithmes Share et Reconstruct]
+On définit formellement les applications :
+\begin{itemize}
+\item $\mathrm{Share}: \F_P \to (\F_P^2)^n$ qui à $s$ associe la famille $((x_i,y_i))_{1\le i\le n}$.
+\item $\mathrm{Reconstruct}: (\F_P^2)^k \to \F_P$ qui, à $k$ points distincts $(x_{i_j},y_{i_j})$, associe $s=f(0)$ obtenu par interpolation de Lagrange.
+\end{itemize}
+\end{definition}
+
+\begin{theorem}[Unicité de l'interpolation]
+\label{thm:lagrange}
+Soient $x_1,\dots,x_k \in \F_P$ deux à deux distincts et
+$y_1,\dots,y_k\in\F_P$. Il existe un unique $f\in\mathcal{P}_{<k}$ tel que
+$f(x_j)=y_j$ pour tout $j\in\{1,\dots,k\}$.
+\end{theorem}
+
+\begin{proof}
+Par le lemme sur le nombre de racines, deux polynômes de degré $<k$
+coïncidant en $k$ points distincts sont égaux. L'existence s'obtient par la
+formule d'interpolation de Lagrange :
+\[
+  f(X) = \sum_{j=1}^k y_j \ell_j(X),\qquad
+  \ell_j(X) = \prod_{\substack{m=1\\ m\neq j}}^k
+  \frac{X-x_m}{x_j-x_m}\in\F_P[X].
+\]
+Les dénominateurs $x_j-x_m$ sont inversibles dans $\F_P$ car les $x_j$ sont distincts. On vérifie $\ell_j(x_i)=\delta_{ij}$, d'où $f(x_j)=y_j$.
+\end{proof}
+
+\begin{propriete}[Reconstruction du secret]
+\label{prop:reconstruction}
+Soit $I=\{i_1,\dots,i_k\}$ avec $i_1<\dots<i_k$. Soit $f$ le polynôme
+défini par le schéma de Shamir. Alors
+\[
+  s = f(0)
+  = \sum_{j=1}^k y_{i_j}\,\lambda_j,\qquad
+  \lambda_j = \ell_j(0) = \prod_{\substack{m=1\\ m\neq j}}^k
+   \frac{-x_{i_m}}{x_{i_j}-x_{i_m}} \in \F_P.
+\]
+\end{propriete}
+
+\begin{proof}
+On applique le théorème~\ref{thm:lagrange} avec
+$(x_j,y_j)=(x_{i_j},y_{i_j})$. On obtient
+\[
+  f(X) = \sum_{j=1}^k y_{i_j}\,\ell_j(X).
+\]
+Comme $f(X)=s + a_1X + \dots + a_{k-1}X^{k-1}$, on a $f(0)=s$. En évaluant en $X=0$, on obtient
+\[
+  s=f(0)=\sum_{j=1}^k y_{i_j}\ell_j(0),
+\]
+avec $\lambda_j=\ell_j(0)$.
+\end{proof}
+
+\begin{proposition}[Confidentialité parfaite du schéma de Shamir]
+\label{prop:perfect-secrecy}
+Soit $t<k$ et $I=\{i_1,\dots,i_t\}\subset\{1,\dots,n\}$. On suppose que
+$(s,a_1,\dots,a_{k-1})$ est uniforme dans $\F_P^k$. Alors, pour toute réalisation
+fixée des parts $\bigl( (x_{i_j},y_{i_j}) \bigr)_{1\le j\le t}$ et pour
+tous $s_0,s_1\in\F_P$,
+\[
+  \Pr[s = s_0 \mid (x_{i_j},y_{i_j})]
+  = \Pr[s = s_1 \mid (x_{i_j},y_{i_j})].
+\]
+En particulier, la loi a posteriori de $s$ conditionnellement à $t<k$ parts
+reste uniforme sur $\F_P$.
+\end{proposition}
+
+\begin{proof}
+Les $t$ équations $f(x_{i_j})=y_{i_j}$ forment un système linéaire de rang $t$ (la matrice de Vandermonde partielle est de rang plein car les $x_{i_j}$ sont distincts). Ce système impose $t$ contraintes indépendantes sur les $k$ variables $(s,a_1,\dots,a_{k-1})$.
+
+Pour toute valeur fixée $s_0 \in \F_P$, le système restreint aux $(a_1,\dots,a_{k-1})$ a $t$ équations indépendantes sur $k-1$ variables, donc admet exactement $P^{k-1-t}$ solutions. Ce nombre est indépendant de $s_0$.
+
+Par Bayes et l'uniformité a priori sur $\F_P^k$ :
+\[
+\Pr[s = s_0 \mid \text{parts}] = \frac{\Pr[\text{parts} \mid s = s_0] \cdot \Pr[s = s_0]}{\Pr[\text{parts}]} = \frac{P^{-t} \cdot P^{-1}}{P^{-t}} = \frac{1}{P}.
+\]
+Ainsi, la loi conditionnelle reste uniforme sur $\F_P$.
+\end{proof}
+
+%=========================================================
+\section{Fonctions de hachage, HMAC, HKDF, PBKDF2}
+
+\subsection{Fonction de hachage}
+
+\begin{definition}[Fonction de hachage]
+Une fonction de hachage est une application
+\[
+  h : \bin^* \to \bin^d,
+\]
+pour un $d$ fixé (par exemple $d=256$ pour SHA-256). Dans ce document,
+$h$ désigne une telle fonction fixée une fois pour toutes.
+\end{definition}
+
+\subsection{HMAC}
+
+\begin{definition}[Longueur de bloc et masques internes]
+On fixe un entier $k_{\mathrm{blk}}\in\mathbb{N}^*$, appelé longueur de bloc
+de HMAC. On se donne deux mots binaires
+\[
+  \mathsf{ipad},\,\mathsf{opad} \in \{0,1\}^{k_{\mathrm{blk}}}
+\]
+appelés respectivement masque interne et masque externe. Dans
+les spécifications usuelles, ce sont les octets $0x36$ (pour \(\mathsf{ipad}\))
+et $0x5C$ (pour \(\mathsf{opad}\)) répétés de façon à obtenir $k_{\mathrm{blk}}$
+bits.
+\end{definition}
+
+\begin{definition}[Normalisation de clé pour HMAC]
+On définit une application
+\[
+  \mathrm{NormKey} : \{0,1\}^* \to \{0,1\}^{k_{\mathrm{blk}}}
+\]
+qui, pour toute clé $K\in\{0,1\}^*$,
+\begin{itemize}[leftmargin=2em]
+  \item si $\lVert K\rVert > k_{\mathrm{blk}}$, alors $K_{\mathrm{blk}} = \mathrm{troncature}(h(K))$ aux $k_{\mathrm{blk}}$ premiers bits ;
+  \item si $\lVert K\rVert < k_{\mathrm{blk}}$, alors $K_{\mathrm{blk}} = K \concat 0^{k_{\mathrm{blk}} - \lVert K\rVert}$ ;
+  \item si $\lVert K\rVert = k_{\mathrm{blk}}$, alors $K_{\mathrm{blk}} = K$.
+\end{itemize}
+Ainsi, pour tout $K\in\{0,1\}^*$, la valeur $\mathrm{NormKey}(K)$ est un mot
+binaire de longueur exactement $k_{\mathrm{blk}}$.
+\end{definition}
+
+\begin{definition}[HMAC basé sur $h$]
+On fixe une fonction de hachage
+\[
+  h : \{0,1\}^* \to \{0,1\}^d.
+\]
+On définit la fonction
+\[
+  \HMAC_h : \{0,1\}^* \times \{0,1\}^* \to \{0,1\}^d
+\]
+par la formule :
+\[
+  \HMAC_h(K,M)
+  = h\bigl( (\mathrm{NormKey}(K) \xor \mathsf{opad}) \concat
+           h\bigl( (\mathrm{NormKey}(K) \xor \mathsf{ipad}) \concat M \bigr)
+      \bigr).
+\]
+\end{definition}
+
+\subsection{Fonction d'encodage d'entier}
+
+\begin{definition}[Fonction $\mathrm{INT}_4$]
+On définit l'application
+\[
+  \mathrm{INT}_4 : \{0,\dots,2^{32}-1\} \to \bin^{32}
+\]
+qui à un entier $i$ associe son encodage big-endian sur 4 octets (32 bits) :
+\[
+\mathrm{INT}_4(i) = (b_{31}b_{30}\dots b_0) \text{ où } i = \sum_{j=0}^{31} b_j 2^{31-j}.
+\]
+\end{definition}
+
+\subsection{HKDF}
+
+\begin{definition}[HKDF]
+Soit $h:\bin^*\to\bin^d$ une fonction de hachage. On définit la fonction de dérivation de clé HKDF selon RFC 5869 :
+\[
+  \HKDF_h : \bin^* \times \bin^* \times \bin^* \times \N \to \bin^L
+\]
+comme suit. Soient $\mathrm{IKM}\in\bin^*$ (input keying material), $\mathrm{salt}\in\bin^*$, $\mathrm{info}\in\bin^*$, et $L\in\N$ (longueur de sortie en octets). On pose :
+\begin{itemize}
+\item $\mathrm{PRK} = \HMAC_h(\mathrm{salt}, \mathrm{IKM})$ (extraction)
+\item On définit itérativement pour $i=1,2,\dots$ jusqu'à obtenir $L$ octets :
+  \begin{align*}
+  T_1 &= \HMAC_h(\mathrm{PRK}, \mathrm{info} \concat \mathrm{INT}_4(1)) \\
+  T_2 &= \HMAC_h(\mathrm{PRK}, T_1 \concat \mathrm{info} \concat \mathrm{INT}_4(2)) \\
+  &\vdots \\
+  T_i &= \HMAC_h(\mathrm{PRK}, T_{i-1} \concat \mathrm{info} \concat \mathrm{INT}_4(i))
+  \end{align*}
+\item La sortie est la troncature aux $L$ octets de $T_1 \concat T_2 \concat \dots$
+\end{itemize}
+\end{definition}
+
+\subsection{PBKDF2}
+
+\begin{definition}[PBKDF2]
+On fixe un paramètre d'itération $c\in\N^*$ et un hachage $h$. On définit
+\[
+  \PBKDF_h : \bin^* \times \bin^* \times \N^* \times \N \to \bin^{8L}
+\]
+où $L$ est le nombre d'octets souhaités. Pour un mot de passe $P\in\bin^*$, un sel $S\in\bin^*$ et un entier $L\ge 1$, on
+définit, pour $i\ge 1$ :
+\[
+  U_1 = \HMAC_h(P,\,S\concat \mathrm{INT}_4(i)),
+\]
+\[
+  U_j = \HMAC_h(P,\,U_{j-1})\quad(2\le j\le c),
+\]
+puis
+\[
+  F(P,S,c,i) = U_1 \xor U_2 \xor \dots \xor U_c.
+\]
+La sortie de PBKDF2 est le préfixe aux $8L$ bits de la concaténation
+\[
+  F(P,S,c,1)\concat F(P,S,c,2)\concat \dots
+\]
+\end{definition}
+
+%=========================================================
+
+\section{Structure de groupe et signature Ed25519}
+
+\subsection{Courbe elliptique Ed25519}
+
+\begin{definition}[Courbe elliptique Ed25519]
+Soit $q = 2^{255} - 19$ et $\F_q$ le corps fini correspondant. La courbe elliptique Ed25519 est définie par l'équation de Twisted Edwards :
+\[
+E: -x^2 + y^2 = 1 + dx^2y^2 \quad \text{sur } \F_q
+\]
+où $d = -\frac{121665}{121666} \in \F_q$, avec la division interprétée comme la multiplication par l'inverse modulo $q$.
+\end{definition}
+
+\begin{definition}[Loi de groupe sur $E(\F_q)$]
+Soient $P_1 = (x_1, y_1)$ et $P_2 = (x_2, y_2)$ deux points de $E(\F_q)$. L'addition est définie par :
+\[
+P_1 + P_2 = (x_3, y_3) = \left(
+\frac{x_1y_2 + y_1x_2}{1 + dx_1x_2y_1y_2},
+\frac{y_1y_2 + x_1x_2}{1 - dx_1x_2y_1y_2}
+\right)
+\]
+où toutes les opérations arithmétiques sont effectuées dans $\F_q$. L'élément neutre est le point $\mathcal{O} = (0, 1)$.
+\end{definition}
+
+\begin{proposition}[Cardinal du groupe]
+Le groupe $E(\F_q)$ est abélien fini de cardinal :
+\[
+\#E(\F_q) = 8\ell
+\]
+où $\ell$ est le nombre premier $\ell = 2^{252} + 27742317777372353535851937790883648493$.
+\end{proposition}
+
+\begin{remark}[Admission du cardinal]
+Le calcul du cardinal de la courbe Ed25519 est admis. Il peut être obtenu par l'algorithme de Schoof-Elkies-Atkin (SEA) et a été vérifié de manière indépendante par plusieurs implémentations.
+\end{remark}
+
+\begin{definition}[Point de base standard Ed25519]
+On fixe le point de base standard $B \in E(\F_q)$ d'ordre $\ell$, dont les coordonnées affines sont :
+\begin{align*}
+y_B &= 46316835694926478169428394003475163141307993866256225615783033603165251855960 \\
+x_B &= 15112221349535400772501151409588531511454012693041857206046113283949847762202
+\end{align*}
+Ces valeurs satisfont l'équation de la courbe.
+\end{definition}
+
+\begin{remark}[Admission de l'ordre du point de base]
+L'ordre premier $\ell$ du point de base $B$ est admis. Cette propriété essentielle pour la sécurité cryptographique a été vérifiée par la communauté.
+\end{remark}
+
+\begin{definition}[Sous-groupe cyclique principal]
+Le sous-groupe cyclique d'ordre $\ell$ est :
+\[
+\langle B \rangle = \{aB \mid a \in \mathbb{Z}_\ell\}
+\]
+qui est isomorphe à $\mathbb{Z}_\ell$.
+\end{definition}
+
+\begin{remark}[Utilisation cryptographique]
+Seuls les points du sous-groupe $\langle B \rangle$ d'ordre premier $\ell$ sont utilisés pour la cryptographie. Le clampage dans Ed25519 garantit que les scalaires appartiennent à $\mathbb{Z}_\ell$.
+\end{remark}
+
+\subsection{Encodage des points et scalaires}
+
+\begin{definition}[Encodage des points et scalaires]
+L'encodage canonique d'un point $P = (x, y) \in E(\F_q)$ est défini par :
+\[
+\mathrm{enc}(P) = \mathrm{bytes}_{\mathrm{le}}(y) \concat p \in \bin^{256}
+\]
+où $\mathrm{bytes}_{\mathrm{le}}(y)$ est la représentation little-endian de $y$ sur 255 bits (32 octets, le bit de poids fort ignoré), et $p$ est le bit de parité de $x$, c'est-à-dire le bit le moins significatif de $x$.
+
+L'encodage d'un scalaire $s \in \mathbb{Z}_\ell$ est sa représentation little-endian sur 32 octets.
+\end{definition}
+
+\begin{remark}[Encodage compressé]
+L'encodage utilisé pour Ed25519 est l'encodage compressé standard où seul le coordonnée $y$ est stockée avec un bit de parité pour permettre la reconstruction de $x$. L'encodage est en little-endian conformément au standard.
+\end{remark}
+
+\subsection{Décodage des points Ed25519}
+
+\begin{definition}[Symbole de Legendre]
+Soit $p$ un nombre premier impair et $a$ un entier. Le symbole de Legendre $\left(\frac{a}{p}\right)$ est défini par :
+\[
+\left(\frac{a}{p}\right) = \begin{cases}
+0 & \text{si } p \mid a \\
+1 & \text{si } a \text{ est un carré modulo } p \\
+-1 & \text{sinon}
+\end{cases}
+\]
+\end{definition}
+
+\begin{theorem}[Critère d'Euler]
+\label{thm:euler-critere}
+Soit $p$ un nombre premier impair et $a$ un entier non divisible par $p$. Alors :
+\[
+a^{(p-1)/2} \equiv \left(\frac{a}{p}\right) \pmod{p}
+\]
+En particulier, $a^{(p-1)/2} \equiv 1 \pmod{p}$ si et seulement si $a$ est un carré modulo $p$, et $a^{(p-1)/2} \equiv -1 \pmod{p}$ si et seulement si $a$ n'est pas un carré modulo $p$.
+\end{theorem}
+
+\begin{proof}
+Si $a$ est un carré modulo $p$, alors $a \equiv b^2 \pmod{p}$ pour un $b$ non divisible par $p$, donc $a^{(p-1)/2} \equiv b^{p-1} \equiv 1 \pmod{p}$ par le théorème de Fermat.
+
+Réciproquement, dans $\F_p^*$ qui est cyclique d'ordre $p-1$, considérons l'homomorphisme $\phi: x \mapsto x^2$. Son noyau est $\{\pm 1\}$ d'ordre 2, donc son image (les carrés) est d'ordre $(p-1)/2$. L'équation $x^{(p-1)/2} = 1$ a au plus $(p-1)/2$ solutions, et tous les carrés la vérifient. Donc les non-carrés vérifient $a^{(p-1)/2} = -1$.
+\end{proof}
+
+\begin{lemma}[Lemme de Gauss pour les résidus quadratiques]
+\label{lem:gauss-quadratic}
+Soit $p$ un nombre premier impair et $a$ un entier non divisible por $p$. Considérons l'ensemble :
+\[
+A = \{a, 2a, 3a, \dots, \tfrac{p-1}{2}a\}
+\]
+Pour chaque élément $ka \in A$, on considère son \emph{résidu modulo $p$}, c'est-à-dire l'unique entier $r_k$ tel que $1 \leq r_k \leq p-1$ et $r_k \equiv ka \pmod{p}$.
+
+On sépare ces résidus en deux groupes :
+\begin{itemize}
+\item Les résidus $r_1, \dots, r_k$ qui sont inférieurs ou égaux à $p/2$
+\item Les résidus $s_1, \dots, s_\mu$ qui sont supérieurs à $p/2$
+\end{itemize}
+où $k$ est le nombre de résidus dans le premier groupe et $\mu$ est le nombre de résidus dans le second groupe. Alors :
+\[
+\left(\frac{a}{p}\right) = (-1)^\mu
+\]
+\end{lemma}
+
+\begin{proof}
+\textbf{Étape 1 : Les nombres $r_1, \dots, r_k, p-s_1, \dots, p-s_\mu$ sont distincts}
+
+Les $r_i$ sont par définition dans $\{1, \dots, \lfloor p/2 \rfloor\}$. Pour les $s_j$, comme $s_j > p/2$, on a $p-s_j \in \{1, \dots, \lfloor p/2 \rfloor\}$.
+
+Supposons par l'absurde qu'il existe $i,j$ tels que $r_i = p-s_j$. Alors :
+\[
+r_i + s_j = p
+\]
+Mais $r_i \equiv \alpha a \pmod{p}$ et $s_j \equiv \beta a \pmod{p}$ pour certains $\alpha, \beta \in \{1, \dots, \tfrac{p-1}{2}\}$. Donc :
+\[
+\alpha a + \beta a \equiv 0 \pmod{p} \quad \Rightarrow \quad (\alpha + \beta)a \equiv 0 \pmod{p}
+\]
+Puisque $p \nmid a$, on doit avoir $p \mid (\alpha + \beta)$. Mais $2 \leq \alpha + \beta \leq p-1$, contradiction.
+
+Ainsi, ces $k + \mu = \tfrac{p-1}{2}$ nombres forment une permutation de $\{1, 2, \dots, \tfrac{p-1}{2}\}$.
+
+\textbf{Étape 2 : Relations produits}
+
+Le produit de tous les éléments de $\{1, 2, \dots, \tfrac{p-1}{2}\}$ est $\left(\tfrac{p-1}{2}\right)!$. Donc :
+\[
+r_1 \cdots r_k (p-s_1) \cdots (p-s_\mu) = \left(\frac{p-1}{2}\right)!
+\]
+
+Modulo $p$, on a $p-s_j \equiv -s_j \pmod{p}$, donc :
+\[
+r_1 \cdots r_k (p-s_1) \cdots (p-s_\mu) \equiv r_1 \cdots r_k (-s_1) \cdots (-s_\mu) = (-1)^\mu r_1 \cdots r_k s_1 \cdots s_\mu \pmod{p}
+\]
+
+Ainsi :
+\[
+(-1)^\mu r_1 \cdots r_k s_1 \cdots s_\mu \equiv \left(\frac{p-1}{2}\right)! \pmod{p} \tag{1}
+\]
+
+D'autre part, le produit des éléments de $A$ est :
+\[
+a \cdot 2a \cdot 3a \cdots \tfrac{p-1}{2}a = a^{(p-1)/2} \left(\frac{p-1}{2}\right)!
+\]
+
+Modulo $p$, ce produit est congru au produit des résidus des éléments de $A$, c'est-à-dire $r_1 \cdots r_k s_1 \cdots s_\mu$. Donc :
+\[
+a^{(p-1)/2} \left(\frac{p-1}{2}\right)! \equiv r_1 \cdots r_k s_1 \cdots s_\mu \pmod{p} \tag{2}
+\]
+
+\textbf{Étape 3 : Conclusion}
+
+En substituant (2) dans (1), on obtient :
+\[
+(-1)^\mu a^{(p-1)/2} \left(\frac{p-1}{2}\right)! \equiv \left(\frac{p-1}{2}\right)! \pmod{p}
+\]
+
+Puisque $\left(\tfrac{p-1}{2}\right)!$ n'est pas divisible par $p$, on peut simplifier :
+\[
+(-1)^\mu a^{(p-1)/2} \equiv 1 \pmod{p} \quad \Rightarrow \quad a^{(p-1)/2} \equiv (-1)^\mu \pmod{p}
+\]
+
+Par le critère d'Euler (Théorème~\ref{thm:euler-critere}), on a $a^{(p-1)/2} \equiv \left(\frac{a}{p}\right) \pmod{p}$, donc :
+\[
+\left(\frac{a}{p}\right) = (-1)^\mu
+\]
+\end{proof}
+
+\begin{lemma}[Caractère quadratique de 2]
+Soit $q$ un nombre premier impair. Alors :
+\[
+\left(\frac{2}{q}\right) = (-1)^{\frac{q^2-1}{8}}
+\]
+En particulier, pour $q \equiv 5 \pmod{8}$, on a $\left(\frac{2}{q}\right) = -1$.
+\end{lemma}
+
+\begin{proof}
+Nous appliquons le lemme~\ref{lem:gauss-quadratic} avec $a = 2$. Soit 
+\[
+A = \{2, 4, 6, \dots, 2\cdot\frac{q-1}{2}\} = \{2, 4, \dots, q-1\}
+\]
+Soit $\mu$ le nombre d'éléments de $A$ dont le reste modulo $q$ est supérieur à $q/2$. Alors par le lemme de Gauss :
+\[
+\left(\frac{2}{q}\right) = (-1)^\mu
+\]
+
+Les éléments de $A$ sont tous dans l'intervalle $[2, q-1]$. Un élément $2k$ (avec $1 \leq k \leq \frac{q-1}{2}$) a un reste modulo $q$ supérieur à $q/2$ si et seulement si $2k > q/2$, c'est-à-dire $k > q/4$.
+
+Le nombre de tels $k$ est donc :
+\[
+\mu = \left\lfloor \frac{q-1}{2} \right\rfloor - \left\lfloor \frac{q}{4} \right\rfloor
+\]
+
+Écrivons $q = 8m + r$ avec $r \in \{1, 3, 5, 7\}$. Alors :
+\[
+\frac{q^2 - 1}{8} = \frac{(8m+r)^2 - 1}{8} = 8m^2 + 2mr + \frac{r^2 - 1}{8}
+\]
+
+D'autre part, calculons $\mu$ pour chaque cas :
+
+\begin{itemize}
+\item Si $q = 8m+1$, alors $\mu = 4m - 2m = 2m$ (pair)
+\item Si $q = 8m+3$, alors $\mu = 4m+1 - 2m = 2m+1$ (impair)  
+\item Si $q = 8m+5$, alors $\mu = 4m+2 - (2m+1) = 2m+1$ (impair)
+\item Si $q = 8m+7$, alors $\mu = 4m+3 - (2m+1) = 2m+2$ (pair)
+\end{itemize}
+
+Donc $\left(\frac{2}{q}\right) = (-1)^\mu = (-1)^{\frac{q^2-1}{8}}$.
+
+Pour $q \equiv 5 \pmod{8}$, on a $q = 8m+5$, donc $\frac{q^2-1}{8} = 8m^2 + 10m + 3$ qui est impair, donc $\left(\frac{2}{q}\right) = -1$.
+\end{proof}
+
+\begin{theorem}[Structure des racines carrées dans $\F_q$ pour $q \equiv 5 \pmod{8}$]
+Soit $q = 2^{255} - 19$ et $a \in \F_q$ un élément non nul. Si $a$ est un carré dans $\F_q$, alors l'ensemble de ses racines carrées est $\{x, -x\}$ où :
+\[
+x = a^{(q+3)/8} \quad \text{ou} \quad x = a^{(q+3)/8} \cdot 2^{(q-1)/4}
+\]
+De plus, ces deux racines carrées ont des bits de parité opposés.
+\end{theorem}
+
+\begin{proof}
+Soit $q = 2^{255} - 19 \equiv 5 \pmod{8}$. On peut écrire $q = 8k + 5$ avec $k \in \mathbb{Z}$, donc $(q+3)/8 = k+1$ est un entier.
+
+Supposons que $a$ est un carré dans $\F_q$. Calculons $x_0 = a^{(q+3)/8}$ :
+\[
+x_0^2 = \left(a^{(q+3)/8}\right)^2 = a^{(q+3)/4} = a \cdot a^{(q-1)/4}
+\]
+Soit $b = a^{(q-1)/4}$. Puisque $a$ est un carré, le critère d'Euler (Théorème~\ref{thm:euler-critere}) donne $a^{(q-1)/2} = 1$, donc $b^2 = a^{(q-1)/2} = 1$, ce qui implique $b = \pm 1$.
+
+On distingue deux cas :
+\begin{itemize}
+\item Si $b = 1$, alors $x_0^2 = a \cdot 1 = a$, donc $x_0$ est une racine carrée de $a$.
+\item Si $b = -1$, alors $x_0^2 = a \cdot (-1) = -a$. Soit $i = 2^{(q-1)/4}$. Alors :
+\[
+i^2 = (2^{(q-1)/4})^2 = 2^{(q-1)/2}
+\]
+Par le lemme précédent, pour $q \equiv 5 \pmod{8}$, on a $\left(\frac{2}{q}\right) = -1$, donc par le critère d'Euler (Théorème~\ref{thm:euler-critere}), $2^{(q-1)/2} = -1$. Ainsi $i^2 = -1$ et $x = x_0 \cdot i$ vérifie $x^2 = x_0^2 \cdot i^2 = (-a) \cdot (-1) = a$, donc $x$ est une racine carrée de $a$.
+\end{itemize}
+
+Dans les deux cas, on obtient une racine carrée $x$ de $a$. L'autre racine carrée est $-x$. Puisque la caractéristique de $\F_q$ est différente de 2, on a $x \neq -x$. En effet, si $x = -x$, alors $2x = 0$, ce qui impliquerait $x = 0$, mais $a = x^2 = 0$, contradiction avec $a$ non nul.
+
+De plus, les bits de parité de $x$ et $-x$ sont opposés. En effet, si on représente les éléments de $\F_q$ par des entiers entre $0$ et $q-1$, alors $-x$ est représenté par $q - x$. Comme $q$ est impair, $q - x$ a la parité opposée à $x$.
+\end{proof}
+
+\begin{definition}[Décodage des points Ed25519]
+Le décodage d'un point compressé est l'application :
+\[
+\mathrm{dec}: \bin^{256} \to E(\F_q) \cup \{\perp\}
+\]
+définie comme suit. Soit $P_{\mathrm{enc}} \in \bin^{256}$ un point encodé :
+\begin{enumerate}[leftmargin=2em]
+  \item Interpréter $P_{\mathrm{enc}}$ comme un entier en little-endian $0 \le N < 2^{256}$. Noter $p$ le bit de poids fort de $N$ (bit d'indice 255), et $y$ l'entier obtenu en annulant ce bit, c'est-à-dire en prenant les 255 bits de poids faible. On identifie alors $y$ avec un élément de $\bin^{255}$ et $p \in \bin$.
+  \item Interpréter $y$ (les 255 bits de poids faible) comme un élément de $\F_q$ (en little-endian) et le noter $y_P$.
+  \item Calculer $x_P^2 = \frac{y_P^2 - 1}{d y_P^2 + 1}$ dans $\F_q$.
+  \item Si $x_P^2$ n'est pas un carré dans $\F_q$, retourner $\perp$.
+  \item Calculer une racine carrée $x_P$ de $x_P^2$ en utilisant le théorème précédent.
+  \item Parmi les deux racines carrées $\{x_P, -x_P\}$, choisir celle dont le bit de parité (bit le moins significatif) est égal à $p$.
+  \item Retourner le point $P = (x_P, y_P)$.
+\end{enumerate}
+\end{definition}
+
+\begin{remark}[Implémentation efficace de la racine carrée]
+En pratique, on calcule d'abord :
+\[
+x = a^{(q+3)/8}
+\]
+puis on vérifie :
+\begin{itemize}
+\item Si $x^2 = a$, alors $x$ est une racine carrée de $a$.
+\item Si $x^2 = -a$, alors $x \cdot 2^{(q-1)/4}$ est une racine carrée de $a$.
+\item Sinon, $a$ n'est pas un carré dans $\F_q$.
+\end{itemize}
+On ajuste ensuite la parité en choisissant entre la racine obtenue et son opposée selon le bit $p$ stocké dans l'encodage.
+\end{remark}
+
+\subsection{Clés Ed25519}
+
+\begin{definition}[Clampage Ed25519]
+Soit $H_1 \in \bin^{256}$, que l'on interprète comme une suite de 32 octets $(h_0, h_1, \dots, h_{31})$ en little-endian. Le clampage Ed25519 est l'application :
+\[
+\mathrm{clamp}: \bin^{256} \to \mathbb{Z}_\ell
+\]
+définie par les opérations suivantes sur les octets :
+\begin{align*}
+h_0 &\gets h_0 \land \mathtt{0xF8} \quad \text{(bits 0-2 à 0)}, \\
+h_{31} &\gets (h_{31} \land \mathtt{0x7F}) \lor \mathtt{0x40} \quad \text{(bit 255 à 0, bit 254 à 1)},
+\end{align*}
+puis on pose
+\[
+a = \mathrm{val}_{\mathrm{le}}(h_0, h_1, \dots, h_{31}) \bmod \ell.
+\]
+\end{definition}
+
+\begin{definition}[Génération de clés Ed25519]
+Soit $K_{\mathrm{Ed}} \in \bin^{256}$. On calcule :
+\[
+H = \mathrm{SHA\text{-}512}(K_{\mathrm{Ed}}) = H_1 \concat H_2 \quad \text{avec } H_1, H_2 \in \bin^{256}
+\]
+La clé privée est :
+\[
+a = \mathrm{clamp}(H_1) \in \mathbb{Z}_\ell
+\]
+La clé publique est :
+\[
+A = aB \in E(\F_q)
+\]
+\end{definition}
+
+\subsection{Algorithme de signature Ed25519}
+
+\begin{definition}[Signature Ed25519]
+L'algorithme de signature $\mathrm{Sign}: \mathbb{Z}_\ell \times \bin^* \to \bin^{512}$ est défini comme suit :
+
+Pour $(a, M) \in \mathbb{Z}_\ell \times \bin^*$ :
+\begin{enumerate}[leftmargin=2em]
+\item Calculer $H = \mathrm{SHA\text{-}512}(K_{\mathrm{Ed}}) = H_1 \concat H_2$
+\item Définir $r = \mathrm{val}_{\mathrm{le}}(\mathrm{SHA\text{-}512}(H_2 \concat M)) \bmod \ell$
+\item Calculer $R = rB \in E(\F_q)$
+\item Calculer $k = \mathrm{val}_{\mathrm{le}}(\mathrm{SHA\text{-}512}(\mathrm{enc}(R) \concat \mathrm{enc}(A) \concat M)) \bmod \ell$
+\item Calculer $s = (r + k \cdot a) \bmod \ell$
+\item La signature est $\sigma = \mathrm{enc}(R) \concat \mathrm{bytes}_{\mathrm{le}}(s)$
+\end{enumerate}
+\end{definition}
+
+\subsection{Algorithme de vérification Ed25519}
+
+\begin{definition}[Vérification Ed25519]
+L'algorithme de vérification $\mathrm{Verify}: E(\F_q) \times \bin^* \times \bin^{512} \to \{\mathrm{OK}, \perp\}$ est défini comme suit :
+
+Pour $(A, M, \sigma) \in E(\F_q) \times \bin^* \times \bin^{512}$ :
+\begin{enumerate}[leftmargin=2em]
+\item Parser $\sigma = R_{enc} \concat s_{enc}$ avec $R_{enc}, s_{enc} \in \bin^{256}$
+\item Décoder $R = \mathrm{dec}(R_{enc}) \in E(\F_q)$
+\item Décoder $s = \mathrm{val}_{\mathrm{le}}(s_{enc}) \in \mathbb{Z}_\ell$
+\item Vérifier que $A$ et $R$ sont des points valides sur $E(\F_q)$
+\item Vérifier que $s \in \{0, \dots, \ell-1\}$
+\item Calculer $k = \mathrm{val}_{\mathrm{le}}(\mathrm{SHA\text{-}512}(R_{enc} \concat \mathrm{enc}(A) \concat M)) \bmod \ell$
+\item Vérifier l'équation :
+\[
+sB = R + kA
+\]
+Si toutes les vérifications réussissent, retourner $\mathrm{OK}$, sinon $\perp$.
+\end{enumerate}
+\end{definition}
+
+\begin{theorem}[Correction de la vérification Ed25519]
+Pour toute paire $(a,A)$ générée valide et tout message $M$,
+\[
+\mathrm{Verify}(A, M, \mathrm{Sign}(a, M)) = \mathrm{OK}
+\]
+\end{theorem}
+
+\begin{proof}
+Soit $\sigma = (R, s)$ une signature valide. Alors :
+\begin{align*}
+sB &= (r + k \cdot a)B \\
+   &= rB + k \cdot (aB) \\
+   &= R + kA
+\end{align*}
+L'équation de vérification est donc satisfaite.
+\end{proof}
+
+\begin{remark}[Signature contextuelle dans le schéma $k$-sur-$n$]
+Dans notre implémentation, on signe non pas $M$ directement mais le message contextualisé :
+\[
+M' = \texttt{"kofn-ed25519-v1"} \concat \mathrm{SHA256}(A) \concat M
+\]
+où $A$ est la clé publique Ed25519. Cela empêche la réutilisation des signatures hors contexte et garantit la liaison avec la clé maîtresse du schéma.
+\end{remark}
+
+\begin{remark}[Sécurité des signatures]
+La sécurité d'Ed25519 repose sur la difficulté du problème du logarithme discret dans le groupe $\langle B \rangle$ et sur les propriétés de résistance aux collisions de SHA-512. Le clampage empêche les attaques par canaux auxiliaires et garantit que le scalaire est dans le sous-groupe principal.
+\end{remark}
+
+%=========================================================
+\section{RSA, MGF1 et OAEP}
+
+\subsection{Clés RSA}
+
+\begin{proposition}[Valeur de $\varphi(n)$ pour $n = pq$]
+Si $p$ et $q$ sont deux nombres premiers distincts et $n = pq$, alors :
+\[
+\varphi(n) = (p-1)(q-1)
+\]
+\end{proposition}
+
+\begin{proof}
+Parmi les $n = pq$ entiers de $1$ à $n$, les entiers qui ne sont pas premiers avec $n$ sont :
+\begin{itemize}
+\item Les multiples de $p$ : $p, 2p, 3p, \dots, qp$ → il y en a $q$
+\item Les multiples de $q$ : $q, 2q, 3q, \dots, pq$ → il y en a $p$
+\end{itemize}
+L'entier $pq$ a été compté deux fois. Par le principe d'inclusion-exclusion :
+\[
+\varphi(n) = n - q - p + 1 = pq - p - q + 1 = (p-1)(q-1)
+\]
+\end{proof}
+
+\begin{definition}[Clés RSA]
+On choisit deux nombres premiers $p,q$ de taille comparable (typiquement $p,q \approx 2^{2048}$ pour un module de 4096 bits) et on pose $n = pq$. 
+
+On calcule $\varphi(n) = (p-1)(q-1)$.
+
+On choisit un exposant public $e$ tel que $\gcd(e,\varphi(n)) = 1$ (typiquement $e = 65537$). L'exposant privé $d$ est l'inverse de $e$ modulo $\varphi(n)$ :
+\[
+d \equiv e^{-1} \pmod{\varphi(n)}
+\]
+La clé publique est $(n,e)$ et la clé privée est $(n,d)$.
+\end{definition}
+
+\begin{theorem}[Correction du chiffrement RSA]
+\label{thm:rsa-correct}
+Pour tout message $M \in \{0,\dots,n-1\}$ et toute clé RSA valide $(n,e,d)$, on a :
+\[
+(M^e)^d \equiv M \pmod{n}
+\]
+\end{theorem}
+
+\begin{proof}
+Puisque $ed \equiv 1 \pmod{\varphi(n)}$, il existe $k$ tel que $ed = 1 + k(p-1)(q-1)$.
+
+\textbf{Modulo $p$} :
+\begin{itemize}
+\item Si $p \mid M$ : alors $M \equiv 0 \pmod{p}$, donc $M^{ed} \equiv 0 \equiv M \pmod{p}$
+\item Si $p \nmid M$ : par le petit théorème de Fermat (théorème \ref{thm:fermat}), $M^{p-1} \equiv 1 \pmod{p}$, donc
+  \[
+  M^{ed} = M^{1 + k(p-1)(q-1)} = M \cdot (M^{p-1})^{k(q-1)} \equiv M \cdot 1^{k(q-1)} = M \pmod{p}
+  \]
+\end{itemize}
+
+Ainsi, dans tous les cas, $M^{ed} \equiv M \pmod{p}$, donc $p \mid (M^{ed} - M)$.
+
+\textbf{Modulo $q$} :
+\begin{itemize}
+\item Si $q \mid M$ : alors $M \equiv 0 \pmod{q}$, donc $M^{ed} \equiv 0 \equiv M \pmod{q}$
+\item Si $q \nmid M$ : par le petit théorème de Fermat (théorème \ref{thm:fermat}), $M^{q-1} \equiv 1 \pmod{q}$, donc
+  \[
+  M^{ed} = M^{1 + k(p-1)(q-1)} = M \cdot (M^{q-1})^{k(p-1)} \equiv M \cdot 1^{k(p-1)} = M \pmod{q}
+  \]
+\end{itemize}
+
+Ainsi, dans tous les cas, $M^{ed} \equiv M \pmod{q}$, donc $q \mid (M^{ed} - M)$.
+
+Soit $N = M^{ed} - M$. Nous avons montré que $p \mid N$ et $q \mid N$. Puisque $p$ et $q$ sont premiers distincts, ils sont premiers entre eux.
+
+Comme $p \mid N$, on peut écrire $N = p \cdot K$ pour un certain entier $K$.
+Puisque $q \mid N = p \cdot K$ et que $\gcd(p,q) = 1$, par le théorème de Gauss (théorème \ref{thm:gauss-div}), $q \mid K$.
+Donc $K = q \cdot L$ pour un certain entier $L$, et ainsi :
+\[
+N = p \cdot K = p \cdot q \cdot L = n \cdot L
+\]
+Ce qui montre que $n \mid N$, c'est-à-dire :
+\[
+M^{ed} \equiv M \pmod{n}
+\]
+\end{proof}
+
+\begin{remark}[Risque lorsque $\gcd(M,n) \neq 1$]
+Si $\gcd(M,n) \neq 1$, alors $M$ est divisible par $p$ ou par $q$, ce qui permettrait à un attaquant de factoriser $n$ en calculant $\gcd(M,n)$.
+
+Bien que théoriquement possible, cette attaque est pratiquement irréalisable :
+
+\begin{itemize}
+\item Pour un module RSA de 4096 bits, la probabilité qu'un message aléatoire $M$ (de 4096 bits après encodage OAEP) ait un facteur commun avec $n$ est d'environ $2^{-2048}$
+\item Cette probabilité est bien inférieure à l'inverse du nombre estimé de particules dans l'univers observable ($\approx 10^{80} \approx 2^{266}$)
+\item Même en chiffrant un milliard de messages par seconde pendant l'âge de l'univers ($\approx 4 \times 10^{17}$ secondes), le nombre total de messages serait d'environ $10^{26} \approx 2^{86}$, et l'espérance du nombre de messages \og vulnérables \fg{} serait de $2^{86} \cdot 2^{-2048} = 2^{-1962}$, ce qui reste bien inférieur à 1
+\item Si un tel événement se produisait par miracle, le chiffrement et le déchiffrement fonctionneraient parfaitement normalement, et personne ne s'en rendrait compte sans calculer explicitement $\gcd(M,n)$
+\end{itemize}
+
+En pratique, cette attaque n'est donc pas une préoccupation réaliste pour la sécurité de RSA avec des paramètres standard.
+\end{remark}
+
+\begin{definition}[Paramètres concrets pour le schéma $k$-sur-$n$]
+Dans notre implémentation :
+\begin{itemize}[leftmargin=2em]
+  \item Module $n$ : 4096 bits
+  \item Exposant public $e = 65537$
+  \item Exposant privé $d \equiv e^{-1} \pmod{\varphi(n)}$
+\end{itemize}
+\end{definition}
+
+\begin{remark}[Sécurité RSA]
+La sécurité de RSA repose sur la difficulté de la factorisation du module $n$. Pour un module de 4096 bits, cela offre une sécurité suffisante selon les standards actuels.
+\end{remark}
+
+\subsection{MGF1}
+
+\begin{definition}[Fonction de génération de masque MGF1]
+Soit $h:\bin^*\to\bin^d$ une fonction de hachage. On définit
+\[
+  \MGF_h : \bin^* \times \N \to \bin^\ell
+\]
+par :
+\[
+  \MGF_h(Z,\ell) = T_1 \concat T_2 \concat \dots \concat T_{\lceil \ell/d \rceil} \quad \text{tronqué à $\ell$ bits}
+\]
+où 
+\[
+T_i = h(Z \concat \mathrm{INT}_4(i-1)) \quad \text{pour } i = 1, 2, \dots, \lceil \ell/d \rceil
+\]
+et $\mathrm{INT}_4(j)$ est l'encodage big-endian de $j$ sur 4 octets.
+\end{definition}
+
+\begin{propriete}[Propriétés de MGF1]
+MGF1 est déterministe et peut générer des masques de longueur arbitraire. Sa sécurité repose sur les propriétés de résistance aux collisions et de préimage de la fonction de hachage sous-jacente $h$.
+\end{propriete}
+
+\begin{remark}[Rôle crucial de MGF1 dans OAEP]
+MGF1 joue un rôle essentiel dans OAEP en empêchant les attaques par blocs indépendants :
+
+\begin{itemize}
+\item \textbf{Transformation de taille} : Passer d'une entrée fixe à une sortie de longueur arbitraire
+\item \textbf{Distribution uniforme} : Garantir que le masque n'a pas de motifs détectables  
+\item \textbf{Non-corrélation} : Assurer que chaque partie du masque est unique grâce au compteur
+\item \textbf{Entrelacement cryptographique} : Créer des dépendances non linéaires entre \texttt{maskedSeed} et \texttt{maskedDB} via la structure :
+  \[
+  \begin{cases}
+  \texttt{maskedDB} = \texttt{DB} \oplus \MGF_h(\texttt{seed}) \\
+  \texttt{maskedSeed} = \texttt{seed} \oplus \MGF_h(\texttt{maskedDB})
+  \end{cases}
+  \]
+\item \textbf{Prévention d'attaques par blocs} : Toute modification d'un bit dans une partie affecte de manière imprévisible l'ensemble du message, rendant impossible les attaques ciblées sur des blocs individuels
+\item \textbf{Sécurité prouvée} : Permettre les preuves formelles de sécurité d'OAEP contre les attaques adaptatives (IND-CCA2)
+\end{itemize}
+
+Sans MGF1, un attaquant pourrait manipuler séparément les différentes parties du message encodé, réduisant la sécurité à celle de schémas de padding vulnérables comme PKCS\#1 v1.5. MGF1 est donc la \og colle cryptographique \fg{} qui assure l'indissociabilité des composants d'OAEP.
+\end{remark}
+
+\subsection{RSA-OAEP}
+
+\begin{definition}[Paramètres RSA-OAEP]
+Soient $k$ la taille en octets du module $n$ (pour $n$ de 4096 bits, $k = 512$), et $hLen$ la taille de sortie de la fonction de hachage en octets (pour SHA-256, $hLen = 32$). On fixe :
+\[
+k_0 = k - 2hLen - 2,\quad k_1 = hLen
+\]
+où $k_0$ est la longueur maximale du message en octets et $k_1$ la longueur de l'aléa $r$.
+\end{definition}
+
+\begin{definition}[Encodage OAEP]
+L'encodage OAEP pour un message $M\in\bin^{8k_0}$, un label $L\in\bin^*$ et un aléa $r\in\bin^{8k_1}$ est défini comme suit :
+\begin{enumerate}[leftmargin=2em]
+  \item Calculer $lHash = h(L)$
+  \item Former la chaîne $PS = 0^{8(k - k_0 - 2hLen - 2)}$ (padding de zéros)
+  \item Construire le bloc $DB = lHash \concat PS \concat 0x01 \concat M$
+  \item Calculer $maskedDB = DB \xor \MGF_h(r, 8(k - hLen - 1))$
+  \item Calculer $maskedSeed = r \xor \MGF_h(maskedDB, 8hLen)$
+  \item Le message encodé est $EM = maskedSeed \concat maskedDB \in \bin^{8k}$
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[Chiffrement RSA-OAEP]
+Soient $(n,e)$ une clé publique RSA, $k_0,k_1$ les paramètres de taille définis ci-dessus. On définit :
+\begin{align*}
+  \RSAOAEP_{(n,e)} &: \bin^{8k_0} \times \bin^{8k_1} \to \{0,\dots,n-1\} \\
+  \RSAOAEP_{(n,e)}(M;r) &= \mathrm{val}_{\mathrm{be}}(EM)^e \bmod n
+\end{align*}
+où $EM$ est le résultat de l'encodage OAEP de $M$ avec l'aléa $r$.
+\end{definition}
+
+\begin{definition}[Déchiffrement RSA-OAEP]
+Soient $(n,d)$ une clé privée RSA. On définit :
+\begin{align*}
+  \RSAOAEP^{-1}_{(n,d)} &: \{0,\dots,n-1\} \to \bin^{8k_0} \cup \{\perp\} \\
+  \RSAOAEP^{-1}_{(n,d)}(C) &= 
+  \begin{cases}
+    M & \text{si le décodage réussit} \\
+    \perp & \text{sinon}
+  \end{cases}
+\end{align*}
+où $C \in \{0,\dots,n-1\}$ est le \textbf{texte chiffré} (ciphertext) obtenu par $\RSAOAEP_{(n,e)}(M;r)$.
+
+Le déchiffrement procède comme suit :
+\begin{enumerate}[leftmargin=2em]
+  \item Calculer $EM = C^d \bmod n$ et convertir en binaire sur $8k$ bits
+  \item Parser $EM = maskedSeed \concat maskedDB$ avec $maskedSeed \in \bin^{8hLen}$
+  \item Calculer $seed = maskedSeed \xor \MGF_h(maskedDB, 8hLen)$
+  \item Calculer $DB = maskedDB \xor \MGF_h(seed, 8(k - hLen - 1))$
+  \item Parser $DB = lHash' \concat PS \concat 0x01 \concat M$ où $PS$ est une suite de zéros
+  \item Vérifier que $lHash' = h(L)$ et que $PS$ contient bien que des zéros
+  \item Si toutes les vérifications passent, retourner $M$, sinon $\perp$
+\end{enumerate}
+\end{definition}
+
+\begin{remark}[Statut de l'aléa $r$ dans OAEP]
+Contrairement aux sels publics utilisés dans HKDF ou PBKDF2, l'aléa $r$ dans OAEP est **cryptographiquement protégé** :
+\begin{itemize}
+\item \textbf{Non public} : $r$ n'est pas stocké en clair ni transmis publiquement
+\item \textbf{Masqué cryptographiquement} : Il est caché dans le chiffré via $\texttt{maskedSeed} = r \oplus \MGF_h(\texttt{maskedDB})$
+\item \textbf{Récupération au déchiffrement} : Seul le possesseur de la clé privée peut retrouver $r$ 
+\item \textbf{Rôle éphémère} : $r$ est utilisé une seule fois puis "jeté"
+\end{itemize}
+La sécurité d'OAEP repose sur le fait que $r$ reste **imprévisible** pour un attaquant au moment du chiffrement.
+\end{remark}
+
+\begin{remark}[Paramètres numériques pour RSA-4096 et SHA-256]
+Pour un module RSA de 4096 bits ($k = 512$ octets) avec SHA-256 ($hLen = 32$ octets), on a :
+\[
+k_0 = 512 - 2\times 32 - 2 = 446 \text{ octets}
+\]
+Cette capacité de 446 octets est amplement suffisante pour une clé AES-256 de 32 octets, avec une marge importante pour les données de padding.
+\end{remark}
+
+\begin{theorem}[Correction de RSA-OAEP]
+Pour toute clé $(n,e,d)$ valide, pour tout message $M$ de longueur $8k_0$ bits et pour tout aléa $r\in\bin^{8k_1}$,
+\[
+  \RSAOAEP^{-1}_{(n,d)}\bigl(\RSAOAEP_{(n,e)}(M;r)\bigr) = M.
+\]
+\end{theorem}
+
+\begin{proof}
+La correction découle de la structure réversible de l'encodage OAEP. Les opérations de masquage utilisant MGF sont réversibles car déterministes, et les vérifications assurent l'intégrité du message.
+\end{proof}
+
+\begin{remark}[Propriétés de sécurité]
+RSA-OAEP offre une sécurité prouvée dans le modèle de l'oracle aléatoire contre les attaques adaptatives à chiffrés choisis (IND-CCA2). Le padding OAEP prévient les attaques par canal auxiliaire et garantit l'intégrité du message.
+\end{remark}
+
+\begin{definition}[Utilisation dans le schéma $k$-sur-$n$]
+Dans notre contexte, RSA-OAEP est utilisé pour chiffrer des clés AES-256 de 32 octets. Pour un module RSA de 4096 bits ($k=512$) avec SHA-256 ($hLen=32$), on a :
+\[
+k_0 = 512 - 2\times 32 - 2 = 446 \text{ octets}
+\]
+Ce qui est amplement suffisant pour une clé AES-256 de 32 octets, avec une marge importante de 414 octets pour le padding OAEP.
+\end{definition}
+
+%=========================================================
+\section{AES-GCM}
+
+\subsection{AES comme permutation de bloc}
+
+\begin{definition}[AES]
+Pour chaque clé $K\in\bin^{128}\cup\bin^{192}\cup\bin^{256}$, on
+dispose d'une permutation de bloc
+\[
+  E_K : \bin^{128} \to \bin^{128},
+\]
+bijective avec réciproque $D_K=E_K^{-1}$.
+\end{definition}
+
+\subsection{Corps $\F_{2^{128}}$ et GHASH}
+
+\begin{definition}[Corps $\F_{2^{128}}$]
+On fixe un polynôme irréductible $P(X)\in\F_2[X]$ de degré $128$ (par
+exemple $X^{128}+X^7+X^2+X+1$) et on définit
+\[
+  \F_{2^{128}} = \F_2[X]/(P(X)).
+\]
+On fixe une bijection entre $\bin^{128}$ et $\F_{2^{128}}$ en identifiant le bloc $(b_{127},\dots,b_0)$ au polynôme $\sum_{i=0}^{127} b_iX^i \bmod P(X)$.
+\end{definition}
+
+\begin{definition}[Sous-clé de hachage $H$]
+Pour une clé AES $K$, on définit
+\[
+  H = E_K(0^{128}) \in \bin^{128},
+\]
+que l'on identifie à un élément de $\F_{2^{128}}$.
+\end{definition}
+
+\begin{definition}[GHASH]
+Soit $H\in\F_{2^{128}}$. Pour une séquence $(Y_1,\dots,Y_m)$ de blocs de
+$\bin^{128}$, que l'on identifie à $\F_{2^{128}}$, on définit
+\[
+  \mathrm{GHASH}_H(Y_1,\dots,Y_m)
+  = \sum_{j=1}^m H^{m-j+1} \cdot Y_j \in \F_{2^{128}}.
+\]
+Cette expression correspond à l'itération $((Y_1H + Y_2)H + \dots + Y_m)H$.
+\end{definition}
+
+\subsection{Mode AES-GCM}
+
+\begin{definition}[AES-GCM]
+Pour une clé $K\in\bin^{256}$, on modélise AES-GCM comme un couple
+d'applications
+\begin{align*}
+  \AESGCM_K &: \bin^{96} \times \bin^* \to \bin^* \times \bin^{128} \\
+  \AESGCM_K^{-1} &: \bin^{96} \times \bin^* \times \bin^{128} \to \bin^* \cup\{\perp\}
+\end{align*}
+où le premier argument est un nonce $N\in\bin^{96}$, le deuxième un message
+$M$, la sortie un couple $(C,T)$ avec $C$ le texte chiffré et $T$ le tag (128 bits),
+et où la fonction inverse produit soit le message $M$, soit le symbole
+d'erreur $\perp$ (hors de $\bin^*$) si la vérification du tag échoue.
+\end{definition}
+
+\begin{remark}[Unicité des nonces]
+Pour toute clé $K$, les nonces $N$ doivent être uniques. Formellement, si $(N,M) \neq (N',M')$ alors les ensembles de textes chiffrés générés doivent être disjoints avec probabilité écrasante.
+\end{remark}
+
+\begin{theorem}[Correction d'AES-GCM]
+Pour toute clé $K\in\bin^{256}$, tout nonce $N\in\bin^{96}$ et tout
+message $M\in\bin^*$,
+\[
+  \AESGCM_K^{-1}\bigl(N,\,\AESGCM_K(N,M)\bigr) = M.
+\]
+\end{theorem}
+
+%=========================================================
+\section{Construction globale du schéma $k$-sur-$n$}
+
+\subsection{Paramètres et constantes}
+
+\begin{definition}[Paramètres globaux]
+On fixe :
+\begin{itemize}[leftmargin=2em]
+  \item un entier $n\ge 2$ (nombre de participants) ;
+  \item un entier $k$ avec $2\le k\le n$ (seuil) ;
+  \item le corps $\F_P$ avec $P=2^{521}-1$ ;
+  \item la fonction de hachage $h$ (par exemple SHA-256) ;
+  \item les fonctions dérivées $\HMAC_h$, $\HKDF_h$, $\PBKDF_h$ ;
+  \item un schéma de signature Ed25519 sur $(E(\F_q),\langle B\rangle)$ ;
+  \item un schéma RSA-OAEP pour des modules de taille $4096$ bits ;
+  \item AES-GCM avec blocs de 128 bits et clés de 256 bits.
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Constantes de contexte et sels]
+On fixe les constantes suivantes :
+\begin{itemize}[leftmargin=2em]
+  \item $\mathrm{info}_{\mathrm{Ed}}\in\bin^*$, chaîne ASCII
+        (par exemple \texttt{"ed25519-master-key"}) ;
+  \item $\mathrm{info}_{\mathrm{RSA}}\in\bin^*$,
+        (par exemple \texttt{"rsa-wrap-key"}) ;
+  \item un sel HKDF public pour Ed25519,
+        $\mathrm{saltEd}\in\bin^*$, typiquement l'ASCII de
+        \texttt{"ed25519-salt"} ;
+  \item pour chaque cérémonie, un sel HKDF public pour RSA,
+        $W\in\bin^{\ell_{\mathrm{wrap}}}$, tiré uniformément ;
+  \item pour chaque participant $i$, un sel PBKDF2 individuel
+        $S_i\in\bin^{\ell_S}$ (avec $\ell_S$ fixé, par exemple 128 bits), tiré uniformément ;
+  \item un nombre d'itérations $c\in\N^*$ pour PBKDF2 ;
+  \item pour RSA-OAEP, un label $L\in\bin^*$ (souvent vide).
+\end{itemize}
+\end{definition}
+
+\subsection{Cérémonie initiale}
+
+\begin{definition}[Encodage des éléments de $\F_P$]
+Soit $\phi: \F_P \to \bin^{521}$ l'isomorphisme qui à $a \in \F_P$ associe sa représentation binaire big-endian sur $\lceil \log_2 P \rceil = 521$ bits.
+\end{definition}
+
+\begin{definition}[Étape de génération]
+La cérémonie initiale réalise les étapes suivantes :
+\begin{enumerate}[leftmargin=2em,label=\arabic*)]
+  \item Tirer $S\in\bin^{256}$ uniformément et définir $s = \mathrm{val}_{\mathrm{be}}(S) \bmod P \in \F_P$.
+  \item Appliquer $\mathrm{Share}(s)$ pour obtenir les parts
+        $(x_i,y_i)_{1\le i\le n}$.
+  \item Dériver la clé
+  \[
+    K_{\mathrm{Ed}} = \HKDF_h(S,\mathrm{saltEd},
+    \mathrm{info}_{\mathrm{Ed}},32) \in \bin^{256}.
+  \]
+  \item Dériver à partir de $K_{\mathrm{Ed}}$ la paire de clés Ed25519
+        $(a,A)$.
+  \item Générer une paire RSA $(n,e,d)$ avec $n$ de 4096 bits.
+  \item Tirer $W\in\bin^{\ell_{\mathrm{wrap}}}$ et dériver la clé
+  \[
+    K_{\mathrm{RSA}} = \HKDF_h(S,W,
+    \mathrm{info}_{\mathrm{RSA}},L_{\mathrm{RSA}}) \in \bin^{8L_{\mathrm{RSA}}}
+  \]
+  avec $L_{\mathrm{RSA}}=32$ (clé AES-256 de 32 octets).
+  \item Encoder la clé privée RSA en un mot binaire $M_{\mathrm{RSA}}$ (format PEM ou DER), puis calculer
+  \[
+    (C_{\mathrm{RSA}}, T_{\mathrm{RSA}}) = \AESGCM_{K_{\mathrm{RSA}}}(N_{\mathrm{RSA}}, M_{\mathrm{RSA}})
+  \]
+  pour un nonce $N_{\mathrm{RSA}}\in\bin^{96}$.
+  \item Stocker $(W,N_{\mathrm{RSA}},C_{\mathrm{RSA}},T_{\mathrm{RSA}})$ dans \texttt{rsa\_wrapped.json}.
+\end{enumerate}
+\end{definition}
+
+\subsection{Protection des parts}
+
+\begin{definition}[Sérialisation des parts]
+Pour chaque part $(x_i,y_i)$, on construit un dictionnaire JSON contenant les champs \texttt{x}, \texttt{y}, \texttt{k}, \texttt{n}, et \texttt{pub\_hash}. On encode ce dictionnaire en UTF-8 pour obtenir le message à chiffrer $M_i \in \bin^*$.
+\end{definition}
+
+\begin{definition}[Dérivation des clés individuelles]
+Pour chaque participant $i$, on fixe un mot de passe $P_i\in\bin^*$ et on
+définit
+\[
+  K_i = \PBKDF_h(P_i,S_i,c,L_i) \in \bin^{8L_i},
+\]
+où $L_i$ est choisi en fonction de la clé AES à dériver (par exemple
+$L_i=32$ pour une clé AES-256).
+\end{definition}
+
+\begin{definition}[Chiffrement des parts]
+Pour une part sérialisée $M_i$, on calcule
+\[
+  (C_i,T_i) = \AESGCM_{K_i}(N_i, M_i)
+\]
+avec un nonce $N_i\in\bin^{96}$. Le tuple $(S_i,N_i,C_i,T_i)$ est
+stocké dans la partie personnelle du coffre du participant $i$.
+\end{definition}
+
+\subsection{Chiffrement hybride des fichiers}
+
+\begin{definition}[Chiffrement hybride d'un fichier]
+Soit un fichier $F\in\bin^*$. On procède comme suit :
+\begin{enumerate}[leftmargin=2em,label=\arabic*)]
+  \item Tirer une clé de session $K_{\mathrm{AES}}\in\bin^{256}$.
+  \item Tirer un nonce $N\in\bin^{96}$.
+  \item Calculer $(C,T)=\AESGCM_{K_{\mathrm{AES}}}(N,F)$.
+  \item Calculer $E_K = \RSAOAEP_{(n,e)}(K_{\mathrm{AES}};r)$ pour un
+        aléa $r\in\bin^{k_1}$.
+\end{enumerate}
+Le quadruplet $(E_K,N,C,T)$ est le chiffrement hybride de $F$.
+\end{definition}
+
+%=========================================================
+\section{Correspondance avec les scripts Tails v1}
+
+Cette section établit la correspondance entre les objets formalisés ci-dessus
+et les éléments concrets (scripts, fichiers) de la procédure Tails v1.
+
+\subsection{Secret maître et partage Shamir}
+
+\begin{itemize}[leftmargin=2em]
+  \item Le secret $S\in\bin^{256}$ est généré par \verb|os.urandom(32)|
+        dans le script \texttt{ceremony\_generate.py} (variable \verb|S_int|).
+  \item La conversion $s = \mathrm{val}_{\mathrm{be}}(S) \bmod P \in \F_P$ est implicite
+        dans l'implémentation Python.
+  \item Les partages $(x_i,y_i)$ sont obtenus par évaluation d'un
+        polynôme $f\in\mathcal{P}_{<k}$ via la fonction \verb|shamir_split|.
+  \item La reconstruction utilise l'interpolation de Lagrange dans
+        \verb|shamir_reconstruct| avec calcul explicite des coefficients
+        $\lambda_j$.
+\end{itemize}
+
+\subsection{Clés dérivées, sels HKDF et Ed25519}
+
+\begin{itemize}[leftmargin=2em]
+  \item La clé $K_{\mathrm{Ed}} = \HKDF_h(S,\mathrm{saltEd},
+        \mathrm{info}_{\mathrm{Ed}},32)$ est instanciée via :
+\begin{verbatim}
+HKDF(SHA256, 32, salt=b"ed25519-salt", 
+     info=b"ed25519-master-key")
+\end{verbatim}
+  \item De même, $K_{\mathrm{RSA}} = \HKDF_h(S,W,
+        \mathrm{info}_{\mathrm{RSA}},32)$ utilise \verb|info=b"rsa-wrap-key"|
+        avec un sel aléatoire $W$ stocké dans \texttt{rsa\_wrapped.json}.
+  \item La paire $(a,A)$ est construite via 
+        \verb|Ed25519PrivateKey.from_private_bytes(ed_seed)|,
+        où \texttt{ed\_seed} est $K_{\mathrm{Ed}}$. L'API effectue le clampage
+        et calcule $A=aB$.
+\end{itemize}
+
+\subsection{PBKDF2, sels $S_i$ et chiffrement des parts}
+
+\begin{itemize}[leftmargin=2em]
+  \item Pour chaque participant $i$, le script tire un sel $S_i$ (16 octets)
+        et dérive $K_i = \PBKDF_h(P_i,S_i,c,32)$ avec $c=501000$ itérations.
+  \item Les parts sont sérialisées en JSON avec les champs \texttt{x}, \texttt{y}, 
+        \texttt{k}, \texttt{n}, et \texttt{pub\_hash}, puis chiffrées par AES-GCM.
+  \item L'enveloppe chiffrée inclut les métadonnées nécessaires pour la
+        vérification lors de la reconstruction.
+\end{itemize}
+
+\subsection{RSA, OAEP et chiffrement hybride}
+
+\begin{itemize}[leftmargin=2em]
+  \item La paire RSA $(n,e,d)$ est générée avec $n=4096$ bits et $e=65537$.
+  \item La clé privée RSA est sérialisée en PEM puis chiffrée sous AES-GCM
+        avec $K_{\mathrm{RSA}}$, produisant \texttt{rsa\_wrapped.json}.
+  \item Le script \texttt{rsa\_hybrid\_encrypt.py} implémente le chiffrement
+        hybride : 
+        \begin{itemize}
+        \item Génération de $K_{\mathrm{AES}} \in \bin^{256}$ 
+        \item Chiffrement de $F$ par $\AESGCM_{K_{\mathrm{AES}}}(N,F)$
+        \item Chiffrement de $K_{\mathrm{AES}}$ par $\RSAOAEP_{(n,e)}$
+        \end{itemize}
+  \item Le déchiffrement dans \texttt{kofn\_rsa\_decrypt.py} inverse ces étapes
+        après reconstruction de $S$ et déverrouillage de la clé RSA.
+\end{itemize}
+
+\subsection{Signature Ed25519 avec contexte}
+
+\begin{itemize}[leftmargin=2em]
+  \item Les signatures utilisent un contexte déterministe :
+        \[
+        \mathrm{contexte} = \texttt{"kofn-ed25519-v1"} \concat \mathrm{SHA256}(A) \concat M
+        \]
+        pour éviter la réutilisation hors contexte.
+  \item La vérification dans \texttt{verify\_ed25519.py} utilise le même
+        contexte, assurant l'authenticité même avec la même clé publique.
+\end{itemize}
+
+\subsection{Gestion sécurisée de la mémoire}
+
+\begin{itemize}[leftmargin=2em]
+  \item Les secrets éphémères ($S$, seeds) sont stockés dans des 
+        \texttt{bytearray} pour permettre l'effacement explicite via
+        \verb|secure_wipe|.
+  \item Cette mesure atténue les risques d'exposition en RAM après usage.
+\end{itemize}
+
+\subsection{Résumé sur les sels publics}
+
+\begin{itemize}[leftmargin=2em]
+  \item Sel HKDF Ed25519 $\mathrm{saltEd}$ :
+        \begin{itemize}
+          \item valeur : chaîne ASCII constante (par exemple
+                \verb|"ed25519-salt"|) ;
+          \item génération : aucun tirage, valeur codée en dur
+                dans le script ;
+          \item stockage : implicite dans le code, public et identique
+                pour toutes les cérémonies.
+        \end{itemize}
+  \item Sel HKDF RSA (wrap salt) $W$ :
+        \begin{itemize}
+          \item valeur : bitstring aléatoire \verb|wrap_salt|
+                généré par \verb|os.urandom(WRAP_SALT_SIZE)| ;
+          \item génération : une fois par cérémonie de génération
+                de la clé RSA ;
+          \item stockage : champ \verb|"salt"| dans \texttt{rsa\_wrapped.json},
+                encodé en Base64, public.
+        \end{itemize}
+  \item Sels PBKDF2 $S_i$ :
+        \begin{itemize}
+          \item valeur : bitstrings aléatoires individuels, un par participant,
+                générés par \verb|os.urandom(SALT_SIZE)| ;
+          \item génération : lors de la création ou de la mise à jour de la
+                protection de la part du participant $i$ ;
+          \item stockage : dans la partie personnelle du coffre du participant,
+                aux côtés de $(N_i,C_i,T_i)$, public mais lié au participant.
+        \end{itemize}
+\end{itemize}
+
+%=========================================================
+\section{Résumé des propriétés de sécurité}
+
+\begin{definition}[Modèle de sécurité]
+On considère un adversaire $\mathcal{A}$ ayant accès aux oracles :
+\begin{itemize}
+\item $\mathcal{O}_{\mathrm{Share}}$ : renvoie jusqu'à $t < k$ parts
+\item $\mathcal{O}_{\mathrm{Sign}}$ : signe des messages avec la clé Ed25519
+\item $\mathcal{O}_{\mathrm{Decrypt}}$ : déchiffre des textes chiffrés
+\end{itemize}
+\end{definition}
+
+\begin{theorem}[Confidentialité conditionnelle]
+Soit $\mathcal{A}$ un adversaire polynomial n'ayant accès qu'à $t < k$ parts. Alors pour toute fonction $f$ calculable en temps polynomial :
+\[
+\left|\Pr[\mathcal{A}(f(S)) = 1] - \Pr[\mathcal{A}(f(U)) = 1]\right| \leq \epsilon(\lambda)
+\]
+où $U$ est uniforme dans $\bin^{256}$ et $\epsilon$ est négligeable dans le paramètre de sécurité $\lambda$.
+\end{theorem}
+
+\begin{theorem}[Intégrité des signatures et des chiffrés]
+Sous les hypothèses que HKDF, PBKDF2, AES-GCM et RSA-OAEP sont cryptographiquement sûrs, il est computationnellement difficile pour un adversaire polynomial de forger une signature Ed25519 valide ou de modifier un texte chiffré AES-GCM sans être détecté.
+\end{theorem}
+
+\begin{remark}
+Une preuve complète de sécurité nécessiterait un modèle d'adversaire
+précis (oracles, ressources de calcul) et l'utilisation de techniques de
+réduction dans des modèles comme l'oracle aléatoire. On ne la développe
+pas ici.
+\end{remark}
+
+\end{document}
