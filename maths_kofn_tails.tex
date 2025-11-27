@@ -23,6 +23,10 @@
 \usetikzlibrary{arrows.meta,positioning}
 \usepackage{hyperref}
 
+% Supprimer l'indentation de tous les paragraphes
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}  % Espacement entre paragraphes
+
 % ============================
 % Environnements mathématiques
 % ============================
@@ -73,25 +77,37 @@ formulation mathématique rigoureuse}
 
 
 \begin{abstract}
-On formalise ici, dans un cadre entièrement mathématique, un schéma
-$k$-sur-$n$ pour la gestion d'un secret maître, basé sur :
+Ce texte formalise, dans un cadre entièrement mathématique, le schéma
+$k$-sur-$n$ mis en \oe uvre par la procédure opérationnelle sous Tails
+pour la gestion d'un secret maître, telle qu'elle est décrite dans le
+document HTML \texttt{procedure\_kofn\_tails\_v1.html} dont l'empreinte
+SHA-256 est
+\[
+  \texttt{ed223dd055108b0c08cd6d7b3011962d5bdc5f92dd38760c5c6a202982fcde84}.
+\]
+Le protocole repose sur les briques cryptographiques suivantes :
 \begin{itemize}[leftmargin=2em]
-  \item le partage de secret de Shamir sur un corps fini ;
-  \item la dérivation de clés par HKDF et PBKDF2 ;
-  \item une signature Ed25519 (courbe elliptique sur un corps fini) ;
-  \item un chiffrement hybride RSA--AES avec authentification d'intégrité (AES-GCM).
-\end{itemize}
-AES-GCM garantit la confidentialité et l'intégrité des données. 
-L'authenticité est assurée différemment selon le contexte :
-\begin{itemize}[leftmargin=2em]
-  \item \textbf{Parts de secret} : authentifiées par les mots de passe individuels (AES-GCM avec clé dérivée du mot de passe)
-  \item \textbf{Signatures} : authentifiées cryptographiquement par Ed25519  
-  \item \textbf{Fichiers chiffrés hybrides RSA-AES} : intégrité garantie par AES-GCM, mais authenticité de la source non garantie
-  \item \textbf{Clés publiques} : doivent être authentifiées après distribution publique par canaux sécurisés
+  \item le partage de secret de Shamir sur un corps fini pour répartir un secret maître $S$ selon un seuil $k$-sur-$n$ ;
+  \item la dérivation de clés symétriques à partir de $S$ et des mots de passe par HKDF et PBKDF2 ;
+  \item une clé de signature Ed25519 dérivée de $S$ (schéma de signature à base de courbe elliptique) ;
+  \item un chiffrement hybride RSA-4096 / AES-256-GCM pour les fichiers destinés aux membres du groupe $k$-sur-$n$, la clé RSA privée étant elle-même chiffrée par AES-256-GCM à partir de $S$ ;
 \end{itemize}
 
-Les objets sont définis dans leur structure algébrique naturelle, et
-les liens avec les scripts informatiques sont donnés en fin de document.
+Nous détaillons, pour chaque type d'objet manipulé, les garanties effectives
+en termes de confidentialité, d'intégrité et d'authenticité :
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Parts de secret} : confidentialité et intégrité assurées par AES-GCM avec une clé dérivée du mot de passe du porteur (PBKDF2) ;
+  \item \textbf{Signatures de fichiers} : intégrité et authenticité cryptographiques assurées par Ed25519 à partir de la clé dérivée de $S$ ;
+  \item \textbf{Fichiers chiffrés hybrides RSA--AES} : confidentialité et intégrité du contenu assurées par AES-GCM ; l'authenticité de la \emph{source} n'est en revanche pas garantie en l'absence de signature dédiée ;
+  \item \textbf{Clés publiques} : leur authenticité doit être vérifiée par des canaux hors-bande (vérification humaine, échange préalable sur canal sécurisé, etc.).
+\end{itemize}
+
+Les objets sont définis dans leur structure algébrique naturelle (corps finis,
+groupes, espaces de clés), puis mis en correspondance explicite avec les
+formats de fichiers et les scripts décrits dans \texttt{procedure\_kofn\_tails\_v1.html}, de façon à assurer une traçabilité complète entre le modèle
+mathématique et la mise en \oe uvre opérationnelle. Dans toute la suite,
+l'expression \og procédure Tails\fg{} désigne précisément ce document HTML
+identifié par l'empreinte SHA-256 ci-dessus.
 \end{abstract}
 
 \newpage
@@ -640,7 +656,8 @@ Soit $p$ un nombre premier impair et $a$ un entier non divisible par $p$. Alors 
 \[
 a^{(p-1)/2} \equiv \left(\frac{a}{p}\right) \pmod{p}
 \]
-En particulier, $a^{(p-1)/2} \equiv 1 \pmod{p}$ si et seulement si $a$ est un carré modulo $p$, et $a^{(p-1)/2} \equiv -1 \pmod{p}$ si et seulement si $a$ n'est pas un carré modulo $p$.
+En particulier, $a^{(p-1)/2} \equiv 1 \pmod{p}$ si et seulement si $a$ est un carré modulo $p$, et \\
+$a^{(p-1)/2} \equiv -1 \pmod{p}$ si et seulement si $a$ n'est pas un carré modulo $p$.
 \end{theorem}
 
 \begin{proof}
@@ -1192,14 +1209,93 @@ Ce qui est amplement suffisant pour une clé AES-256 de 32 octets, avec une marg
 
 \subsection{AES comme permutation de bloc}
 
-\begin{definition}[AES]
-Pour chaque clé $K\in\bin^{128}\cup\bin^{192}\cup\bin^{256}$, on
-dispose d'une permutation de bloc
+\begin{definition}[AES-256]
+On fixe une taille de bloc de $128$ bits et une taille de clé de $256$ bits.
+Pour chaque clé $K \in \bin^{256}$, on dispose d'une permutation de blocs
 \[
   E_K : \bin^{128} \to \bin^{128},
 \]
-bijective avec réciproque $D_K=E_K^{-1}$.
+bijective, avec réciproque notée $D_K = E_K^{-1}$.
 \end{definition}
+
+\begin{remark}[Longueur de clé et cohérence opérationnelle]
+La norme AES autorise des clés de longueur $128$, $192$ ou $256$ bits.
+Dans ce document, et conformément à la procédure opérationnelle retenue,
+nous nous restreignons explicitement au cas AES-256, c'est-à-dire $K \in \bin^{256}$.
+\end{remark}
+
+\paragraph{Dénombrement des permutations vs. dénombrement des clés.}
+
+L'espace des blocs possibles est $\bin^{128}$, qui contient
+\[
+  N = 2^{128}
+\]
+éléments. L'ensemble de toutes les permutations de $\bin^{128}$ est donc
+le groupe symétrique
+\[
+  \mathrm{Sym}(\bin^{128}) \simeq \mathfrak{S}_{2^{128}},
+\]
+qui contient
+\[
+  \bigl|\mathrm{Sym}(\bin^{128})\bigr| = (2^{128})!
+\]
+permutations possibles.
+
+L'espace des clés AES-256 contient $ |\mathcal{K}| = 2^{256}$ clés possibles. L'application
+\[
+  \Phi : \mathcal{K} \to \mathrm{Sym}(\bin^{128}), \qquad K \mapsto E_K
+\]
+ne peut donc, au plus, réaliser que $2^{256}$ permutations parmi les $(2^{128})!$
+permutations théoriquement possibles sur $\bin^{128}$.
+
+Pour visualiser l'écart de taille, on passe aux logarithmes en base $2$. En utilisant
+l'approximation de Stirling $\log_2(n!) \approx n(\log_2 n - \log_2 e)$,
+\[
+  \log_2\bigl((2^{128})!\bigr)
+  \approx 2^{128} (\log_2(2^{128}) - \log_2 e)
+  = 2^{128}(128 - \log_2 e)
+  \approx 2^{128} \cdot 126{,}56,
+\]
+alors que
+\[
+  \log_2 |\mathcal{K}| = \log_2(2^{256}) = 256.
+\]
+On a donc
+\[
+  \log_2 \bigl|\mathrm{Sym}(\bin^{128})\bigr| \;\approx\; 126{,}56 \cdot 2^{128}
+  \;\gg\; 256 = \log_2 |\mathcal{K}|,
+\]
+ce qui signifie que le nombre de permutations de blocs possibles est
+astronomiquement plus grand que le nombre de clés AES-256 possibles.
+
+\paragraph{Injectivité pratique.}
+
+Si l'on modélise AES-256 comme une \emph{permutation pseudo-aléatoire} (PRP),
+c'est-à-dire comme si, pour chaque clé $K \in \bin^{256}$,
+la permutation $E_K$ était tirée uniformément au hasard dans $\mathrm{Sym}(\bin^{128})$,
+alors la probabilité que l'application $\Phi : K \mapsto E_K$ ne soit pas injective
+est négligeable.
+
+Le risque de collision (existence de $K \neq K'$ tels que $E_K = E_{K'}$)
+est donné par le paradoxe des anniversaires dans un ensemble de taille $M = (2^{128})!$ :
+\[
+  \Pr[\text{collision}] \approx 1 - \exp\left(-\frac{|\mathcal{K}|^2}{2M}\right).
+\]
+Comme $M$ est extrêmement grand ($\log_2 M \approx 2^{128} \cdot 126{,}56$),
+cette probabilité est de l'ordre de
+\[
+  \frac{|\mathcal{K}|^2}{2M} \approx \frac{2^{512}}{2 \cdot (2^{128})!},
+\]
+soit $2^{-\Omega(2^{128})}$, totalement négligeable à toute échelle pratique.
+
+En résumé, même si l'injectivité de l'application
+\[
+  \Phi : \bin^{256} \to \mathrm{Sym}(\bin^{128}),\quad K \mapsto E_K
+\]
+n'est pas formellement démontrée pour AES-256, le dénombrement ci-dessus justifie
+le postulat cryptographique standard : il est computationnellement infaisable
+de trouver deux clés distinctes $K \neq K'$ induisant la même permutation de blocs $E_K = E_{K'}$.
+
 
 \subsection{Corps $\F_{2^{128}}$ et GHASH}
 
@@ -1480,7 +1576,8 @@ HKDF(SHA256, 32, salt=b"ed25519-salt",
   \item Sels PBKDF2 $S_i$ :
         \begin{itemize}
           \item valeur : bitstrings aléatoires individuels, un par participant,
-                générés par \verb|os.urandom(SALT_SIZE)| ;
+                générés par \\
+                 \verb|os.urandom(SALT_SIZE)| ;
           \item génération : lors de la création ou de la mise à jour de la
                 protection de la part du participant $i$ ;
           \item stockage : dans la partie personnelle du coffre du participant,
