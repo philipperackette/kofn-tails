@@ -80,10 +80,20 @@ $k$-sur-$n$ pour la gestion d'un secret maître, basé sur :
   \item une signature Ed25519 (courbe elliptique sur un corps fini) ;
   \item un chiffrement hybride RSA--AES en mode authentifié (AES-GCM).
 \end{itemize}
+Le mode authentifié (AES-GCM) garantit non seulement la confidentialité
+des données, mais aussi leur intégrité et authenticité : toute modification
+des textes chiffrés est détectée et entraîne le rejet au déchiffrement,
+même sans connaissance de la clé secrète. Cette propriété protège :
+
+\begin{itemize}[leftmargin=2em]
+  \item les parts de secret (chiffrées par AES-GCM avec des clés dérivées de mots de passe)
+  \item les clés AES de session (chiffrées par RSA-OAEP dans le schéma hybride) 
+  \item les fichiers eux-mêmes (chiffrés par AES-GCM avec les clés de session)
+\end{itemize}
+
 Les objets sont définis dans leur structure algébrique naturelle, et
 les liens avec les scripts informatiques sont donnés en fin de document.
 \end{abstract}
-
 \tableofcontents
 
 %=========================================================
