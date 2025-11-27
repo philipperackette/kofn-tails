@@ -81,11 +81,14 @@ $k$-sur-$n$ pour la gestion d'un secret maître, basé sur :
   \item une signature Ed25519 (courbe elliptique sur un corps fini) ;
   \item un chiffrement hybride RSA--AES avec authentification d'intégrité (AES-GCM).
 \end{itemize}
-AES-GCM garantit la confidentialité et l'intégrité des données chiffrées :
-toute modification est détectée au déchiffrement. Cependant, l'authenticité 
-de l'origine des données n'est assurée que pour les signatures Ed25519, 
-pas pour les données chiffrées. L'authenticité des clés publiques (RSA et Ed25519)
-doit être vérifiée par des canaux sécurisés externes.
+AES-GCM garantit la confidentialité et l'intégrité des données. 
+L'authenticité est assurée différemment selon le contexte :
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Parts de secret} : authentifiées par les mots de passe individuels (AES-GCM avec clé dérivée du mot de passe)
+  \item \textbf{Signatures} : authentifiées cryptographiquement par Ed25519  
+  \item \textbf{Fichiers chiffrés hybrides RSA-AES} : intégrité garantie par AES-GCM, mais authenticité de la source non garantie
+  \item \textbf{Clés publiques} : doivent être authentifiées après distribution publique par canaux sécurisés
+\end{itemize}
 
 Les objets sont définis dans leur structure algébrique naturelle, et
 les liens avec les scripts informatiques sont donnés en fin de document.
