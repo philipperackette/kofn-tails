@@ -1206,6 +1206,9 @@ Ce qui est amplement suffisant pour une clé AES-256 de 32 octets, avec une marg
 
 %=========================================================
 %=========================================================
+
+
+%=========================================================
 \section{AES-GCM}
 
 \subsection{AES comme permutation de bloc}
@@ -1239,6 +1242,40 @@ Pour AES-256, on a les paramètres fixes suivants:
 \item $Nr = 14$ (nombre de tours)
 \end{itemize}
 \end{definition}
+
+\subsection{Correspondance des corps finis}
+
+\begin{remark}[Corps GF(2⁸) d'AES]
+Le corps GF(2⁸) utilisé dans AES correspond à la construction suivante dans notre formalisme :
+\[
+\F_{2^8} = \F_2[X]/(X^8 + X^4 + X^3 + X + 1)
+\]
+où :
+\begin{itemize}
+\item $\F_2$ est le corps à 2 éléments (corps premier)
+\item Le polynôme $m(X) = X^8 + X^4 + X^3 + X + 1$ est irréductible sur $\F_2$
+\item Chaque élément de $\F_{2^8}$ est un polynôme de degré $\leq 7$ à coefficients dans $\F_2$
+\item Un octet $\{b_7b_6b_5b_4b_3b_2b_1b_0\}$ représente le polynôme $b_7X^7 + b_6X^6 + \cdots + b_1X + b_0$
+\end{itemize}
+\end{remark}
+
+\begin{remark}[Différence avec le corps de Shamir]
+Le corps $\F_P$ utilisé pour le partage de Shamir (avec $P = 2^{521}-1$) est de caractéristique différente :
+\begin{itemize}
+\item $\F_P$ : corps premier de caractéristique $P$ (premier)
+\item $\F_{2^8}$ : corps de caractéristique 2
+\end{itemize}
+Cette différence est fondamentale et explique pourquoi les opérations arithmétiques (addition, multiplication) diffèrent radicalement entre Shamir et AES.
+\end{remark}
+
+\begin{proposition}[Opérations dans les corps de caractéristique 2]
+Dans $\F_{2^8}$ :
+\begin{itemize}
+\item \textbf{Addition} : équivaut au XOR bit-à-bit
+\item \textbf{Soustraction} : identique à l'addition ($a - b = a + b$)
+\item \textbf{Multiplication} : multiplication polynomiale suivie de réduction modulo le polynôme irréductible
+\end{itemize}
+\end{proposition}
 
 \subsection{Transformations de base}
 
@@ -1294,12 +1331,55 @@ où $c = \mathtt{0x63} = \{01100011\}$.
 Pour $b = 0$, on utilise $0^{-1} = 0$ par convention.
 \end{remark}
 
-\begin{definition}[S-box inverse]
-La S-box inverse INVSBOX() est également définie par une table fixe dans le standard FIPS 197. Elle satisfait:
+\begin{definition}[SHIFTROWS()]
+La transformation SHIFTROWS() décale cycliquement les lignes de l'état:
+\begin{itemize}
+\item Ligne 0: pas de décalage
+\item Ligne 1: décalage de 1 position vers la gauche  
+\item Ligne 2: décalage de 2 positions vers la gauche
+\item Ligne 3: décalage de 3 positions vers la gauche
+\end{itemize}
+Formellement: $s'_{r,c} = s_{r,(c+r)\mod 4}$ pour $0 \leq r < 4$, $0 \leq c < 4$.
+\end{definition}
+
+\begin{definition}[MIXCOLUMNS()]
+La transformation MIXCOLUMNS() traite chaque colonne de l'état comme un polynôme sur GF($2^8$) et le multiplie modulo $x^4 + 1$ par le polynôme fixe:
 \[
-\mathrm{INVSBOX}(\mathrm{SBox}(b)) = b \quad \text{pour tout octet } b
+a(x) = \{03\}x^3 + \{01\}x^2 + \{01\}x + \{02\}
+\]
+Ceci équivaut à la multiplication matricielle:
+\[
+\begin{bmatrix}
+s'_{0,c} \\
+s'_{1,c} \\
+s'_{2,c} \\
+s'_{3,c}
+\end{bmatrix}
+=
+\begin{bmatrix}
+02 & 03 & 01 & 01 \\
+01 & 02 & 03 & 01 \\
+01 & 01 & 02 & 03 \\
+03 & 01 & 01 & 02
+\end{bmatrix}
+\begin{bmatrix}
+s_{0,c} \\
+s_{1,c} \\
+s_{2,c} \\
+s_{3,c}
+\end{bmatrix}
+\quad\text{pour } 0 \leq c < 4
 \]
 \end{definition}
+
+\begin{definition}[ADDROUNDKEY()]
+La transformation ADDROUNDKEY() combine l'état avec la clé de tour par XOR:
+\[
+s'_{r,c} = s_{r,c} \oplus w[4 \times round + c]_r \quad\text{pour } 0 \leq r < 4, 0 \leq c < 4
+\]
+où $w$ est le schedule de clés et $round$ est le numéro du tour.
+\end{definition}
+
 \subsection{Expansion de clé AES-256}
 
 \begin{definition}[KEYEXPANSION() pour AES-256]
@@ -1429,6 +1509,57 @@ message $M\in\bin^*$,
   \AESGCM_K^{-1}\bigl(N,\,\AESGCM_K(N,M)\bigr) = M.
 \]
 \end{theorem}
+
+\subsection{Dénombrement des permutations vs. clés}
+
+\begin{remark}[Injectivité pratique de l'application clé→permutation]
+L'espace des blocs possibles est $\bin^{128}$, qui contient
+\[
+  N = 2^{128}
+\]
+éléments. L'ensemble de toutes les permutations de $\bin^{128}$ est donc
+le groupe symétrique
+\[
+  \mathrm{Sym}(\bin^{128}) \simeq \mathfrak{S}_{2^{128}},
+\]
+qui contient
+\[
+  \bigl|\mathrm{Sym}(\bin^{128})\bigr| = (2^{128})!
+\]
+permutations possibles.
+
+L'espace des clés AES-256 contient $ |\mathcal{K}| = 2^{256}$ clés possibles. L'application
+\[
+  \Phi : \mathcal{K} \to \mathrm{Sym}(\bin^{128}), \qquad K \mapsto E_K
+\]
+ne peut donc, au plus, réaliser que $2^{256}$ permutations parmi les $(2^{128})!$
+permutations théoriquement possibles sur $\bin^{128}$.
+
+En utilisant l'approximation de Stirling $\log_2(n!) \approx n(\log_2 n - \log_2 e)$,
+\[
+  \log_2\bigl((2^{128})!\bigr)
+  \approx 2^{128} (\log_2(2^{128}) - \log_2 e)
+  = 2^{128}(128 - \log_2 e)
+  \approx 2^{128} \cdot 126{,}56,
+\]
+alors que
+\[
+  \log_2 |\mathcal{K}| = \log_2(2^{256}) = 256.
+\]
+On a donc
+\[
+  \log_2 \bigl|\mathrm{Sym}(\bin^{128})\bigr| \;\approx\; 126{,}56 \cdot 2^{128}
+  \;\gg\; 256 = \log_2 |\mathcal{K}|,
+\]
+ce qui signifie que le nombre de permutations de blocs possibles est
+astronomiquement plus grand que le nombre de clés AES-256 possibles.
+
+Si l'on modélise AES-256 comme une \emph{permutation pseudo-aléatoire} (PRP),
+la probabilité de collision (existence de $K \neq K'$ tels que $E_K = E_{K'}$)
+est d'environ $2^{-\Omega(2^{128})}$, totalement négligeable à toute échelle pratique.
+\end{remark}
+
+
 %=========================================================
 \section{Construction globale du schéma $k$-sur-$n$}
 
