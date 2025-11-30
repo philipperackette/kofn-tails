@@ -22,6 +22,7 @@
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning}
 \usepackage{hyperref}
+\usepackage{url}
 
 % Supprimer l'indentation de tous les paragraphes
 \setlength{\parindent}{0pt}
@@ -75,7 +76,6 @@ formulation mathématique rigoureuse}
 \begin{document}
 \maketitle
 
-
 \begin{abstract}
 Ce texte formalise, dans un cadre entièrement mathématique, le schéma
 $k$-sur-$n$ mis en \oe uvre par la procédure opérationnelle sous Tails
@@ -87,10 +87,10 @@ SHA-256 est
 \]
 Le protocole repose sur les briques cryptographiques suivantes :
 \begin{itemize}[leftmargin=2em]
-  \item le partage de secret de Shamir sur un corps fini pour répartir un secret maître $S$ selon un seuil $k$-sur-$n$ ;
-  \item la dérivation de clés symétriques à partir de $S$ et des mots de passe par HKDF et PBKDF2 ;
-  \item une clé de signature Ed25519 dérivée de $S$ (schéma de signature à base de courbe elliptique) ;
-  \item un chiffrement hybride RSA-4096 / AES-256-GCM pour les fichiers destinés aux membres du groupe $k$-sur-$n$, la clé RSA privée étant elle-même chiffrée par AES-256-GCM à partir de $S$ ;
+  \item le partage de secret de Shamir \cite{shamir1979share} sur un corps fini pour répartir un secret maître $S$ selon un seuil $k$-sur-$n$ ;
+  \item la dérivation de clés symétriques à partir de $S$ et des mots de passe par HKDF \cite{rfc5869} et PBKDF2 \cite{rfc8018} ;
+  \item une clé de signature Ed25519 \cite{rfc8032} dérivée de $S$ (schéma de signature à base de courbe elliptique) ;
+  \item un chiffrement hybride RSA-4096 / AES-256-GCM \cite{rfc8017, fips197, nist-sp800-38d} pour les fichiers destinés aux membres du groupe $k$-sur-$n$, la clé RSA privée étant elle-même chiffrée par AES-256-GCM à partir de $S$ ;
 \end{itemize}
 
 Nous détaillons, pour chaque type d'objet manipulé, les garanties effectives
@@ -462,7 +462,7 @@ de HMAC. On se donne deux mots binaires
   \mathsf{ipad},\,\mathsf{opad} \in \{0,1\}^{k_{\mathrm{blk}}}
 \]
 appelés respectivement masque interne et masque externe. Dans
-les spécifications usuelles, ce sont les octets $0x36$ (pour \(\mathsf{ipad}\))
+les spécifications usuelles \cite{rfc2104}, ce sont les octets $0x36$ (pour \(\mathsf{ipad}\))
 et $0x5C$ (pour \(\mathsf{opad}\)) répétés de façon à obtenir $k_{\mathrm{blk}}$
 bits.
 \end{definition}
@@ -515,7 +515,7 @@ qui à un entier $i$ associe son encodage big-endian sur 4 octets (32 bits) :
 
 \subsection{HKDF}
 
-\begin{definition}[HKDF]
+\begin{definition}[HKDF \cite{rfc5869}]
 Soit $h:\bin^*\to\bin^d$ une fonction de hachage. On définit la fonction de dérivation de clé HKDF selon RFC 5869 :
 \[
   \HKDF_h : \bin^* \times \bin^* \times \bin^* \times \N \to \bin^L
@@ -523,7 +523,7 @@ Soit $h:\bin^*\to\bin^d$ une fonction de hachage. On définit la fonction de dé
 comme suit. Soient $\mathrm{IKM}\in\bin^*$ (input keying material), $\mathrm{salt}\in\bin^*$, $\mathrm{info}\in\bin^*$, et $L\in\N$ (longueur de sortie en octets). On pose :
 \begin{itemize}
 \item $\mathrm{PRK} = \HMAC_h(\mathrm{salt}, \mathrm{IKM})$ (extraction)
-\item On définit itérativement pour $i=1,2,\dots$ jusqu'à obtenir $L$ octets :
+\item On définit itérativement pour $i=1,2,\dots$ jusqu' à obtenir $L$ octets :
   \begin{align*}
   T_1 &= \HMAC_h(\mathrm{PRK}, \mathrm{info} \concat \mathrm{INT}_4(1)) \\
   T_2 &= \HMAC_h(\mathrm{PRK}, T_1 \concat \mathrm{info} \concat \mathrm{INT}_4(2)) \\
@@ -536,7 +536,7 @@ comme suit. Soient $\mathrm{IKM}\in\bin^*$ (input keying material), $\mathrm{sal
 
 \subsection{PBKDF2}
 
-\begin{definition}[PBKDF2]
+\begin{definition}[PBKDF2 \cite{rfc8018}]
 On fixe un paramètre d'itération $c\in\N^*$ et un hachage $h$. On définit
 \[
   \PBKDF_h : \bin^* \times \bin^* \times \N^* \times \N \to \bin^{8L}
@@ -565,7 +565,7 @@ La sortie de PBKDF2 est le préfixe aux $8L$ bits de la concaténation
 
 \subsection{Courbe elliptique Ed25519}
 
-\begin{definition}[Courbe elliptique Ed25519]
+\begin{definition}[Courbe elliptique Ed25519 \cite{rfc8032}]
 Soit $q = 2^{255} - 19$ et $\F_q$ le corps fini correspondant. La courbe elliptique Ed25519 est définie par l'équation de Twisted Edwards :
 \[
 E: -x^2 + y^2 = 1 + dx^2y^2 \quad \text{sur } \F_q
@@ -634,7 +634,7 @@ L'encodage d'un scalaire $s \in \mathbb{Z}_\ell$ est sa représentation little-e
 \end{definition}
 
 \begin{remark}[Encodage compressé]
-L'encodage utilisé pour Ed25519 est l'encodage compressé standard où seul le coordonnée $y$ est stockée avec un bit de parité pour permettre la reconstruction de $x$. L'encodage est en little-endian conformément au standard.
+L'encodage utilisé pour Ed25519 est l'encodage compressé standard où seul le coordonnée $y$ est stockée avec un bit de parité pour permettre la reconstruction de $x$. L'encodage est en little-endian conformément au standard \cite{rfc8032}.
 \end{remark}
 
 \subsection{Décodage des points Ed25519}
@@ -889,7 +889,7 @@ A = aB \in E(\F_q)
 
 \subsection{Algorithme de signature Ed25519}
 
-\begin{definition}[Signature Ed25519]
+\begin{definition}[Signature Ed25519 \cite{rfc8032}]
 L'algorithme de signature $\mathrm{Sign}: \mathbb{Z}_\ell \times \bin^* \to \bin^{512}$ est défini comme suit :
 
 Pour $(a, M) \in \mathbb{Z}_\ell \times \bin^*$ :
@@ -905,7 +905,7 @@ Pour $(a, M) \in \mathbb{Z}_\ell \times \bin^*$ :
 
 \subsection{Algorithme de vérification Ed25519}
 
-\begin{definition}[Vérification Ed25519]
+\begin{definition}[Vérification Ed25519 \cite{rfc8032}]
 L'algorithme de vérification $\mathrm{Verify}: E(\F_q) \times \bin^* \times \bin^{512} \to \{\mathrm{OK}, \perp\}$ est défini comme suit :
 
 Pour $(A, M, \sigma) \in E(\F_q) \times \bin^* \times \bin^{512}$ :
@@ -1066,7 +1066,7 @@ La sécurité de RSA repose sur la difficulté de la factorisation du module $n$
 
 \subsection{MGF1}
 
-\begin{definition}[Fonction de génération de masque MGF1]
+\begin{definition}[Fonction de génération de masque MGF1 \cite{rfc8017}]
 Soit $h:\bin^*\to\bin^d$ une fonction de hachage. On définit
 \[
   \MGF_h : \bin^* \times \N \to \bin^\ell
@@ -1109,7 +1109,7 @@ Sans MGF1, un attaquant pourrait manipuler séparément les différentes parties
 
 \subsection{RSA-OAEP}
 
-\begin{definition}[Paramètres RSA-OAEP]
+\begin{definition}[Paramètres RSA-OAEP \cite{rfc8017}]
 Soient $k$ la taille en octets du module $n$ (pour $n$ de 4096 bits, $k = 512$), et $hLen$ la taille de sortie de la fonction de hachage en octets (pour SHA-256, $hLen = 32$). On fixe :
 \[
 k_0 = k - 2hLen - 2,\quad k_1 = hLen
@@ -1152,7 +1152,7 @@ où $C \in \{0,\dots,n-1\}$ est le \textbf{texte chiffré} (ciphertext) obtenu p
 
 Le déchiffrement procède comme suit :
 \begin{enumerate}[leftmargin=2em]
-  \item Calculer $EM = C^d \bmod n$ et convertir en binaire sur $8k$ bits
+  \item Calculer $EM = C^d \bmod n$ et convertir en binary sur $8k$ bits
   \item Parser $EM = maskedSeed \concat maskedDB$ avec $maskedSeed \in \bin^{8hLen}$
   \item Calculer $seed = maskedSeed \xor \MGF_h(maskedDB, 8hLen)$
   \item Calculer $DB = maskedDB \xor \MGF_h(seed, 8(k - hLen - 1))$
@@ -1205,14 +1205,11 @@ Ce qui est amplement suffisant pour une clé AES-256 de 32 octets, avec une marg
 \end{definition}
 
 %=========================================================
-%=========================================================
-
-%=========================================================
 \section{AES-GCM}
 
 \subsection{AES comme permutation de bloc}
 
-\begin{definition}[AES-256 selon FIPS 197]
+\begin{definition}[AES-256 selon FIPS 197 \cite{fips197}]
 On fixe une taille de bloc de $128$ bits et une taille de clé de $256$ bits.
 Pour chaque clé $K \in \bin^{256}$, on dispose d'une permutation de blocs
 \[
@@ -1256,8 +1253,8 @@ Pour AES-256, on a les paramètres fixes suivants:
 
 \subsection{Correspondance des corps finis}
 
-\begin{remark}[Corps GF(2⁸) d'AES]
-Le corps GF(2⁸) utilisé dans AES correspond à la construction suivante dans notre formalisme :
+\begin{remark}[Corps GF($2^8$) d'AES]
+Le corps GF($2^8$) utilisé dans AES correspond à la construction suivante dans notre formalisme :
 \[
 \F_{2^8} = \F_2[X]/(X^8 + X^4 + X^3 + X + 1)
 \]
@@ -1492,7 +1489,7 @@ Pour une clé AES $K$, on définit
 que l'on identifie à un élément de $\F_{2^{128}}$.
 \end{definition}
 
-\begin{definition}[GHASH selon SP 800-38D]
+\begin{definition}[GHASH selon SP 800-38D \cite{nist-sp800-38d}]
 Soit $H\in\F_{2^{128}}$. Pour une séquence de blocs $X_1, \dots, X_m \in \bin^{128}$, la fonction GHASH est définie récursivement par:
 \[
 Y_0 = 0^{128}, \quad Y_i = (Y_{i-1} \oplus X_i) \cdot H \quad \text{pour } i = 1, \dots, m
@@ -1505,7 +1502,7 @@ Le résultat est $Y_m$. Cette définition est équivalente à:
 
 \subsection{Mode AES-GCM}
 
-\begin{definition}[AES-GCM selon SP 800-38D]
+\begin{definition}[AES-GCM selon SP 800-38D \cite{nist-sp800-38d}]
 Pour une clé $K\in\bin^{256}$, on modélise AES-GCM comme un couple
 d'applications
 \begin{align*}
@@ -1845,5 +1842,91 @@ précis (oracles, ressources de calcul) et l'utilisation de techniques de
 réduction dans des modèles comme l'oracle aléatoire. On ne la développe
 pas ici.
 \end{remark}
+
+%=========================================================
+% RÉFÉRENCES
+%=========================================================
+
+\newpage
+
+\begin{thebibliography}{9}
+
+\bibitem{shamir1979share}
+Shamir, A. (1979). 
+\textit{How to share a secret}. 
+Communications of the ACM, 22(11), 612-613.
+
+\bibitem{rfc2104}
+Krawczyk, H., Bellare, M., \& Canetti, R. (1997).
+\textit{HMAC: Keyed-Hashing for Message Authentication}.
+RFC 2104.
+
+\bibitem{rfc5869}
+Krawczyk, H., \& Eronen, P. (2010).
+\textit{HMAC-based Extract-and-Expand Key Derivation Function (HKDF)}.
+RFC 5869.
+
+\bibitem{rfc8018}
+Moriarty, K., Kaliski, B., \& Rusch, A. (2017).
+\textit{PKCS \#5: Password-Based Cryptography Specification Version 2.1}.
+RFC 8018.
+
+\bibitem{rfc8032}
+Josefsson, S., \& Liusvaara, I. (2017).
+\textit{Edwards-Curve Digital Signature Algorithm (EdDSA)}.
+RFC 8032.
+
+\bibitem{rfc8017}
+Moriarty, K., Kaliski, B., Jonsson, J., \& Rusch, A. (2016).
+\textit{PKCS \#1: RSA Cryptography Specifications Version 2.2}.
+RFC 8017.
+
+\bibitem{fips197}
+National Institute of Standards and Technology. (2001).
+\textit{Advanced Encryption Standard (AES)}.
+FIPS PUB 197.
+
+\bibitem{nist-sp800-38d}
+Dworkin, M. (2007).
+\textit{Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC}.
+NIST Special Publication 800-38D.
+
+\bibitem{wikipedia-shamir}
+Wikipedia. \textit{Shamir's Secret Sharing}.
+\url{https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing}
+
+\bibitem{wikipedia-hmac}
+Wikipedia. \textit{HMAC}.
+\url{https://en.wikipedia.org/wiki/HMAC}
+
+\bibitem{wikipedia-hkdf}
+Wikipedia. \textit{HKDF}.
+\url{https://en.wikipedia.org/wiki/HKDF}
+
+\bibitem{wikipedia-pbkdf2}
+Wikipedia. \textit{PBKDF2}.
+\url{https://en.wikipedia.org/wiki/PBKDF2}
+
+\bibitem{wikipedia-ed25519}
+Wikipedia. \textit{Ed25519}.
+\url{https://en.wikipedia.org/wiki/Ed25519}
+
+\bibitem{wikipedia-rsa}
+Wikipedia. \textit{RSA (cryptosystem)}.
+\url{https://en.wikipedia.org/wiki/RSA_(cryptosystem)}
+
+\bibitem{wikipedia-oaep}
+Wikipedia. \textit{Optimal asymmetric encryption padding}.
+\url{https://en.wikipedia.org/wiki/Optimal_asymmetric_encryption_padding}
+
+\bibitem{wikipedia-aes}
+Wikipedia. \textit{Advanced Encryption Standard}.
+\url{https://en.wikipedia.org/wiki/Advanced_Encryption_Standard}
+
+\bibitem{wikipedia-gcm}
+Wikipedia. \textit{Galois/Counter Mode}.
+\url{https://en.wikipedia.org/wiki/Galois/Counter_Mode}
+
+\end{thebibliography}
 
 \end{document}
