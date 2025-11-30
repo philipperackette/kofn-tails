@@ -1207,7 +1207,6 @@ Ce qui est amplement suffisant pour une clé AES-256 de 32 octets, avec une marg
 %=========================================================
 %=========================================================
 
-
 %=========================================================
 \section{AES-GCM}
 
@@ -1232,6 +1231,18 @@ s_{3,0} & s_{3,1} & s_{3,2} & s_{3,3}
 \end{bmatrix}
 \]
 où chaque $s_{r,c}$ est un octet ($0 \leq r < 4$, $0 \leq c < 4$).
+\end{definition}
+
+\begin{definition}[Mapping entrée-état selon FIPS 197]
+Le mapping entre le bloc d'entrée $in \in \bin^{128}$ et l'état suit l'ordre \emph{colonne-major} :
+\[
+s[r,c] = in[8 \cdot (4c + r) \ldots 8 \cdot (4c + r) + 7] \quad \text{pour } 0 \leq r < 4, 0 \leq c < 4
+\]
+En représentation octet, cela équivaut à :
+\[
+s[r,c] = in[4c + r] \quad \text{pour } 0 \leq r < 4, 0 \leq c < 4
+\]
+où $in$ est vu comme un tableau de 16 octets $in[0] \ldots in[15]$.
 \end{definition}
 
 \begin{definition}[Paramètres AES-256]
@@ -1372,15 +1383,15 @@ s_{3,c}
 \]
 \end{definition}
 
-\begin{definition}[ADDROUNDKEY()]
-La transformation ADDROUNDKEY() combine l'état avec la clé de tour par XOR:
-\[
-s'_{r,c} = s_{r,c} \oplus w[4 \times round + c]_r \quad\text{pour } 0 \leq r < 4, 0 \leq c < 4
-\]
-où $w$ est le schedule de clés et $round$ est le numéro du tour.
-\end{definition}
-
 \subsection{Expansion de clé AES-256}
+
+\begin{definition}[Structure des mots de clé]
+Un mot $w[i]$ est une séquence de 32 bits interprétée comme 4 octets:
+\[
+w[i] = (w[i]_0, w[i]_1, w[i]_2, w[i]_3)
+\]
+où $w[i]_0$ est l'octet de poids fort et $w[i]_3$ l'octet de poids faible.
+\end{definition}
 
 \begin{definition}[KEYEXPANSION() pour AES-256]
 L'expansion de clé génère $4 \times (Nr + 1) = 60$ mots de 32 bits à partir de la clé initiale.
@@ -1409,12 +1420,20 @@ où:
 \end{itemize}
 \end{definition}
 
+\begin{definition}[ADDROUNDKEY()]
+La transformation ADDROUNDKEY() combine l'état avec la clé de tour par XOR. Pour chaque colonne $c$ ($0 \leq c < 4$), on a:
+\[
+[s'_{0,c}, s'_{1,c}, s'_{2,c}, s'_{3,c}] = [s_{0,c}, s_{1,c}, s_{2,c}, s_{3,c}] \oplus w[4 \times round + c]
+\]
+où $w[i]$ est le $i$-ème mot du schedule de clés et $round$ est le numéro du tour.
+\end{definition}
+
 \subsection{Algorithme de chiffrement complet}
 
 \begin{definition}[CIPHER() pour AES-256]
 L'algorithme de chiffrement complet est:
 \begin{enumerate}
-\item $\text{state} \leftarrow \text{in}$ (copie de l'entrée dans l'état)
+\item $\text{state} \leftarrow \text{in}$ (copie de l'entrée dans l'état selon le mapping colonne-major)
 \item $\text{state} \leftarrow \text{ADDROUNDKEY}(\text{state}, w[0..3])$
 \item Pour $round = 1$ à $Nr-1$:
   \begin{enumerate}
@@ -1426,7 +1445,7 @@ L'algorithme de chiffrement complet est:
 \item $\text{state} \leftarrow \text{SUBBYTES}(\text{state})$
 \item $\text{state} \leftarrow \text{SHIFTROWS}(\text{state})$
 \item $\text{state} \leftarrow \text{ADDROUNDKEY}(\text{state}, w[4 \times Nr..4 \times Nr + 3])$
-\item $\text{out} \leftarrow \text{state}$
+\item $\text{out} \leftarrow \text{state}$ (conversion selon le mapping colonne-major inverse)
 \end{enumerate}
 \end{definition}
 
@@ -1473,40 +1492,44 @@ Pour une clé AES $K$, on définit
 que l'on identifie à un élément de $\F_{2^{128}}$.
 \end{definition}
 
-\begin{definition}[GHASH]
-Soit $H\in\F_{2^{128}}$. Pour une séquence $(Y_1,\dots,Y_m)$ de blocs de
-$\bin^{128}$, que l'on identifie à $\F_{2^{128}}$, on définit
+\begin{definition}[GHASH selon SP 800-38D]
+Soit $H\in\F_{2^{128}}$. Pour une séquence de blocs $X_1, \dots, X_m \in \bin^{128}$, la fonction GHASH est définie récursivement par:
 \[
-  \mathrm{GHASH}_H(Y_1,\dots,Y_m)
-  = \sum_{j=1}^m H^{m-j+1} \cdot Y_j \in \F_{2^{128}}.
+Y_0 = 0^{128}, \quad Y_i = (Y_{i-1} \oplus X_i) \cdot H \quad \text{pour } i = 1, \dots, m
 \]
-Cette expression correspond à l'itération $((Y_1H + Y_2)H + \dots + Y_m)H$.
+Le résultat est $Y_m$. Cette définition est équivalente à:
+\[
+\mathrm{GHASH}_H(X_1, \dots, X_m) = \sum_{j=1}^m X_j \cdot H^{m-j+1}
+\]
 \end{definition}
 
 \subsection{Mode AES-GCM}
 
-\begin{definition}[AES-GCM]
+\begin{definition}[AES-GCM selon SP 800-38D]
 Pour une clé $K\in\bin^{256}$, on modélise AES-GCM comme un couple
 d'applications
 \begin{align*}
-  \AESGCM_K &: \bin^{96} \times \bin^* \to \bin^* \times \bin^{128} \\
-  \AESGCM_K^{-1} &: \bin^{96} \times \bin^* \times \bin^{128} \to \bin^* \cup\{\perp\}
+  \AESGCM_K &: \bin^{96} \times \bin^* \times \bin^* \to \bin^* \times \bin^{128} \\
+  \AESGCM_K^{-1} &: \bin^{96} \times \bin^* \times \bin^* \times \bin^{128} \to \bin^* \cup\{\perp\}
 \end{align*}
-où le premier argument est un nonce $N\in\bin^{96}$, le deuxième un message
-$M$, la sortie un couple $(C,T)$ avec $C$ le texte chiffré et $T$ le tag (128 bits),
-et où la fonction inverse produit soit le message $M$, soit le symbole
-d'erreur $\perp$ (hors de $\bin^*$) si la vérification du tag échoue.
+où:
+\begin{itemize}
+\item Le premier argument est un nonce $N\in\bin^{96}$
+\item Le deuxième argument est les données authentifiées associées (AAD) $A\in\bin^*$
+\item Le troisième argument est le message $M\in\bin^*$
+\item La sortie est un couple $(C,T)$ avec $C$ le texte chiffré et $T$ le tag (128 bits)
+\end{itemize}
+Dans notre schéma $k$-sur-$n$, on utilise $A = \varepsilon$ (AAD vide).
 \end{definition}
 
 \begin{remark}[Unicité des nonces]
-Pour toute clé $K$, les nonces $N$ doivent être uniques. Formellement, si $(N,M) \neq (N',M')$ alors les ensembles de textes chiffrés générés doivent être disjoints avec probabilité écrasante.
+Pour toute clé $K$, les nonces $N$ doivent être uniques. Formellement, si $(N,A,M) \neq (N',A',M')$ alors les ensembles de textes chiffrés générés doivent être disjoints avec probabilité écrasante.
 \end{remark}
 
 \begin{theorem}[Correction d'AES-GCM]
-Pour toute clé $K\in\bin^{256}$, tout nonce $N\in\bin^{96}$ et tout
-message $M\in\bin^*$,
+Pour toute clé $K\in\bin^{256}$, tout nonce $N\in\bin^{96}$, toutes données authentifiées $A\in\bin^*$ et tout message $M\in\bin^*$,
 \[
-  \AESGCM_K^{-1}\bigl(N,\,\AESGCM_K(N,M)\bigr) = M.
+  \AESGCM_K^{-1}\bigl(N,\,A,\,\AESGCM_K(N,A,M)\bigr) = M.
 \]
 \end{theorem}
 
@@ -1559,8 +1582,8 @@ la probabilité de collision (existence de $K \neq K'$ tels que $E_K = E_{K'}$)
 est d'environ $2^{-\Omega(2^{128})}$, totalement négligeable à toute échelle pratique.
 \end{remark}
 
-
 %=========================================================
+
 \section{Construction globale du schéma $k$-sur-$n$}
 
 \subsection{Paramètres et constantes}
