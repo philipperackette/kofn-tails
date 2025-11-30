@@ -1500,6 +1500,7 @@ Le résultat est $Y_m$. Cette définition est équivalente à:
 \]
 \end{definition}
 
+
 \subsection{Mode AES-GCM}
 
 \begin{definition}[AES-GCM selon SP 800-38D \cite{nist-sp800-38d}]
@@ -1516,19 +1517,179 @@ où:
 \item Le troisième argument est le message $M\in\bin^*$
 \item La sortie est un couple $(C,T)$ avec $C$ le texte chiffré et $T$ le tag (128 bits)
 \end{itemize}
-Dans notre schéma $k$-sur-$n$, on utilise $A = \varepsilon$ (AAD vide).
 \end{definition}
 
-\begin{remark}[Unicité des nonces]
-Pour toute clé $K$, les nonces $N$ doivent être uniques. Formellement, si $(N,A,M) \neq (N',A',M')$ alors les ensembles de textes chiffrés générés doivent être disjoints avec probabilité écrasante.
+\begin{remark}[Rôle d'AES dans AES-GCM]
+Le chiffrement AES est utilisé à deux endroits essentiels dans GCM :
+\begin{enumerate}
+\item \textbf{Dans GCTR} : Pour générer la séquence de masquage en chiffrant les compteurs $J_i$ :
+\[
+E_K(J_i) \quad \text{servant de masque pour } M_i \xor E_K(J_i)
+\]
+
+\item \textbf{Pour calculer $H$} : La sous-clé de hachage est obtenue par :
+\[
+H = E_K(0^{128})
+\]
+qui est utilisée dans toutes les multiplications GHASH.
+\end{enumerate}
+Ainsi, AES fournit à la fois la confidentialité (via GCTR) et la base de l'authentification (via $H$).
 \end{remark}
 
-\begin{theorem}[Correction d'AES-GCM]
-Pour toute clé $K\in\bin^{256}$, tout nonce $N\in\bin^{96}$, toutes données authentifiées $A\in\bin^*$ et tout message $M\in\bin^*$,
+\begin{definition}[Structure mathématique de GCM]
+Le mode GCM combine :
+\begin{itemize}
+\item Le chiffrement en mode compteur (GCTR) utilisant $E_K$ pour la confidentialité
+\item La fonction d'authentification GHASH dans $\F_{2^{128}}$ utilisant $H = E_K(0^{128})$ pour l'intégrité
+\end{itemize}
+Soit le polynôme irréductible :
 \[
-  \AESGCM_K^{-1}\bigl(N,\,A,\,\AESGCM_K(N,A,M)\bigr) = M.
+P(X) = X^{128} + X^7 + X^2 + X + 1 \in \F_2[X]
+\]
+qui définit le corps $\F_{2^{128}} = \F_2[X]/(P(X))$.
+\end{definition}
+
+\begin{definition}[Sous-clé de hachage $H$]
+Pour une clé AES $K$, on définit la sous-clé de hachage :
+\[
+H = E_K(0^{128}) \in \bin^{128}
+\]
+Cette valeur est identifiée à un élément de $\F_{2^{128}}$ et utilisée dans toutes les multiplications GHASH.
+\end{definition}
+
+\begin{definition}[Fonction d'incrémentation GCM]
+Soit $\mathrm{incr}_s : \bin^{128} \to \bin^{128}$ qui incrémente les $s$ bits de droite comme un entier big-endian.
+Pour GCM, $s = 32$ :
+\[
+\mathrm{incr}_{32}(X) = \mathrm{MSB}_{96}(X) \concat \mathrm{INT}_4^{-1}((\mathrm{val}_{\mathrm{be}}(\mathrm{LSB}_{32}(X)) + 1) \bmod 2^{32})
+\]
+\end{definition}
+
+\begin{definition}[Génération des compteurs]
+À partir du nonce $N\in\bin^{96}$, on définit :
+\[
+J_0 = 
+\begin{cases}
+N \concat 0^{31}1 & \text{si } \lVert N\rVert = 96 \\
+\mathrm{GHASH}_H(\varepsilon, N) & \text{sinon}
+\end{cases}
+\]
+Les compteurs successifs sont :
+\[
+J_i = \mathrm{incr}_{32}(J_{i-1}) \quad \text{pour } i = 1, 2, \dots
+\]
+\end{definition}
+
+\begin{definition}[Fonction GCTR utilisant AES]
+Pour une clé $K$, un compteur initial $ICB\in\bin^{128}$, et une entrée $X\in\bin^*$ :
+\begin{align*}
+\text{GCTR}_K(ICB, X) = & \\
+\text{Si } X = \varepsilon &: \varepsilon \\
+\text{Sinon } &: \text{Soit } m = \lceil \lVert X\rVert/128 \rceil \\
+& \text{Pour } i = 1 \text{ à } m-1: \\
+& \quad CB_i = \mathrm{incr}_{32}(CB_{i-1}) \text{ avec } CB_0 = ICB \\
+& \quad Y_i = X_i \xor \mathbf{E_K(CB_i)} \quad \text{\textbf{AES utilisé ici}} \\
+& CB_m = \mathrm{incr}_{32}(CB_{m-1}) \\
+& Y_m = X_m \xor \mathrm{MSB}_{\lVert X_m\rVert}(\mathbf{E_K(CB_m)}) \quad \text{\textbf{AES utilisé ici}} \\
+& \text{Résultat } Y_1 \concat \dots \concat Y_m
+\end{align*}
+\end{definition}
+
+\begin{definition}[Fonction GHASH utilisant $H = E_K(0^{128})$]
+Soit $H = \mathbf{E_K(0^{128})} \in \F_{2^{128}}$. Pour des données $X\in\bin^*$ :
+\begin{align*}
+\text{GHASH}_H(X) = & \\
+\text{Soit } & X_1, \dots, X_m \leftarrow \text{Partition}_{128}(X) \\
+& Y_0 = 0^{128} \\
+& \text{Pour } i = 1 \text{ à } m: \\
+& \quad Y_i = (Y_{i-1} \xor X_i) \cdot H \quad \text{dans } \F_{2^{128}} \\
+& \text{Résultat } Y_m
+\end{align*}
+Équivalent polynomial :
+\[
+\text{GHASH}_H(X_1, \dots, X_m) = X_1 \cdot H^m \xor X_2 \cdot H^{m-1} \xor \dots \xor X_m \cdot H
+\]
+\end{definition}
+
+\begin{definition}[Algorithme de chiffrement GCM]
+Pour $K, N, A, M$ :
+\begin{enumerate}[leftmargin=2em]
+  \item $H = \mathbf{E_K(0^{128})}$ \quad \textbf{AES utilisé ici}
+  \item $J_0 = \begin{cases} 
+        N \concat 0^{31}1 & \text{si } \lVert N\rVert = 96 \\
+        \mathrm{GHASH}_H(\varepsilon, N) & \text{sinon}
+        \end{cases}$
+  \item $C = \mathrm{GCTR}_K(\mathrm{incr}_{32}(J_0), M)$ \quad \textbf{AES utilisé dans GCTR}
+  \item $u = 128 \cdot \lceil \lVert C\rVert/128 \rceil - \lVert C\rVert$
+  \item $v = 128 \cdot \lceil \lVert A\rVert/128 \rceil - \lVert A\rVert$
+  \item $S = \mathrm{GHASH}_H(A \concat 0^v \concat C \concat 0^u \concat \mathrm{len}_{64}(A) \concat \mathrm{len}_{64}(C))$
+  \item $T = \mathrm{MSB}_t(\mathrm{GCTR}_K(J_0, S))$ \quad \textbf{AES utilisé dans GCTR}
+  \item Retourner $(C, T)$
+\end{enumerate}
+où $\mathrm{len}_{64}(X)$ représente la longueur de $X$ en bits sur 64 bits.
+\end{definition}
+
+\begin{definition}[Algorithme de déchiffrement GCM]
+Pour $K, N, A, C, T$ :
+\begin{enumerate}[leftmargin=2em]
+  \item $H = \mathbf{E_K(0^{128})}$ \quad \textbf{AES utilisé ici}
+  \item $J_0 = \begin{cases} 
+        N \concat 0^{31}1 & \text{si } \lVert N\rVert = 96 \\
+        \mathrm{GHASH}_H(\varepsilon, N) & \text{sinon}
+        \end{cases}$
+  \item $P = \mathrm{GCTR}_K(\mathrm{incr}_{32}(J_0), C)$ \quad \textbf{AES utilisé dans GCTR}
+  \item $u = 128 \cdot \lceil \lVert C\rVert/128 \rceil - \lVert C\rVert$
+  \item $v = 128 \cdot \lceil \lVert A\rVert/128 \rceil - \lVert A\rVert$
+  \item $S = \mathrm{GHASH}_H(A \concat 0^v \concat C \concat 0^u \concat \mathrm{len}_{64}(A) \concat \mathrm{len}_{64}(C))$
+  \item $T' = \mathrm{MSB}_t(\mathrm{GCTR}_K(J_0, S))$ \quad \textbf{AES utilisé dans GCTR}
+  \item Si $T' = T$ retourner $P$, sinon $\perp$
+\end{enumerate}
+\end{definition}
+
+\begin{theorem}[Correction d'AES-GCM]
+Pour toute clé $K$, tout nonce $N$, toutes données $A$, et tout message $M$ :
+\[
+\AESGCM_K^{-1}(N, A, \AESGCM_K(N, A, M)) = M
 \]
 \end{theorem}
+
+\begin{proof}[Esquisse]
+La correction découle de :
+\begin{itemize}
+\item La réversibilité de GCTR qui utilise $E_K$ de façon déterministe
+\item La linéarité de GHASH dans $\F_{2^{128}}$ utilisant $H = E_K(0^{128})$
+\item L'utilisation cohérente des mêmes compteurs $J_i$ et de la même clé $K$
+\end{itemize}
+\end{proof}
+
+\begin{remark}[Double usage d'AES dans GCM]
+AES est utilisé de deux manières différentes :
+\begin{enumerate}
+\item \textbf{Confidentialité} : Dans GCTR, $E_K(J_i)$ génère une séquence de masquage pour chiffrer le message
+\item \textbf{Authentification} : $E_K(0^{128})$ produit $H$, la base de toutes les opérations GHASH
+\end{enumerate}
+Cette dualité fait de GCM un mode authentifié efficace utilisant une seule primitive cryptographique.
+\end{remark}
+
+\begin{remark}[Sécurité GCM]
+La sécurité d'AES-GCM repose sur :
+\begin{itemize}
+\item L'indistinguabilité de $E_K$ comme permutation pseudo-aléatoire (PRP)
+\item L'unicité des nonces (pour éviter la réutilisation des compteurs)
+\item La résistance aux collisions de GHASH dans $\F_{2^{128}}$
+\end{itemize}
+\end{remark}
+
+\begin{remark}[Utilisation dans le schéma $k$-sur-$n$]
+Dans notre contexte :
+\begin{itemize}
+\item AES-256 est utilisé avec des clés de 256 bits
+\item Nonces de 96 bits garantissant $J_0 = N \concat 0^{31}1$
+\item Données authentifiées associées généralement vides : $A = \varepsilon$
+\item Tags de 128 bits ($t = 128$)
+\end{itemize}
+\end{remark}
+
 
 \subsection{Dénombrement des permutations vs. clés}
 
