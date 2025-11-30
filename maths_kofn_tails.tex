@@ -1163,14 +1163,14 @@ Le déchiffrement procède comme suit :
 \end{definition}
 
 \begin{remark}[Statut de l'aléa $r$ dans OAEP]
-Contrairement aux sels publics utilisés dans HKDF ou PBKDF2, l'aléa $r$ dans OAEP est **cryptographiquement protégé** :
+Contrairement aux sels publics utilisés dans HKDF ou PBKDF2, l'aléa $r$ dans OAEP est \og cryptographiquement protégé \fg{} :
 \begin{itemize}
 \item \textbf{Non public} : $r$ n'est pas stocké en clair ni transmis publiquement
 \item \textbf{Masqué cryptographiquement} : Il est caché dans le chiffré via $\texttt{maskedSeed} = r \oplus \MGF_h(\texttt{maskedDB})$
 \item \textbf{Récupération au déchiffrement} : Seul le possesseur de la clé privée peut retrouver $r$ 
-\item \textbf{Rôle éphémère} : $r$ est utilisé une seule fois puis "jeté"
+\item \textbf{Rôle éphémère} : $r$ est utilisé une seule fois puis \og jeté \fg{}
 \end{itemize}
-La sécurité d'OAEP repose sur le fait que $r$ reste **imprévisible** pour un attaquant au moment du chiffrement.
+La sécurité d'OAEP repose sur le fait que $r$ reste \og imprévisible \fg{} pour un attaquant au moment du chiffrement.
 \end{remark}
 
 \begin{remark}[Paramètres numériques pour RSA-4096 et SHA-256]
