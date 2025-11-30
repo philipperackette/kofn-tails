@@ -88,9 +88,9 @@ SHA-256 est
 Le protocole repose sur les briques cryptographiques suivantes :
 \begin{itemize}[leftmargin=2em]
   \item le partage de secret de Shamir \cite{shamir1979share} sur un corps fini pour répartir un secret maître $S$ selon un seuil $k$-sur-$n$ ;
-  \item la dérivation de clés symétriques à partir de $S$ et des mots de passe par HKDF \cite{rfc5869} et PBKDF2 \cite{rfc8018} ;
-  \item une clé de signature Ed25519 \cite{rfc8032} dérivée de $S$ (schéma de signature à base de courbe elliptique) ;
-  \item un chiffrement hybride RSA-4096 / AES-256-GCM \cite{rfc8017, fips197, nist-sp800-38d} pour les fichiers destinés aux membres du groupe $k$-sur-$n$, la clé RSA privée étant elle-même chiffrée par AES-256-GCM à partir de $S$ ;
+  \item la dérivation de clés symétriques à partir de $S$ et des mots de passe par \textbf{HKDF} (\textbf{HMAC-based Key Derivation Function}) \cite{rfc5869} et \textbf{PBKDF2} (\textbf{Password-Based Key Derivation Function 2}) \cite{rfc8018} ;
+  \item une clé de signature \textbf{Ed25519} (Edwards-curve Digital Signature Algorithm) \cite{rfc8032} dérivée de $S$ (schéma de signature à base de courbe elliptique) ;
+  \item un chiffrement hybride \textbf{RSA-4096} / \textbf{AES-256-GCM} (\textbf{Advanced Encryption Standard} en mode \textbf{Galois/Counter Mode}) \cite{rfc8017, fips197, nist-sp800-38d} pour les fichiers destinés aux membres du groupe $k$-sur-$n$, la clé RSA privée étant elle-même chiffrée par AES-256-GCM à partir de $S$ ;
 \end{itemize}
 
 Nous détaillons, pour chaque type d'objet manipulé, les garanties effectives
@@ -515,7 +515,7 @@ qui à un entier $i$ associe son encodage big-endian sur 4 octets (32 bits) :
 
 \subsection{HKDF}
 
-\begin{definition}[HKDF \cite{rfc5869}]
+\begin{definition}[HKDF (HMAC-based Key Derivation Function) \cite{rfc5869}]
 Soit $h:\bin^*\to\bin^d$ une fonction de hachage. On définit la fonction de dérivation de clé HKDF selon RFC 5869 :
 \[
   \HKDF_h : \bin^* \times \bin^* \times \bin^* \times \N \to \bin^L
@@ -536,7 +536,7 @@ comme suit. Soient $\mathrm{IKM}\in\bin^*$ (input keying material), $\mathrm{sal
 
 \subsection{PBKDF2}
 
-\begin{definition}[PBKDF2 \cite{rfc8018}]
+\begin{definition}[PBKDF2 (Password-Based Key Derivation Function 2) \cite{rfc8018}]
 On fixe un paramètre d'itération $c\in\N^*$ et un hachage $h$. On définit
 \[
   \PBKDF_h : \bin^* \times \bin^* \times \N^* \times \N \to \bin^{8L}
@@ -565,7 +565,7 @@ La sortie de PBKDF2 est le préfixe aux $8L$ bits de la concaténation
 
 \subsection{Courbe elliptique Ed25519}
 
-\begin{definition}[Courbe elliptique Ed25519 \cite{rfc8032}]
+\begin{definition}[Courbe elliptique Ed25519 (Edwards-curve Digital Signature Algorithm) \cite{rfc8032}]
 Soit $q = 2^{255} - 19$ et $\F_q$ le corps fini correspondant. La courbe elliptique Ed25519 est définie par l'équation de Twisted Edwards :
 \[
 E: -x^2 + y^2 = 1 + dx^2y^2 \quad \text{sur } \F_q
@@ -977,7 +977,7 @@ L'entier $pq$ a été compté deux fois. Par le principe d'inclusion-exclusion :
 \]
 \end{proof}
 
-\begin{definition}[Clés RSA]
+\begin{definition}[Clés RSA (Rivest-Shamir-Adleman)]
 On choisit deux nombres premiers $p,q$ de taille comparable (typiquement $p,q \approx 2^{2048}$ pour un module de 4096 bits) et on pose $n = pq$. 
 
 On calcule $\varphi(n) = (p-1)(q-1)$.
@@ -1066,7 +1066,7 @@ La sécurité de RSA repose sur la difficulté de la factorisation du module $n$
 
 \subsection{MGF1}
 
-\begin{definition}[Fonction de génération de masque MGF1 \cite{rfc8017}]
+\begin{definition}[Fonction de génération de masque MGF1 (Mask Generation Function 1) \cite{rfc8017}]
 Soit $h:\bin^*\to\bin^d$ une fonction de hachage. On définit
 \[
   \MGF_h : \bin^* \times \N \to \bin^\ell
@@ -1109,7 +1109,7 @@ Sans MGF1, un attaquant pourrait manipuler séparément les différentes parties
 
 \subsection{RSA-OAEP}
 
-\begin{definition}[Paramètres RSA-OAEP \cite{rfc8017}]
+\begin{definition}[Paramètres RSA-OAEP (Optimal Asymmetric Encryption Padding) \cite{rfc8017}]
 Soient $k$ la taille en octets du module $n$ (pour $n$ de 4096 bits, $k = 512$), et $hLen$ la taille de sortie de la fonction de hachage en octets (pour SHA-256, $hLen = 32$). On fixe :
 \[
 k_0 = k - 2hLen - 2,\quad k_1 = hLen
@@ -1189,7 +1189,7 @@ Pour toute clé $(n,e,d)$ valide, pour tout message $M$ de longueur $8k_0$ bits 
 \end{theorem}
 
 \begin{proof}
-La correction découle de la structure réversible de l'encodage OAEP. Les opérations de masquage utilisant MGF sont réversibles car déterministes, et les vérifications assurent l'intégrité du message.
+La correction découle de la structure réversible de l'encodage OAEP. Les opérations de masquage utilisant MGF sont réversibles car déterministes, et les vérifications assuren l'intégrité du message.
 \end{proof}
 
 \begin{remark}[Propriétés de sécurité]
@@ -1209,7 +1209,7 @@ Ce qui est amplement suffisant pour une clé AES-256 de 32 octets, avec une marg
 
 \subsection{AES comme permutation de bloc}
 
-\begin{definition}[AES-256 selon FIPS 197 \cite{fips197}]
+\begin{definition}[AES-256 (Advanced Encryption Standard) selon FIPS 197 \cite{fips197}]
 On fixe une taille de bloc de $128$ bits et une taille de clé de $256$ bits.
 Pour chaque clé $K \in \bin^{256}$, on dispose d'une permutation de blocs
 \[
@@ -1228,6 +1228,8 @@ s_{3,0} & s_{3,1} & s_{3,2} & s_{3,3}
 \end{bmatrix}
 \]
 où chaque $s_{r,c}$ est un octet ($0 \leq r < 4$, $0 \leq c < 4$).
+
+\textbf{Note :} L'algorithme complet de chiffrement (fonction CIPHER) sera détaillé à la section~\ref{sec:aes-cipher}.
 \end{definition}
 
 \begin{definition}[Mapping entrée-état selon FIPS 197]
@@ -1426,6 +1428,7 @@ où $w[i]$ est le $i$-ème mot du schedule de clés et $round$ est le numéro du
 \end{definition}
 
 \subsection{Algorithme de chiffrement complet}
+\label{sec:aes-cipher}
 
 \begin{definition}[CIPHER() pour AES-256]
 L'algorithme de chiffrement complet est:
@@ -1489,7 +1492,7 @@ Pour une clé AES $K$, on définit
 que l'on identifie à un élément de $\F_{2^{128}}$.
 \end{definition}
 
-\begin{definition}[GHASH selon SP 800-38D \cite{nist-sp800-38d}]
+\begin{definition}[GHASH (Galois Hash) selon SP 800-38D \cite{nist-sp800-38d}]
 Soit $H\in\F_{2^{128}}$. Pour une séquence de blocs $X_1, \dots, X_m \in \bin^{128}$, la fonction GHASH est définie récursivement par:
 \[
 Y_0 = 0^{128}, \quad Y_i = (Y_{i-1} \oplus X_i) \cdot H \quad \text{pour } i = 1, \dots, m
@@ -1503,7 +1506,7 @@ Le résultat est $Y_m$. Cette définition est équivalente à:
 
 \subsection{Mode AES-GCM}
 
-\begin{definition}[AES-GCM selon SP 800-38D \cite{nist-sp800-38d}]
+\begin{definition}[AES-GCM (Galois/Counter Mode) selon SP 800-38D \cite{nist-sp800-38d}]
 Pour une clé $K\in\bin^{256}$, on modélise AES-GCM comme un couple
 d'applications
 \begin{align*}
