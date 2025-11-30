@@ -1242,70 +1242,64 @@ Pour AES-256, on a les paramètres fixes suivants:
 
 \subsection{Transformations de base}
 
-\begin{definition}[SUBBYTES()]
-La transformation SUBBYTES() applique une substitution non-linéaire à chaque octet de l'état en utilisant la S-boîte (S-box) d'AES:
+\begin{definition}[S-box AES]
+La S-box (table de substitution) AES est une table fixe de 256 octets définie dans le standard FIPS 197. Pour un octet d'entrée $xy$ en hexadécimal (où $x$ est le nibble de poids fort et $y$ le nibble de poids faible), la valeur de substitution est donnée par la table suivante:
 
-Pour chaque octet $b = \{b_7b_6b_5b_4b_3b_2b_1b_0\}$:
+\[
+\renewcommand{\arraystretch}{1.2}
+\begin{array}{c|cccccccccccccccc}
+ & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & a & b & c & d & e & f \\
+\hline
+0 & 63 & 7c & 77 & 7b & f2 & 6b & 6f & c5 & 30 & 01 & 67 & 2b & fe & d7 & ab & 76 \\
+1 & ca & 82 & c9 & 7d & fa & 59 & 47 & f0 & ad & d4 & a2 & af & 9c & a4 & 72 & c0 \\
+2 & b7 & fd & 93 & 26 & 36 & 3f & f7 & cc & 34 & a5 & e5 & f1 & 71 & d8 & 31 & 15 \\
+3 & 04 & c7 & 23 & c3 & 18 & 96 & 05 & 9a & 07 & 12 & 80 & e2 & eb & 27 & b2 & 75 \\
+4 & 09 & 83 & 2c & 1a & 1b & 6e & 5a & a0 & 52 & 3b & d6 & b3 & 29 & e3 & 2f & 84 \\
+5 & 53 & d1 & 00 & ed & 20 & fc & b1 & 5b & 6a & cb & be & 39 & 4a & 4c & 58 & cf \\
+6 & d0 & ef & aa & fb & 43 & 4d & 33 & 85 & 45 & f9 & 02 & 7f & 50 & 3c & 9f & a8 \\
+7 & 51 & a3 & 40 & 8f & 92 & 9d & 38 & f5 & bc & b6 & da & 21 & 10 & ff & f3 & d2 \\
+8 & cd & 0c & 13 & ec & 5f & 97 & 44 & 17 & c4 & a7 & 7e & 3d & 64 & 5d & 19 & 73 \\
+9 & 60 & 81 & 4f & dc & 22 & 2a & 90 & 88 & 46 & ee & b8 & 14 & de & 5e & 0b & db \\
+a & e0 & 32 & 3a & 0a & 49 & 06 & 24 & 5c & c2 & d3 & ac & 62 & 91 & 95 & e4 & 79 \\
+b & e7 & c8 & 37 & 6d & 8d & d5 & 4e & a9 & 6c & 56 & f4 & ea & 65 & 7a & ae & 08 \\
+c & ba & 78 & 25 & 2e & 1c & a6 & b4 & c6 & e8 & dd & 74 & 1f & 4b & bd & 8b & 8a \\
+d & 70 & 3e & b5 & 66 & 48 & 03 & f6 & 0e & 61 & 35 & 57 & b9 & 86 & c1 & 1d & 9e \\
+e & e1 & f8 & 98 & 11 & 69 & d9 & 8e & 94 & 9b & 1e & 87 & e9 & ce & 55 & 28 & df \\
+f & 8c & a1 & 89 & 0d & bf & e6 & 42 & 68 & 41 & 99 & 2d & 0f & b0 & 54 & bb & 16 \\
+\end{array}
+\]
+
+Cette table est notée $\mathrm{SBox} : \bin^8 \to \bin^8$.
+\end{definition}
+
+\begin{definition}[SUBBYTES()]
+La transformation SUBBYTES() applique la S-box à chaque octet de l'état:
+\[
+s'_{r,c} = \mathrm{SBox}(s_{r,c}) \quad \text{pour } 0 \leq r < 4, 0 \leq c < 4
+\]
+
+Bien que la S-box soit définie par un algorithme (inversion dans GF($2^8$) suivie d'une transformation affine), dans la pratique elle est implémentée comme une table de consultation fixe pour des raisons de performance.
+\end{definition}
+
+\begin{remark}[Construction algorithmique de la S-box]
+La S-box peut être générée algorithmiquement pour tout octet $b \neq 0$ par:
 \begin{enumerate}
-\item Si $b \neq \{00\}$, calculer l'inverse multiplicatif $b^{-1}$ dans GF($2^8$)
+\item Calculer l'inverse multiplicatif $b^{-1}$ dans GF($2^8$) modulo $m(x) = x^8 + x^4 + x^3 + x + 1$
 \item Appliquer la transformation affine:
 \[
 b_i' = b_i \oplus b_{(i+4)\mod 8} \oplus b_{(i+5)\mod 8} \oplus b_{(i+6)\mod 8} \oplus b_{(i+7)\mod 8} \oplus c_i
 \]
-où $c = \{01100011\}$.
+où $c = \mathtt{0x63} = \{01100011\}$.
 \end{enumerate}
-La S-boîte complète est donnée dans la Table 4 du FIPS 197.
-\end{definition}
+Pour $b = 0$, on utilise $0^{-1} = 0$ par convention.
+\end{remark}
 
-\begin{definition}[SHIFTROWS()]
-La transformation SHIFTROWS() décale cycliquement les lignes de l'état:
-\begin{itemize}
-\item Ligne 0: pas de décalage
-\item Ligne 1: décalage de 1 position vers la gauche  
-\item Ligne 2: décalage de 2 positions vers la gauche
-\item Ligne 3: décalage de 3 positions vers la gauche
-\end{itemize}
-Formellement: $s'_{r,c} = s_{r,(c+r)\mod 4}$ pour $0 \leq r < 4$, $0 \leq c < 4$.
-\end{definition}
-
-\begin{definition}[MIXCOLUMNS()]
-La transformation MIXCOLUMNS() traite chaque colonne de l'état comme un polynôme sur GF($2^8$) et le multiplie modulo $x^4 + 1$ par le polynôme fixe:
+\begin{definition}[S-box inverse]
+La S-box inverse INVSBOX() est également définie par une table fixe dans le standard FIPS 197. Elle satisfait:
 \[
-a(x) = \{03\}x^3 + \{01\}x^2 + \{01\}x + \{02\}
-\]
-Ceci équivaut à la multiplication matricielle:
-\[
-\begin{bmatrix}
-s'_{0,c} \\
-s'_{1,c} \\
-s'_{2,c} \\
-s'_{3,c}
-\end{bmatrix}
-=
-\begin{bmatrix}
-02 & 03 & 01 & 01 \\
-01 & 02 & 03 & 01 \\
-01 & 01 & 02 & 03 \\
-03 & 01 & 01 & 02
-\end{bmatrix}
-\begin{bmatrix}
-s_{0,c} \\
-s_{1,c} \\
-s_{2,c} \\
-s_{3,c}
-\end{bmatrix}
-\quad\text{pour } 0 \leq c < 4
+\mathrm{INVSBOX}(\mathrm{SBox}(b)) = b \quad \text{pour tout octet } b
 \]
 \end{definition}
-
-\begin{definition}[ADDROUNDKEY()]
-La transformation ADDROUNDKEY() combine l'état avec la clé de tour par XOR:
-\[
-s'_{r,c} = s_{r,c} \oplus w[4 \times round + c]_r \quad\text{pour } 0 \leq r < 4, 0 \leq c < 4
-\]
-où $w$ est le schedule de clés et $round$ est le numéro du tour.
-\end{definition}
-
 \subsection{Expansion de clé AES-256}
 
 \begin{definition}[KEYEXPANSION() pour AES-256]
