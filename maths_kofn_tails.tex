@@ -174,13 +174,6 @@ N,\,N_i & Nonces AES-GCM \\
 \newpage
 
 %=========================================================
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%=========================================================
-%=========================================================
-
-
-%=========================================================
 \section{Cadre algébrique de base}
 
 \subsection{Mots binaires et encodage}
@@ -239,7 +232,7 @@ Dans la suite du document :
 \end{itemize}
 \end{remark}
 
-\subsection{Corps finis et polynômes}
+\subsection{Corps finis premiers}
 
 \begin{definition}[Corps fini premier]
 Soit $P$ un nombre premier. On note
@@ -248,6 +241,62 @@ Soit $P$ un nombre premier. On note
 \]
 le corps fini à $P$ éléments. Les opérations arithmétiques dans $\F_P$ sont effectuées modulo $P$.
 \end{definition}
+
+\subsection{Théorèmes arithmétiques fondamentaux}
+
+\begin{definition}[Indicatrice d'Euler]
+L'indicatrice d'Euler $\varphi(n)$ est définie pour tout entier $n \geq 1$ comme le nombre d'entiers compris entre $1$ et $n$ qui sont premiers avec $n$ :
+\[
+\varphi(n) = \#\{k \in \{1, 2, \dots, n\} \mid \gcd(k, n) = 1\}
+\]
+\end{definition}
+
+\begin{theorem}[Théorème d'Euler]
+\label{thm:euler}
+Si $a$ et $n$ sont premiers entre eux, alors :
+\[
+a^{\varphi(n)} \equiv 1 \pmod{n}
+\]
+\end{theorem}
+
+\begin{proof}[Preuve utilisant la théorie des groupes]
+L'ensemble des éléments inversibles de l'anneau $\Z/n\Z$ est noté $(\Z/n\Z)^\times$. 
+Par l'identité de Bézout, un élément $a \in \{0,1,\dots,n-1\}$ est inversible modulo $n$ si et seulement si $\gcd(a,n)=1$.
+Ainsi, le groupe multiplicatif $(\Z/n\Z)^\times$ a pour ordre $\varphi(n)$. 
+Par le théorème de Lagrange, l'ordre de tout élément du groupe divise l'ordre du groupe. 
+Donc, pour tout $a$ inversible modulo $n$, on a $a^{\varphi(n)} \equiv 1 \pmod{n}$.
+\end{proof}
+
+\begin{theorem}[Petit théorème de Fermat]
+\label{thm:fermat}
+Si $p$ est premier et $a$ n'est pas divisible par $p$, alors :
+\[
+a^{p-1} \equiv 1 \pmod{p}
+\]
+\end{theorem}
+
+\begin{proof}
+C'est un cas particulier du théorème d'Euler, car pour $p$ premier, $\varphi(p) = p-1$.
+\end{proof}
+
+\begin{theorem}[Théorème de Gauss (lemme d'Euclide)]
+\label{thm:gauss-div}
+Soient $a, b, c$ des entiers. Si $a$ et $b$ sont premiers entre eux et $a$ divise $bc$, alors $a$ divise $c$.
+\end{theorem}
+
+\begin{proof}
+Puisque $\gcd(a,b) = 1$, par l'identité de Bézout, il existe des entiers $u,v$ tels que :
+\[
+au + bv = 1
+\]
+Multiplions cette égalité par $c$ :
+\[
+auc + bvc = c
+\]
+Par hypothèse, $a$ divise $bc$, donc $a$ divise $bvc$. De plus, $a$ divise évidemment $auc$. Donc $a$ divise la somme $auc + bvc = c$.
+\end{proof}
+
+\subsection{Polynômes}
 
 \begin{definition}[Anneau de polynômes]
 Soit $\mathbb{K}$ un corps commutatif. On note
@@ -341,61 +390,9 @@ Puisque $\mathbb{K}[X]$ est principal (Proposition~\ref{prop:anneau-principal}),
 Par la Proposition~\ref{prop:quotient-maximal}, le quotient $\mathbb{K}[X]/I$ est un corps.
 \end{proof}
 
-\subsection{Théorèmes arithmétiques fondamentaux}
-
-\begin{definition}[Indicatrice d'Euler]
-L'indicatrice d'Euler $\varphi(n)$ est définie pour tout entier $n \geq 1$ comme le nombre d'entiers compris entre $1$ et $n$ qui sont premiers avec $n$ :
-\[
-\varphi(n) = \#\{k \in \{1, 2, \dots, n\} \mid \gcd(k, n) = 1\}
-\]
-\end{definition}
-
-\begin{theorem}[Théorème d'Euler]
-\label{thm:euler}
-Si $a$ et $n$ sont premiers entre eux, alors :
-\[
-a^{\varphi(n)} \equiv 1 \pmod{n}
-\]
-\end{theorem}
-
-\begin{proof}[Preuve utilisant la théorie des groupes]
-L'ensemble des éléments inversibles de l'anneau $\Z/n\Z$ est noté $(\Z/n\Z)^\times$. 
-Par l'identité de Bézout, un élément $a \in \{0,1,\dots,n-1\}$ est inversible modulo $n$ si et seulement si $\gcd(a,n)=1$.
-Ainsi, le groupe multiplicatif $(\Z/n\Z)^\times$ a pour ordre $\varphi(n)$. 
-Par le théorème de Lagrange, l'ordre de tout élément du groupe divise l'ordre du groupe. 
-Donc, pour tout $a$ inversible modulo $n$, on a $a^{\varphi(n)} \equiv 1 \pmod{n}$.
-\end{proof}
-
-\begin{theorem}[Petit théorème de Fermat]
-\label{thm:fermat}
-Si $p$ est premier et $a$ n'est pas divisible par $p$, alors :
-\[
-a^{p-1} \equiv 1 \pmod{p}
-\]
-\end{theorem}
-
-\begin{proof}
-C'est un cas particulier du théorème d'Euler, car pour $p$ premier, $\varphi(p) = p-1$.
-\end{proof}
-
-\begin{theorem}[Théorème de Gauss (lemme d'Euclide)]
-\label{thm:gauss-div}
-Soient $a, b, c$ des entiers. Si $a$ et $b$ sont premiers entre eux et $a$ divise $bc$, alors $a$ divise $c$.
-\end{theorem}
-
-\begin{proof}
-Puisque $\gcd(a,b) = 1$, par l'identité de Bézout, il existe des entiers $u,v$ tels que :
-\[
-au + bv = 1
-\]
-Multiplions cette égalité par $c$ :
-\[
-auc + bvc = c
-\]
-Par hypothèse, $a$ divise $bc$, donc $a$ divise $bvc$. De plus, $a$ divise évidemment $auc$. Donc $a$ divise la somme $auc + bvc = c$.
-\end{proof}
-
-
+\begin{remark}[Cas des anneaux non principaux]
+La démonstration utilise crucialement le fait que $\mathbb{K}[X]$ est un anneau principal. Si on part d'un anneau $A$ quelconque et d'un polynôme $P(X) \in A[X]$ irréductible, l'anneau quotient $A[X]/(P(X))$ n'est généralement pas un corps. Par exemple, $\mathbb{Z}[X]/(X^2 + 1)$ n'est pas un corps (c'est l'anneau des entiers de Gauss $\mathbb{Z}[i]$, où seuls $\pm 1, \pm i$ sont inversibles).
+\end{remark}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
