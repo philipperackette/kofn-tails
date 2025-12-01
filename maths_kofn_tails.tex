@@ -1462,31 +1462,14 @@ La sécurité d'Ed25519 repose sur la difficulté du problème du logarithme dis
 %=========================================================
 \section{RSA, MGF1 et OAEP}
 
+
+
 \subsection{Clés RSA}
-
-\begin{proposition}[Valeur de $\varphi(n)$ pour $n = pq$]
-Si $p$ et $q$ sont deux nombres premiers distincts et $n = pq$, alors :
-\[
-\varphi(n) = (p-1)(q-1)
-\]
-\end{proposition}
-
-\begin{proof}
-Parmi les $n = pq$ entiers de $1$ à $n$, les entiers qui ne sont pas premiers avec $n$ sont :
-\begin{itemize}
-\item Les multiples de $p$ : $p, 2p, 3p, \dots, qp$ → il y en a $q$
-\item Les multiples de $q$ : $q, 2q, 3q, \dots, pq$ → il y en a $p$
-\end{itemize}
-L'entier $pq$ a été compté deux fois. Par le principe d'inclusion-exclusion :
-\[
-\varphi(n) = n - q - p + 1 = pq - p - q + 1 = (p-1)(q-1)
-\]
-\end{proof}
 
 \begin{definition}[Clés RSA (Rivest-Shamir-Adleman)]
 On choisit deux nombres premiers $p,q$ de taille comparable (typiquement $p,q \approx 2^{2048}$ pour un module de 4096 bits) et on pose $n = pq$. 
 
-On calcule $\varphi(n) = (p-1)(q-1)$.
+On calcule $\varphi(n) = (p-1)(q-1)$ (voir Proposition~\ref{prop:phi-pq}).
 
 On choisit un exposant public $e$ tel que $\gcd(e,\varphi(n)) = 1$ (typiquement $e = 65537$). L'exposant privé $d$ est l'inverse de $e$ modulo $\varphi(n)$ :
 \[
@@ -1495,6 +1478,12 @@ d \equiv e^{-1} \pmod{\varphi(n)}
 La clé publique est $(n,e)$ et la clé privée est $(n,d)$.
 \end{definition}
 
+
+
+
+
+
+\
 \begin{theorem}[Correction du chiffrement RSA]
 \label{thm:rsa-correct}
 Pour tout message $M \in \{0,\dots,n-1\}$ et toute clé RSA valide $(n,e,d)$, on a :
