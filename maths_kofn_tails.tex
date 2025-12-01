@@ -323,6 +323,9 @@ L'entier $pq$ a été compté deux fois. Par le principe d'inclusion-exclusion :
 \]
 \end{proof}
 
+
+
+
 \begin{theorem}[Théorème de Lagrange pour les groupes finis]
 \label{thm:lagrange-groupes}
 Soit $G$ un groupe fini et $H$ un sous-groupe de $G$. Alors l'ordre de $H$ divise l'ordre de $G$ :
@@ -498,7 +501,7 @@ Soit $f: A \to B$ un homomorphisme d'anneaux. Alors :
 \overline{f}((a + \ker(f)) + (b + \ker(f))) &= \overline{f}(a + b + \ker(f)) = f(a + b) = f(a) + f(b) \\
 &= \overline{f}(a + \ker(f)) + \overline{f}(b + \ker(f)), \\
 \overline{f}((a + \ker(f)) \cdot (b + \ker(f))) &= \overline{f}(a \cdot b + \ker(f)) = f(a \cdot b) = f(a) \cdot f(b) \\
-&= \overline{f}(a + \ker(f)) \cdot \overline(f)(b + \ker(f)), \\
+&= \overline{f}(a + \ker(f)) \cdot \overline{f}(b + \ker(f)), \\
 \overline{f}(1_A + \ker(f)) &= f(1_A) = 1_B.
 \end{align*}
 L'injectivité : si $\overline{f}(a + \ker(f)) = 0_B$, alors $f(a) = 0_B$, donc $a \in \ker(f)$, d'où $a + \ker(f) = 0_A + \ker(f)$. La surjectivité est évidente. Donc $\overline{f}$ est un isomorphisme.
@@ -679,41 +682,34 @@ Puisque $\Kpolys$ est principal (Proposition~\ref{prop:anneau-principal}), et qu
 Par la Proposition~\ref{prop:quotient-maximal}, le quotient $\Kpolys/I$ est un corps.
 \end{proof}
 
-\begin{theorem}[Théorème de Moore (admis)]
+\begin{theorem}[Théorème de Moore]
 \label{thm:moore}
 Pour tout $q = p^n$ avec $p$ premier et $n \ge 1$, il existe un corps fini de
 cardinal $q$, unique à isomorphisme près. On note alors $\F_{p^n}$ n'importe
 quel corps fini de cardinal $p^n$.
+
+Ce théorème est essentiellement là pour justifier que la notation $\F_{p^n}$
+(en particulier $\F_{2^n}$) n'est pas ambiguë : tous les corps finis de
+cardinal $p^n$ sont isomorphes, quel que soit le modèle concret choisi.
 \end{theorem}
 
-\begin{proof}[Commentaire et esquisse de preuve]
+\begin{proof}[Commentaire]
 \textbf{Existence.}
 En pratique, on construit un corps de cardinal $p^n$ comme quotient
 $\F_p[X]/(m(X))$, où $m(X) \in \F_p[X]$ est un polynôme irréductible de degré $n$
 (on admet ici l'existence d'un tel polynôme). Par la
 Proposition~\ref{prop:corps-quotient}, ce quotient est un corps. Vu comme
 $\F_p$-espace vectoriel de base $1,\overline{X},\dots,\overline{X}^{n-1}$, il a
-donc exactement $p^n$ éléments.
+donc exactement $p^n$ éléments. C'est ce modèle concret que nous utiliserons
+pour la construction de $\F_{p^n}$ (par exemple $\F_{2^8}$ pour AES).
 
 \medskip
-\noindent\textbf{Unicité (admise).}
+\noindent\textbf{Unicité.}
 Une preuve complète du fait que tout corps fini de cardinal $p^n$ est isomorphe
 à tout autre repose sur quelques notions de théorie des corps que nous ne
-développons pas ici :
-\begin{itemize}
-  \item la \emph{caractéristique} d'un corps fini, et l'existence d'un sous-corps
-        premier isomorphe à $\F_p$ ;
-  \item la description des corps finis comme extensions finies de $\F_p$ de
-        degré $n$ ;
-  \item l'endomorphisme de Frobenius $x \mapsto x^p$, qui implique que tout
-        élément d'un corps fini de cardinal $p^n$ vérifie $x^{p^n} = x$ ;
-  \item le fait que $X^{p^n} - X \in \F_p[X]$ a pour racines exactement les
-        éléments de tout corps fini de cardinal $p^n$, et que son corps de
-        décomposition sur $\F_p$ est unique à isomorphisme près.
-\end{itemize}
-
+développons pas dans le corps du texte. Ces éléments sont développés en détail dans l'Annexe~\ref{sec:annexe-moore},
+où l'on donne une preuve complète du théorème de Moore.
 \end{proof}
-
 \begin{remark}[Construction pratique]
 En pratique, pour construire $\F_{p^n}$, on choisit un polynôme irréductible $m(X) \in \F_p[X]$ de degré $n$ et on pose :
 \[
@@ -2586,6 +2582,515 @@ pas ici.
 
 \newpage
 
+
+\appendix
+
+\section{Annexe A --- Corps finis et notation $\F_{2^n}$}
+\label{sec:annexe-moore}
+
+Cette annexe rassemble les compléments d'algèbre nécessaires pour justifier entièrement
+l'utilisation de la notation $\F_{2^n}$ (et, plus généralement, $\F_{p^n}$) dans le reste
+du document. Toutes les démonstrations reposent sur des arguments élémentaires portant sur
+des objets finis : polynômes sur $\F_p$, groupes abéliens finis, dénombrements.
+Dans cette annexe, on détaille les éléments de théorie des corps finis
+qui justifient complètement le Théorème~\ref{thm:moore}. On travaille
+toujours avec un nombre premier $p$ et des corps de caractéristique $p$.
+
+\subsection{Caractéristique et sous-corps premier}
+
+\begin{definition}[Caractéristique d'un corps]
+Soit $K$ un corps. La \emph{caractéristique} de $K$ est le plus petit entier
+$p \ge 1$ tel que
+\[
+\underbrace{1 + 1 + \cdots + 1}_{p\ \text{fois}} = 0
+\]
+s'il existe, et $0$ sinon.
+\end{definition}
+
+\begin{proposition}
+\label{prop:caract-prime}
+Si $K$ est un corps fini, alors sa caractéristique est un nombre premier $p$.
+\end{proposition}
+
+\begin{proof}
+Comme $K$ est fini, le sous-groupe additif engendré par $1$ est lui aussi fini.
+Il existe donc un entier $p \ge 1$ minimal tel que $p \cdot 1 = 0$. On montre
+que $p$ est premier : si $p=ab$ avec $1<a,b<p$, on a
+\[
+0 = p\cdot 1 = (ab)\cdot 1 = a \cdot (b\cdot 1),
+\]
+et comme $K$ est sans diviseur de zéro (c'est un corps), cela implique
+$b\cdot 1 = 0$ ou $a\cdot 1 = 0$, en contradiction avec la minimalité de $p$.
+\end{proof}
+
+\begin{proposition}[Sous-corps premier]
+\label{prop:sous-corps-premier}
+Soit $K$ un corps de caractéristique $p>0$. L'application
+\[
+\varphi : \F_p \longrightarrow K,\quad \overline{n} \longmapsto n\cdot 1_K
+\]
+est un homomorphisme injectif de corps. Son image est un sous-corps de $K$,
+appelé \emph{sous-corps premier} de $K$, isomorphe à $\F_p$.
+\end{proposition}
+
+\begin{proof}
+L'application est bien définie car dans $\F_p$ on identifie $\overline{n}$ et
+$\overline{m}$ si $p$ divise $n-m$, et dans $K$ on a alors
+$(n-m)\cdot 1_K = p\cdot q\cdot 1_K = 0$. On vérifie facilement que $\varphi$
+respecte l'addition et la multiplication, et que $\varphi(1)=1_K$.
+L'injectivité vient de ce que le noyau ne peut pas contenir de $1_K$ non nul.
+\end{proof}
+
+Ainsi, tout corps fini $K$ contient un sous-corps isomorphe à $\F_p$, et on
+peut voir $K$ comme une extension finie de $\F_p$.
+
+\subsection{Cardinal d'un corps fini}
+
+\begin{proposition}
+\label{prop:cardinal-pn}
+Soit $K$ un corps fini de caractéristique $p$, et soit $k$ le sous-corps
+premier de $K$ (isomorphe à $\F_p$). Alors $K$ est un $k$-espace vectoriel
+de dimension finie $n$, et
+\[
+|K| = p^n.
+\]
+\end{proposition}
+
+\begin{proof}
+Par la Proposition~\ref{prop:sous-corps-premier}, $k$ est un sous-corps de $K$.
+La structure de corps fait de $K$ un $k$-espace vectoriel. Comme $K$ est fini,
+il admet une base finie $(e_1,\dots,e_n)$ sur $k$, et chaque élément de $K$
+s'écrit de manière unique comme combinaison linéaire
+\[
+x = \lambda_1 e_1 + \cdots + \lambda_n e_n,\quad \lambda_i \in k.
+\]
+Comme $|k| = p$, il y a exactement $p^n$ $n$-uplets $(\lambda_1,\dots,\lambda_n)$,
+donc $|K| = p^n$.
+\end{proof}
+
+Cela justifie l'écriture \og $|K|=p^n$ \fg{} et le fait de noter un corps fini
+$K$ de cardinal $p^n$ par $\F_{p^n}$.
+
+\subsection{Frobenius et polynôme $X^{p^n}-X$}
+
+\begin{proposition}[Endomorphisme de Frobenius]
+\label{prop:frobenius}
+Soit $K$ un corps de caractéristique $p$. L'application
+\[
+\varphi : K \longrightarrow K,\quad x \longmapsto x^p
+\]
+est un homomorphisme de corps, appelé \emph{endomorphisme de Frobenius}.
+\end{proposition}
+
+\begin{proof}
+Pour $x,y \in K$, on a
+\[
+(x+y)^p = \sum_{k=0}^p \binom{p}{k} x^k y^{p-k}.
+\]
+Pour $0<k<p$, le coefficient binomial $\binom{p}{k}$ est divisible par $p$,
+donc $\binom{p}{k}=0$ dans un corps de caractéristique $p$. Il reste donc
+$(x+y)^p = x^p + y^p$. La compatibilité à la multiplication est évidente :
+$(xy)^p = x^p y^p$. Enfin, $\varphi(1) = 1$, donc $\varphi$ est un homomorphisme
+de corps.
+\end{proof}
+
+\begin{proposition}
+\label{prop:frobenius-bij}
+Si $K$ est un corps fini de caractéristique $p$, l'endomorphisme de Frobenius
+$\varphi : x \mapsto x^p$ est bijectif.
+\end{proposition}
+
+\begin{proof}
+Un homomorphisme de corps est injectif dès que son noyau est réduit à $\{0\}$.
+Mais si $\varphi(x)=0$, alors $x^p=0$ implique $x=0$ dans un corps. Ainsi
+$\varphi$ est injectif. Comme $K$ est fini, une application injective est
+automatiquement surjective.
+\end{proof}
+
+\begin{corollary}
+\label{cor:pn-frobenius}
+Soit $K$ un corps fini de cardinal $p^n$. Pour tout $x \in K$, on a
+\[
+x^{p^n} = x.
+\]
+Autrement dit, tout élément de $K$ est racine du polynôme $X^{p^n}-X \in \F_p[X]$.
+\end{corollary}
+
+\begin{proof}
+Par la Proposition~\ref{prop:frobenius-bij}, $\varphi$ est bijective, donc
+$\varphi^n$ aussi. Or
+\[
+\varphi^n(x) = x^{p^n}.
+\]
+Comme $\varphi^n$ est une permutation de $K$, son ensemble de points fixes
+contient tout $K$ (ou, plus simplement, dans un corps fini, l'endomorphisme
+$z \mapsto z^{p^n}-z$ a au plus $p^n$ zéros et on en a déjà $|K| = p^n$),
+d'où $x^{p^n}-x=0$ pour tout $x\in K$.
+\end{proof}
+
+\subsection{Polynôme $X^{p^n}-X$ et polynômes irréductibles}
+
+On se place dans une extension de $\F_p$ dans laquelle le polynôme $$X^{p^n} - X \in \F_p[X]$$ est scindé (par exemple dans un corps fini de cardinal $p^n$). Dans toute la suite, nous raisonnons à l'intérieur d'un tel corps, sans avoir besoin de décrire cette extension de manière plus précise.
+
+\begin{proposition}
+\label{prop:racines-XpnX}
+Les racines du polynôme $X^{p^n} - X \in \F_p[X]$ dans $\overline{\F_p}$
+forment un corps de cardinal $p^n$, que l'on note $\F_{p^n}$.
+\end{proposition}
+
+\begin{proof}
+Soit
+\[
+S = \{\,x \in \overline{\F_p} \mid x^{p^n} = x\,\}.
+\]
+Par le Corollaire~\ref{cor:pn-frobenius}, pour tout corps fini $K$ de cardinal
+$p^n$ contenant $\F_p$, on a $K \subset S$. Réciproquement, on vérifie que $S$
+est stable par addition, multiplication et passage à l'inverse (pour $x\neq 0$) :
+\[
+(x+y)^{p^n} = x^{p^n} + y^{p^n} = x+y,\quad (xy)^{p^n} = x^{p^n} y^{p^n} = xy,
+\quad (x^{-1})^{p^n} = (x^{p^n})^{-1} = x^{-1}.
+\]
+Donc $S$ est un sous-corps de $\overline{\F_p}$ contenant $\F_p$. Par
+la Proposition~\ref{prop:cardinal-pn}, tout corps fini contenu dans
+$\overline{\F_p}$ a un cardinal d'une puissance de $p$. En fait, on vérifie
+facilement que $|S| = p^n$ (par exemple en remarquant que $X^{p^n}-X$ a au plus
+$p^n$ racines dans un corps, et que $S$ est exactement cet ensemble de racines).
+On note ce corps $\F_{p^n}$.
+\end{proof}
+
+\begin{proposition}
+\label{prop:XpnX-irreductibles}
+La factorisation de $X^{p^n}-X$ dans $\F_p[X]$ est
+\[
+X^{p^n}-X = \prod_{\substack{f \text{ irréductible,}\\ f \in \F_p[X],\ \deg(f)\mid n}} f(X),
+\]
+le produit portant sur tous les polynômes irréductibles unitaires dont le degré
+divise $n$, chaque facteur apparaissant une seule fois.
+\end{proposition}
+
+\begin{proof}
+Soit $f \in \F_p[X]$ irréductible unitaire et soit $\alpha$ une racine de $f$
+dans $\overline{\F_p}$. Alors $f$ est le polynôme minimal de $\alpha$ sur $\F_p$
+et $\F_p(\alpha)$ est un corps de cardinal $p^d$, où $d = \deg(f)$
+(cf. Proposition~\ref{prop:cardinal-pn}).
+On a $\alpha^{p^d} = \alpha$ (Corollaire~\ref{cor:pn-frobenius} appliqué à
+$\F_p(\alpha)$), donc $\alpha$ est racine de $X^{p^d}-X$.
+
+Si $d$ divise $n$, alors $p^d-1$ divise $p^n-1$, et on vérifie que
+\[
+X^{p^n}-X = \bigl(X^{p^d}-X\bigr) \circ (\cdots),
+\]
+ce qui implique que toute racine de $X^{p^d}-X$ est racine de $X^{p^n}-X$.
+En particulier, $\alpha$ est racine de $X^{p^n}-X$, donc le polynôme minimal
+$f$ divise $X^{p^n}-X$ dans $\F_p[X]$.
+
+Réciproquement, si $f$ divise $X^{p^n}-X$, toute racine $\alpha$ de $f$
+satisfait $\alpha^{p^n}=\alpha$, donc $\alpha \in \F_{p^n}$ et
+$\F_p(\alpha) \subset \F_{p^n}$, ce qui impose que $|\F_p(\alpha)| = p^d$
+divise $p^n$, donc $d\mid n$.
+
+Enfin, comme $X^{p^n}-X$ n'a pas de racine multiple (sa dérivée est
+$-1 \neq 0$), il est sans facteur carré, donc chaque polynôme irréductible
+apparaît au plus une fois dans la factorisation. En regroupant les facteurs
+associés à chaque degré, on obtient la factorisation annoncée.
+\end{proof}
+
+\begin{corollary}[Existence de polynômes irréductibles de degré $n$]
+\label{cor:irreductible-degre-n}
+Pour tout entier $n \ge 1$, il existe au moins un polynôme irréductible
+dans $\F_p[X]$ de degré exactement $n$.
+\end{corollary}
+
+\begin{proof}
+Notons $I_d$ le nombre de polynômes irréductibles unitaires de degré $d$
+dans $\F_p[X]$. La Proposition~\ref{prop:XpnX-irreductibles} donne
+\[
+X^{p^n}-X = \prod_{d \mid n} \ \prod_{\deg(f)=d} f(X),
+\]
+donc la somme des degrés des facteurs vaut
+\[
+p^n = \deg(X^{p^n}-X) = \sum_{d\mid n} d\, I_d.
+\]
+Si $I_n$ était nul, on aurait
+\[
+p^n = \sum_{\substack{d\mid n \\ d<n}} d\, I_d \le \sum_{\substack{d\mid n \\ d<n}} d\, p^d
+< \sum_{k=0}^{n-1} p^k = \frac{p^n-1}{p-1} < p^n,
+\]
+ce qui est impossible. Donc $I_n>0$.
+\end{proof}
+
+Le Corollaire~\ref{cor:irreductible-degre-n} redonne l'argument admis dans
+la preuve « courte » du Théorème~\ref{thm:moore} : il existe toujours un
+polynôme irréductible de degré $n$ sur $\F_p$.
+
+\begin{lemma}
+\label{lem:phi-somme-diviseurs}
+Pour tout entier $n \ge 1$, on a
+\[
+\sum_{d \mid n} \varphi(d) = n.
+\]
+\end{lemma}
+
+\begin{proof}
+Notons
+\[
+A = \{1,2,\dots,n\}.
+\]
+Nous allons partitionner $A$ suivant la valeur du plus grand diviseur commun
+avec $n$.
+
+Pour chaque diviseur $d$ de $n$, posons
+\[
+A_d = \{\,k \in A \mid \gcd(k,n) = d\,\}.
+\]
+Les ensembles $(A_d)_{d\mid n}$ sont deux à deux disjoints et leur union est
+tout $A$ (puisque pour tout $k$ il existe un unique $d = \gcd(k,n)$). On a
+donc
+\[
+|A| = n = \sum_{d\mid n} |A_d|.
+\]
+
+Fixons un diviseur $d$ de $n$. Nous allons établir une bijection entre $A_d$
+et l'ensemble
+\[
+B_{n/d} = \{\,m \in \{1,\dots,n/d\} \mid \gcd(m,n/d) = 1\,\},
+\]
+qui est, par définition, de cardinal $\varphi(n/d)$.
+
+\medskip
+\noindent\emph{Construction de la bijection.}
+Définissons une application
+\[
+\Phi_d : A_d \longrightarrow B_{n/d},\qquad k \longmapsto \frac{k}{d}.
+\]
+Cette application est bien définie : si $k \in A_d$, on a $\gcd(k,n) = d$,
+donc $d$ divise $k$ et il existe un entier $m$ tel que $k = d m$. Comme
+$d$ divise aussi $n$, on écrit $n = d n'$ avec $n' = n/d$. Alors
+\[
+\gcd(m,n') = \gcd\!\left(\frac{k}{d}, \frac{n}{d}\right) = 1,
+\]
+car tout diviseur commun de $m$ et $n'$ donnerait, en le multipliant par $d$,
+un diviseur commun de $k$ et $n$ plus grand que $d$, ce qui contredirait
+$\gcd(k,n) = d$. De plus, $1 \le k \le n$ implique $1 \le m \le n'$, donc
+$m \in B_{n/d}$.
+
+Réciproquement, définissons
+\[
+\Psi_d : B_{n/d} \longrightarrow A_d,\qquad m \longmapsto d m.
+\]
+Cette application est bien définie : si $m \in B_{n/d}$, alors
+$\gcd(m,n/d) = 1$. En posant $k = d m$ et $n = d (n/d)$, tout diviseur commun
+de $k$ et $n$ est de la forme $d q$, où $q$ divise à la fois $m$ et $n/d$.
+Comme $\gcd(m,n/d) = 1$, on a $q = 1$, donc $\gcd(k,n) = d$, ce qui montre
+que $k \in A_d$.
+
+Il est immédiat que $\Phi_d$ et $\Psi_d$ sont réciproques l'une de l'autre :
+pour $k \in A_d$, écrit $k = d m$,
+\[
+\Psi_d(\Phi_d(k)) = \Psi_d\!\left(\frac{k}{d}\right) = d \cdot \frac{k}{d} = k,
+\]
+et pour $m \in B_{n/d}$,
+\[
+\Phi_d(\Psi_d(m)) = \Phi_d(d m) = \frac{d m}{d} = m.
+\]
+Ainsi, $\Phi_d$ est une bijection de $A_d$ sur $B_{n/d}$, et donc
+\[
+|A_d| = |B_{n/d}| = \varphi\!\left(\frac{n}{d}\right).
+\]
+
+\medskip
+En reportant cette égalité dans la décomposition de $A$, on obtient
+\[
+n = |A| = \sum_{d\mid n} |A_d|
+        = \sum_{d\mid n} \varphi\!\left(\frac{n}{d}\right).
+\]
+En faisant le changement de variable $e = n/d$, qui établit une bijection
+entre les diviseurs $d$ de $n$ et les diviseurs $e$ de $n$, on en déduit
+\[
+n = \sum_{e\mid n} \varphi(e),
+\]
+ce qui est exactement l'égalité annoncée.
+\end{proof}
+\subsection{Cyclicité du groupe multiplicatif}
+
+
+
+\begin{lemma}
+\label{lem:groupe-mult-cyclique}
+Soit $K$ un corps et soit $G$ un sous-groupe fini du groupe multiplicatif
+$K^\times$. Alors $G$ est un groupe cyclique.
+\end{lemma}
+
+\begin{proof}
+Notons $n = |G|$. Pour chaque diviseur $d$ de $n$, on note
+\[
+G_d = \{\,g \in G \mid \text{l'ordre de } g \text{ est exactement } d\,\}.
+\]
+Les ensembles $G_d$ sont deux à deux disjoints et recouvrent $G$, donc
+\begin{equation}
+\label{eq:partition-G}
+n = |G| = \sum_{d \mid n} |G_d|.
+\end{equation}
+
+\medskip
+\noindent\textbf{Étape 1 : si $G_d$ est non vide, alors $|G_d| = \varphi(d)$.}
+
+Fixons un diviseur $d$ de $n$ et supposons $G_d \neq \varnothing$. Il existe alors
+$y \in G_d$ d'ordre exactement $d$. Le sous-groupe engendré par $y$,
+\[
+H = \langle y \rangle = \{ y^0, y^1, \dots, y^{d-1} \},
+\]
+est cyclique d'ordre $d$.
+
+Considérons l'ensemble des solutions de l'équation $x^d = 1$ dans $G$ :
+\[
+R_d = \{\,x \in G \mid x^d = 1\,\}.
+\]
+On a toujours $H \subseteq R_d$, puisque pour tout $k$, $(y^k)^d = y^{kd} = 1$.
+
+D'autre part, l'équation $x^d = 1$ est l'équation $x^d-1 = 0$, dont le membre de
+gauche est un polynôme de degré $d$ à coefficients dans $K$. Par le
+Lemme~\ref{lem:racines-poly}, ce polynôme a au plus $d$ racines dans $K$, d'où
+\[
+|R_d| \le d.
+\]
+Mais $H$ est de cardinal $d$ et contenu dans $R_d$, donc nécessairement
+$R_d = H$.
+
+Ainsi, $G_d$ est exactement l'ensemble des éléments de $H$ d'ordre \emph{exactement}
+$d$, c'est-à-dire l'ensemble des générateurs du groupe cyclique $H$. Or un groupe
+cyclique d'ordre $d$ possède exactement $\varphi(d)$ générateurs. On en conclut
+\[
+|G_d| = \varphi(d).
+\]
+
+\medskip
+\noindent\textbf{Étape 2 : existence d'un élément d'ordre $n$.}
+
+Pour chaque diviseur $d$ de $n$, on vient de montrer que
+\[
+|G_d| = 0 \quad \text{ou} \quad |G_d| = \varphi(d).
+\]
+Comme $\varphi(d) \ge 1$ pour tout $d \ge 1$, on a alors
+\[
+|G_d| \le \varphi(d).
+\]
+En reportant cela dans \eqref{eq:partition-G}, on obtient
+\[
+n = \sum_{d \mid n} |G_d| \le \sum_{d \mid n} \varphi(d).
+\]
+D'un autre côté, en appliquant le Lemme~\ref{lem:phi-somme-diviseurs} (démontré
+dans la section sur l'indicatrice d'Euler), on sait que
+\[
+\sum_{d \mid n} \varphi(d) = n.
+\]
+On en déduit que toutes les inégalités précédentes sont en fait des égalités,
+ce qui n'est possible que si, pour chaque diviseur $d$ de $n$, on a
+\[
+|G_d| = \varphi(d),
+\]
+c'est-à-dire qu'aucun $G_d$ n'est vide.
+
+En particulier, pour $d = n$, on a $G_n \neq \varnothing$ : il existe au moins
+un élément de $G$ d'ordre exactement $n$.
+
+\medskip
+\noindent\textbf{Conclusion.}
+Si $g \in G$ a pour ordre $n = |G|$, le sous-groupe $\langle g \rangle$ a lui
+aussi $n$ éléments. Comme $G$ est un groupe d'ordre $n$ contenant $\langle g \rangle$,
+on doit avoir $G = \langle g \rangle$. Le groupe $G$ est donc cyclique.
+\end{proof}
+
+En particulier, pour un corps fini $K$ de cardinal $p^n$, le groupe multiplicatif
+$K^\times$ est cyclique d'ordre $p^n - 1$.
+
+\begin{proposition}[Élément primitif]
+\label{prop:element-primitif}
+Soit $K$ un corps fini de cardinal $p^n$. Il existe un élément
+$\alpha \in K$ tel que
+\[
+K^\times = \langle \alpha \rangle.
+\]
+En particulier, $K = \F_p(\alpha)$ et le polynôme minimal de $\alpha$
+sur $\F_p$ est de degré $n$.
+\end{proposition}
+
+\begin{proof}
+Par le Lemme~\ref{lem:groupe-mult-cyclique}, le groupe multiplicatif $K^\times$
+est cyclique : il existe $\alpha \in K^\times$ tel que
+\[
+K^\times = \langle \alpha \rangle.
+\]
+Le sous-corps $\F_p(\alpha)$ contient alors tous les éléments non nuls de $K$,
+donc $\F_p(\alpha)$ est un sous-corps de $K$ ayant le même cardinal que $K$.
+Par conséquent, $\F_p(\alpha)=K$.
+
+Enfin, par la Proposition~\ref{prop:cardinal-pn}, la dimension du corps
+$\F_p(\alpha)$ comme $\F_p$-espace vectoriel vaut $n$, ce qui signifie que
+le polynôme minimal de $\alpha$ sur $\F_p$ est de degré $n$.
+\end{proof}
+
+\subsection{Unicité de $\F_{p^n}$ à isomorphisme près}
+
+On peut maintenant démontrer complètement l'unicité de $\F_{p^n}$.
+
+\begin{theorem}[Unicité à isomorphisme près]
+\label{thm:unicite-Fpn}
+Soient $K$ et $L$ deux corps finis de cardinal $p^n$. Alors $K$ et $L$
+sont isomorphes en tant que corps.
+\end{theorem}
+
+\begin{proof}
+Par la Proposition~\ref{prop:element-primitif}, il existe $\alpha \in K$
+tel que $K = \F_p(\alpha)$ et le polynôme minimal $m_\alpha$ de $\alpha$
+sur $\F_p$ est de degré $n$. D'après la Proposition~\ref{prop:XpnX-irreductibles},
+tout polynôme irréductible de degré $n$ sur $\F_p$ divise
+$X^{p^n}-X$. En particulier, $m_\alpha$ divise $X^{p^n}-X$.
+
+Considérons le corps $L$. Comme $|L|=p^n$, le Corollaire~\ref{cor:pn-frobenius}
+implique que tout élément de $L$ est racine de $X^{p^n}-X$, donc le polynôme
+$m_\alpha$ se factorise dans $L[X]$ et admet une racine $\beta \in L$.
+
+Par définition du polynôme minimal, l'application
+\[
+\Phi : \F_p[X]/(m_\alpha) \longrightarrow \F_p(\alpha),\quad \overline{P(X)}
+\longmapsto P(\alpha)
+\]
+est un isomorphisme de corps, et de même
+\[
+\Psi : \F_p[X]/(m_\alpha) \longrightarrow \F_p(\beta),\quad \overline{P(X)}
+\longmapsto P(\beta)
+\]
+en est un. On obtient donc un isomorphisme
+\[
+\theta : \F_p(\alpha) \longrightarrow \F_p(\beta),\quad \alpha \longmapsto \beta.
+\]
+
+Or $\F_p(\alpha) = K$ (Proposition~\ref{prop:element-primitif}) et
+$\F_p(\beta)$ est un sous-corps de $L$ contenant $\F_p$. Son cardinal vaut
+$p^{\deg(m_\alpha)} = p^n$, donc $\F_p(\beta)$ est de cardinal $p^n$.
+Comme $L$ est lui-même de cardinal $p^n$, on en déduit
+$\F_p(\beta) = L$. L'isomorphisme $\theta$ est donc un isomorphisme de
+corps $K \simeq L$.
+\end{proof}
+
+Le Théorème~\ref{thm:unicite-Fpn}, combiné à la construction par quotient
+$\F_p[X]/(m(X))$ (Corollaire~\ref{cor:irreductible-degre-n} et
+Proposition~\ref{prop:corps-quotient}), donne la version complète du 
+Théorème~\ref{thm:moore} utilisé dans le corps du texte : pour tout
+$q=p^n$, il existe un corps fini de cardinal $q$, unique à isomorphisme près,
+et l'on peut le noter sans ambiguïté $\F_{p^n}$.
+
+\begin{corollary}
+En particulier, pour tout entier $n \ge 1$, il existe un unique (à isomorphisme
+près) corps fini d'ordre $2^n$, noté $\F_{2^n}$. La notation $\F_{2^n}$ utilisée
+dans le reste du document est donc entièrement justifiée.
+\end{corollary}
+
+
+\newpage
+
+\addcontentsline{toc}{section}{Références}
 \begin{thebibliography}{9}
 
 \bibitem{shamir1979share}
