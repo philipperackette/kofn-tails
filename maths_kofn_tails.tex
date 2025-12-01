@@ -174,6 +174,13 @@ N,\,N_i & Nonces AES-GCM \\
 \newpage
 
 %=========================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%=========================================================
+%=========================================================
+
+
+%=========================================================
 \section{Cadre algébrique de base}
 
 \subsection{Mots binaires et encodage}
@@ -234,31 +241,104 @@ Dans la suite du document :
 
 \subsection{Corps finis et polynômes}
 
-\begin{definition}[Corps fini et polynômes]
+\begin{definition}[Corps fini premier]
 Soit $P$ un nombre premier. On note
 \[
   \F_P = \Z/P\Z
 \]
-le corps fini à $P$ éléments, et
+le corps fini à $P$ éléments. Les opérations arithmétiques dans $\F_P$ sont effectuées modulo $P$.
+\end{definition}
+
+\begin{definition}[Anneau de polynômes]
+Soit $\mathbb{K}$ un corps commutatif. On note
 \[
-  \F_P[X]
+  \mathbb{K}[X]
 \]
-l'anneau des polynômes à coefficients dans $\F_P$. On pose
+l'anneau des polynômes à coefficients dans $\mathbb{K}$.
+\end{definition}
+
+\begin{definition}[Espace des polynômes de degré borné]
+Soit $\mathbb{K}$ un corps commutatif et $k \in \N$. On pose
 \[
   \mathcal{P}_{<k}
-  = \{f\in\F_P[X] \mid \deg(f)<k\}.
+  = \{f\in\mathbb{K}[X] \mid \deg(f)<k\}.
 \]
 \end{definition}
 
-\begin{lemma}[Nombre de racines]
-Soit $f\in\F_P[X]$ un polynôme non nul de degré $d\ge 0$. Alors $f$ admet
-au plus $d$ racines dans $\F_P$.
+\begin{definition}[Division euclidienne des polynômes]
+Soit $\mathbb{K}$ un corps. Pour tous $A(X), B(X) \in \mathbb{K}[X]$ avec $B(X) \neq 0$, il existe un unique couple $(Q(X), R(X))$ tel que :
+\[
+A(X) = B(X)Q(X) + R(X) \quad \text{avec} \quad \deg(R(X)) < \deg(B(X)) \quad \text{ou} \quad R(X) = 0.
+\]
+\end{definition}
+
+\subsection{Propriétés algébriques fondamentales}
+
+\begin{proposition}[Anneau principal des polynômes]
+\label{prop:anneau-principal}
+Soit $\mathbb{K}$ un corps. Alors $\mathbb{K}[X]$ est un anneau principal, c'est-à-dire que tout idéal de $\mathbb{K}[X]$ est engendré par un unique polynôme unitaire (le générateur unitaire de l'idéal).
+\end{proposition}
+
+\begin{proof}
+Soit $J$ un idéal non nul de $\mathbb{K}[X]$. Considérons l'ensemble :
+\[
+D = \{\deg(P(X)) \mid P(X) \in J,\ P(X) \neq 0\}.
+\]
+Comme $J$ est non nul, $D$ est une partie non vide de $\mathbb{N}$. Soit $d_0$ le plus petit élément de $D$, et soit $P_0(X) \in J$ non nul de degré $d_0$. On peut supposer $P_0(X)$ unitaire (quitte à le normaliser). Montrons que $J = (P_0(X))$.
+
+Soit $A(X) \in J$. Par division euclidienne, il existe $Q(X), R(X) \in \mathbb{K}[X]$ tels que :
+\[
+A(X) = P_0(X)Q(X) + R(X) \quad \text{avec} \quad \deg(R(X)) < \deg(P_0(X)) \quad \text{ou} \quad R(X) = 0.
+\]
+Or $R(X) = A(X) - P_0(X)Q(X) \in J$ (car $A(X), P_0(X) \in J$). Si $R(X) \neq 0$, alors $\deg(R(X)) < d_0$, ce qui contredit la minimalité de $d_0$. Donc $R(X) = 0$ et $A(X) = P_0(X)Q(X) \in (P_0(X))$. Ainsi $J \subset (P_0(X))$. L'inclusion inverse est évidente car $P_0(X) \in J$. Donc $J = (P_0(X))$.
+\end{proof}
+
+\begin{lemma}[Nombre de racines d'un polynôme]
+Soit $\mathbb{K}$ un corps et soit $f\in\mathbb{K}[X]$ un polynôme non nul de degré $d\ge 0$. Alors $f$ admet au plus $d$ racines dans $\mathbb{K}$.
 \end{lemma}
 
 \begin{proof}
-Par récurrence sur $d$. Le cas $d=0$ est immédiat (un polynôme constant non nul n'a aucune racine). Pour $d\ge 1$, si $f$ a une racine $a\in\F_P$, alors par division euclidienne dans $\F_P[X]$, on peut écrire $f(X) = (X-a)g(X)$ avec $g\in\F_P[X]$ de degré $d-1$. En effet, la division de $f$ par $(X-a)$ donne un quotient $g$ et un reste $r$ de degré $<1$, donc constant. En évaluant en $X=a$, on obtient $f(a)=0 = 0\cdot g(a) + r$, donc $r=0$.
+Par récurrence sur $d$. Le cas $d=0$ est immédiat (un polynôme constant non nul n'a aucune racine). Pour $d\ge 1$, si $f$ a une racine $a\in\mathbb{K}$, alors par division euclidienne dans $\mathbb{K}[X]$, on peut écrire $f(X) = (X-a)g(X)$ avec $g\in\mathbb{K}[X]$ de degré $d-1$. En effet, la division de $f$ par $(X-a)$ donne un quotient $g$ et un reste $r$ de degré $<1$, donc constant. En évaluant en $X=a$, on obtient $f(a)=0 = 0\cdot g(a) + r$, donc $r=0$.
 
-Soit maintenant $b\neq a$ une autre racine de $f$. Alors $0=f(b)=(b-a)g(b)$. Comme $b-a\neq 0$ et que $\F_P$ est un corps (donc intègre), on en déduit $g(b)=0$. Ainsi, toutes les racines de $f$ distinctes de $a$ sont des racines de $g$. Par hypothèse de récurrence, $g$ a au plus $d-1$ racines, donc $f$ a au plus $d$ racines.
+Soit maintenant $b\neq a$ une autre racine de $f$. Alors $0=f(b)=(b-a)g(b)$. Comme $b-a\neq 0$ et que $\mathbb{K}$ est un corps (donc intègre), on en déduit $g(b)=0$. Ainsi, toutes les racines de $f$ distinctes de $a$ sont des racines de $g$. Par hypothèse de récurrence, $g$ a au plus $d-1$ racines, donc $f$ a au plus $d$ racines.
+\end{proof}
+
+\subsection{Construction de corps finis par extension}
+
+\begin{proposition}[Quotient par un idéal maximal]
+\label{prop:quotient-maximal}
+Soit $A$ un anneau commutatif unitaire et $I$ un idéal maximal de $A$. Alors l'anneau quotient $A/I$ est un corps.
+\end{proposition}
+
+\begin{proof}
+Soit $\overline{x} \neq 0$ dans $A/I$. Alors $x \notin I$. Considérons l'idéal $J = I + (x)$ (l'idéal engendré par $I$ et $x$). Puisque $I$ est maximal et $I \subsetneq J$ (car $x \in J$ mais $x \notin I$), on a nécessairement $J = A$.
+
+Ainsi, il existe $i \in I$ et $a \in A$ tels que :
+\[
+1 = i + a \cdot x
+\]
+En passant au quotient dans $A/I$, on obtient :
+\[
+\overline{1} = \overline{i} + \overline{a} \cdot \overline{x} = 0 + \overline{a} \cdot \overline{x} = \overline{a} \cdot \overline{x}
+\]
+Donc $\overline{a}$ est l'inverse de $\overline{x}$ dans $A/I$. Ainsi, tout élément non nul de $A/I$ est inversible, et $A/I$ est un corps.
+\end{proof}
+
+\begin{remark}[Construction de corps finis par quotient]
+Soit $\mathbb{F}$ un corps commutatif (par exemple $\F_p$ pour $p$ premier). Soit $m(X) \in \mathbb{F}[X]$ un polynôme irréductible de degré $d$. Alors l'anneau quotient $\mathbb{F}[X]/(m(X))$ est un corps commutatif de cardinal $|\mathbb{F}|^d$. Les éléments de ce corps sont les polynômes de degré au plus $d-1$ à coefficients dans $\mathbb{F}$. Les opérations d'addition et de multiplication sont effectuées modulo $m(X)$. Cette construction est fondamentale pour de nombreux schémas cryptographiques, notamment AES qui utilise $\F_{2^8} = \F_2[X]/(X^8 + X^4 + X^3 + X + 1)$.
+\end{remark}
+
+\begin{proposition}[Corps obtenu par quotient avec un polynôme irréductible]
+\label{prop:corps-quotient}
+Soit $\mathbb{K}$ un corps commutatif et soit $m(X) \in \mathbb{K}[X]$ un polynôme irréductible. Alors l'anneau quotient $\mathbb{K}[X]/(m(X))$ est un corps.
+\end{proposition}
+
+\begin{proof}
+Soit $I = (m(X))$ l'idéal engendré par $m(X)$. 
+
+Puisque $\mathbb{K}[X]$ est principal (Proposition~\ref{prop:anneau-principal}), et que $m(X)$ est irréductible, l'idéal $I$ est maximal. En effet, soit $J$ un idéal tel que $I \subset J \subset \mathbb{K}[X]$. Alors $J = (p(X))$ pour un certain $p(X) \in \mathbb{K}[X]$. Puisque $m(X) \in J$, on a $p(X) \mid m(X)$. Mais $m(X)$ est irréductible, donc soit $p(X)$ est une constante non nulle (auquel cas $J = \mathbb{K}[X]$), soit $p(X)$ est associé à $m(X)$ (auquel cas $J = I$). Ainsi, $I$ est maximal.
+
+Par la Proposition~\ref{prop:quotient-maximal}, le quotient $\mathbb{K}[X]/I$ est un corps.
 \end{proof}
 
 \subsection{Théorèmes arithmétiques fondamentaux}
@@ -315,7 +395,10 @@ auc + bvc = c
 Par hypothèse, $a$ divise $bc$, donc $a$ divise $bvc$. De plus, $a$ divise évidemment $auc$. Donc $a$ divise la somme $auc + bvc = c$.
 \end{proof}
 
-%=========================================================
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Secret maître et schéma de Shamir}
 
 \subsection{Secret maître}
