@@ -136,6 +136,7 @@ identifié par l'empreinte SHA-256 ci-dessus.
 \lVert x\rVert & Longueur en bits de $x\in\bin^*$ \\
 x\concat y & Concaténation de mots binaires \\
 x\xor y & XOR bit-à-bit ($x,y$ de même longueur) \\
+\gcd(a,b) & Plus grand commun diviseur de $a$ et $b$ \\
 \mathrm{val}_{\mathrm{be}}(b) & Encodage big-endian $b\in\bin^t \to \{0,\dots,2^t-1\}$ \\
 \mathrm{val}_{\mathrm{le}}(b) & Encodage little-endian $b\in\bin^t \to \{0,\dots,2^t-1\}$ \\
 S \in \bin^{256} & Secret maître (32 octets) \\
@@ -197,6 +198,76 @@ Cette section rassemble les notions d'algèbre abstraite et d'arithmétique modu
 \end{itemize}
 
 \subsection{Arithmétique modulaire et groupe multiplicatif $(\Z/n\Z)^\times$}
+
+\begin{theorem}[Identité de Bézout (lemme de Bachet-Bézout)]
+\label{thm:bezout}
+Soient $a, b \in \Z$ deux entiers non tous les deux nuls. Il existe $u, v \in \Z$ tels que :
+\[
+au + bv = \gcd(a, b)
+\]
+\end{theorem}
+
+\begin{proof}[Preuve par propriétés élémentaires de divisibilité]
+Soit $d = \gcd(a, b)$. Considérons l'ensemble :
+\[
+S = \{ax + by \mid x, y \in \Z \text{ et } ax + by > 0\}
+\]
+
+\textbf{1. L'ensemble $S$ est non vide} :
+Puisque $a$ et $b$ ne sont pas tous deux nuls, au moins l'un des nombres $|a|$ ou $|b|$ est strictement positif. On a donc :
+- Si $a \neq 0$, alors $a\cdot 1 + b\cdot 0 = |a| > 0$, donc $|a| \in S$.
+- Si $b \neq 0$, alors $a\cdot 0 + b\cdot 1 = |b| > 0$, donc $|b| \in S$.
+
+\textbf{2. Soit $m$ le plus petit élément de $S$} :
+Par le principe du bon ordre (tout ensemble non vide d'entiers positifs possède un plus petit élément), $S$ a un plus petit élément que nous notons $m$. Par définition de $S$, il existe $u_0, v_0 \in \Z$ tels que :
+\[
+m = au_0 + bv_0 > 0
+\]
+
+\textbf{3. $m$ divise $a$ et $b$} :
+Effectuons la division euclidienne de $a$ par $m$ : $a = mq + r$ avec $0 \le r < m$.
+Alors :
+\[
+r = a - mq = a - (au_0 + bv_0)q = a(1 - u_0q) + b(-v_0q)
+\]
+Si $r > 0$, alors $r \in S$ et $r < m$, ce qui contredit la minimalité de $m$. Donc $r = 0$, et $m$ divise $a$.
+De même, en divisant $b$ par $m$, on montre que $m$ divise $b$.
+
+\textbf{4. $m$ est le plus grand diviseur commun} :
+Puisque $m$ divise $a$ et $b$, et que $m = au_0 + bv_0$, tout diviseur commun de $a$ et $b$ divise aussi $m$.
+En effet, si $d'$ divise $a$ et $b$, alors $a = d'a'$ et $b = d'b'$, donc :
+\[
+m = d'a'u_0 + d'b'v_0 = d'(a'u_0 + b'v_0)
+\]
+Donc $d'$ divise $m$.
+
+En particulier, $d = \gcd(a, b)$ divise $m$. Mais puisque $m$ divise $a$ et $b$, et que $d$ est le plus grand diviseur commun (au sens de la divisibilité), on a $m \le d$. Comme $d$ divise $m$, on a aussi $d \le m$. Donc $m = d$.
+
+\textbf{5. Conclusion} :
+Nous avons montré que le plus petit élément positif $m$ de $S$ est égal à $\gcd(a, b)$, et qu'il s'écrit $m = au_0 + bv_0$ pour certains $u_0, v_0 \in \Z$.
+Ainsi, $\gcd(a, b) = au_0 + bv_0$.
+\end{proof}
+
+\begin{remark}[Nombres premiers entre eux]
+Deux entiers $a$ et $b$ sont dits \emph{premiers entre eux} (ou \emph{copremiers}) si et seulement si $\gcd(a, b) = 1$. Cette propriété est fondamentale pour l'inversibilité modulo $n$ et pour le théorème d'Euler.
+\end{remark}
+
+\begin{theorem}[Théorème de Gauss (lemme d'Euclide)]
+\label{thm:gauss-div}
+Soient $a, b, c$ des entiers. Si $a$ et $b$ sont premiers entre eux et $a$ divise $bc$, alors $a$ divise $c$.
+\end{theorem}
+
+\begin{proof}
+Puisque $\gcd(a,b) = 1$, par l'identité de Bézout, il existe des entiers $u,v$ tels que :
+\[
+au + bv = 1
+\]
+Multiplions cette égalité par $c$ :
+\[
+auc + bvc = c
+\]
+Par hypothèse, $a$ divise $bc$, donc $a$ divise $bvc$. De plus, $a$ divise évidemment $auc$. Donc $a$ divise la somme $auc + bvc = c$.
+\end{proof}
 
 \begin{definition}[Anneau $\Z/n\Z$ et groupe multiplicatif $(\Z/n\Z)^\times$]
 Soit $n \in \N^*$. L'anneau $\Z/n\Z$ est l'ensemble $\{0,1,\dots,n-1\}$ muni des opérations $+$ et $\cdot$ modulo $n$.
@@ -302,22 +373,7 @@ a^{p-1} \equiv 1 \pmod{p}
 C'est un cas particulier du théorème d'Euler, car pour $p$ premier, $\varphi(p) = p-1$.
 \end{proof}
 
-\begin{theorem}[Théorème de Gauss (lemme d'Euclide)]
-\label{thm:gauss-div}
-Soient $a, b, c$ des entiers. Si $a$ et $b$ sont premiers entre eux et $a$ divise $bc$, alors $a$ divise $c$.
-\end{theorem}
 
-\begin{proof}
-Puisque $\gcd(a,b) = 1$, par l'identité de Bézout, il existe des entiers $u,v$ tels que :
-\[
-au + bv = 1
-\]
-Multiplions cette égalité par $c$ :
-\[
-auc + bvc = c
-\]
-Par hypothèse, $a$ divise $bc$, donc $a$ divise $bvc$. De plus, $a$ divise évidemment $auc$. Donc $a$ divise la somme $auc + bvc = c$.
-\end{proof}
 
 \begin{proposition}[Algorithme d'Euclide étendu et inverse modulaire]
 \label{prop:euclide-etendu}
@@ -1479,11 +1535,6 @@ La clé publique est $(n,e)$ et la clé privée est $(n,d)$.
 \end{definition}
 
 
-
-
-
-
-\
 \begin{theorem}[Correction du chiffrement RSA]
 \label{thm:rsa-correct}
 Pour tout message $M \in \{0,\dots,n-1\}$ et toute clé RSA valide $(n,e,d)$, on a :
