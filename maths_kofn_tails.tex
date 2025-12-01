@@ -23,6 +23,7 @@
 \usetikzlibrary{arrows.meta,positioning}
 \usepackage{hyperref}
 \usepackage{url}
+\usepackage{thmtools}
 
 % Supprimer l'indentation de tous les paragraphes
 \setlength{\parindent}{0pt}
@@ -199,6 +200,7 @@ Cette section rassemble les notions d'algèbre abstraite et d'arithmétique modu
 
 \subsection{Arithmétique modulaire et groupe multiplicatif $(\Z/n\Z)^\times$}
 
+
 \begin{theorem}[Identité de Bézout (lemme de Bachet-Bézout)]
 \label{thm:bezout}
 Soient $a, b \in \Z$ deux entiers non tous les deux nuls. Il existe $u, v \in \Z$ tels que :
@@ -207,46 +209,58 @@ au + bv = \gcd(a, b)
 \]
 \end{theorem}
 
-\begin{proof}[Preuve par propriétés élémentaires de divisibilité]
+\begin{proof}
 Soit $d = \gcd(a, b)$. Considérons l'ensemble :
 \[
 S = \{ax + by \mid x, y \in \Z \text{ et } ax + by > 0\}
 \]
 
-\textbf{1. L'ensemble $S$ est non vide} :
-Puisque $a$ et $b$ ne sont pas tous deux nuls, au moins l'un des nombres $|a|$ ou $|b|$ est strictement positif. On a donc :
-- Si $a \neq 0$, alors $a\cdot 1 + b\cdot 0 = |a| > 0$, donc $|a| \in S$.
-- Si $b \neq 0$, alors $a\cdot 0 + b\cdot 1 = |b| > 0$, donc $|b| \in S$.
+\medskip
 
-\textbf{2. Soit $m$ le plus petit élément de $S$} :
-Par le principe du bon ordre (tout ensemble non vide d'entiers positifs possède un plus petit élément), $S$ a un plus petit élément que nous notons $m$. Par définition de $S$, il existe $u_0, v_0 \in \Z$ tels que :
+\noindent\textbf{L'ensemble $S$ est non vide.} 
+Puisque $a$ et $b$ ne sont pas tous deux nuls, au moins l'un des nombres $|a|$ ou $|b|$ est strictement positif. 
+Ainsi, si $a \neq 0$, alors $a\cdot 1 + b\cdot 0 = |a| > 0$, donc $|a| \in S$ ; 
+si $b \neq 0$, alors $a\cdot 0 + b\cdot 1 = |b| > 0$, donc $|b| \in S$.
+
+\medskip
+
+\noindent\textbf{Soit $m$ le plus petit élément de $S$.} 
+Par le principe du bon ordre (tout ensemble non vide d'entiers positifs possède un plus petit élément), 
+$S$ a un plus petit élément que nous notons $m$. Par définition de $S$, il existe $u_0, v_0 \in \Z$ tels que :
 \[
-m = au_0 + bv_0 > 0
+m = au_0 + bv_0 > 0.
 \]
 
-\textbf{3. $m$ divise $a$ et $b$} :
+\medskip
+
+\noindent\textbf{$m$ divise $a$ et $b$.} 
 Effectuons la division euclidienne de $a$ par $m$ : $a = mq + r$ avec $0 \le r < m$.
 Alors :
 \[
-r = a - mq = a - (au_0 + bv_0)q = a(1 - u_0q) + b(-v_0q)
+r = a - mq = a - (au_0 + bv_0)q = a(1 - u_0q) + b(-v_0q).
 \]
 Si $r > 0$, alors $r \in S$ et $r < m$, ce qui contredit la minimalité de $m$. Donc $r = 0$, et $m$ divise $a$.
 De même, en divisant $b$ par $m$, on montre que $m$ divise $b$.
 
-\textbf{4. $m$ est le plus grand diviseur commun} :
+\medskip
+
+\noindent\textbf{$m$ est le plus grand diviseur commun.} 
 Puisque $m$ divise $a$ et $b$, et que $m = au_0 + bv_0$, tout diviseur commun de $a$ et $b$ divise aussi $m$.
 En effet, si $d'$ divise $a$ et $b$, alors $a = d'a'$ et $b = d'b'$, donc :
 \[
-m = d'a'u_0 + d'b'v_0 = d'(a'u_0 + b'v_0)
+m = d'a'u_0 + d'b'v_0 = d'(a'u_0 + b'v_0),
 \]
-Donc $d'$ divise $m$.
+et $d'$ divise $m$.
 
 En particulier, $d = \gcd(a, b)$ divise $m$. Mais puisque $m$ divise $a$ et $b$, et que $d$ est le plus grand diviseur commun (au sens de la divisibilité), on a $m \le d$. Comme $d$ divise $m$, on a aussi $d \le m$. Donc $m = d$.
 
-\textbf{5. Conclusion} :
+\medskip
+
+\noindent\textbf{Conclusion.} 
 Nous avons montré que le plus petit élément positif $m$ de $S$ est égal à $\gcd(a, b)$, et qu'il s'écrit $m = au_0 + bv_0$ pour certains $u_0, v_0 \in \Z$.
 Ainsi, $\gcd(a, b) = au_0 + bv_0$.
 \end{proof}
+
 
 \begin{remark}[Nombres premiers entre eux]
 Deux entiers $a$ et $b$ sont dits \emph{premiers entre eux} (ou \emph{copremiers}) si et seulement si $\gcd(a, b) = 1$. Cette propriété est fondamentale pour l'inversibilité modulo $n$ et pour le théorème d'Euler.
@@ -665,21 +679,39 @@ Puisque $\Kpolys$ est principal (Proposition~\ref{prop:anneau-principal}), et qu
 Par la Proposition~\ref{prop:quotient-maximal}, le quotient $\Kpolys/I$ est un corps.
 \end{proof}
 
-\begin{theorem}[Théorème de Moore]
+\begin{theorem}[Théorème de Moore (admis)]
 \label{thm:moore}
-Pour tout $q = p^n$ avec $p$ premier et $n \ge 1$, il existe un corps fini de cardinal $q$, unique à isomorphisme près.
+Pour tout $q = p^n$ avec $p$ premier et $n \ge 1$, il existe un corps fini de
+cardinal $q$, unique à isomorphisme près. On note alors $\F_{p^n}$ n'importe
+quel corps fini de cardinal $p^n$.
 \end{theorem}
 
-\begin{proof}[Idée de la preuve]
-\textbf{Existence} : Soit $\F_p$ le corps premier à $p$ éléments. Soit $m(X) \in \F_p[X]$ un polynôme irréductible de degré $n$ (un tel polynôme existe toujours). Alors par la Proposition~\ref{prop:corps-quotient}, l'anneau quotient $\F_p[X]/(m(X))$ est un corps. Comme $\F_p[X]/(m(X))$ est un $\F_p$-espace vectoriel de dimension $n$, il contient exactement $p^n = q$ éléments.
+\begin{proof}[Commentaire et esquisse de preuve]
+\textbf{Existence.}
+En pratique, on construit un corps de cardinal $p^n$ comme quotient
+$\F_p[X]/(m(X))$, où $m(X) \in \F_p[X]$ est un polynôme irréductible de degré $n$
+(on admet ici l'existence d'un tel polynôme). Par la
+Proposition~\ref{prop:corps-quotient}, ce quotient est un corps. Vu comme
+$\F_p$-espace vectoriel de base $1,\overline{X},\dots,\overline{X}^{n-1}$, il a
+donc exactement $p^n$ éléments.
 
-\textbf{Unicité} : Soient $K$ et $L$ deux corps finis de cardinal $q = p^n$. Alors $K$ et $L$ ont pour caractéristique $p$ (car un corps fini a pour cardinal une puissance de sa caractéristique). Le sous-corps premier de $K$ et de $L$ est isomorphe à $\F_p$. Notons $\F_p$ ce sous-corps commun.
+\medskip
+\noindent\textbf{Unicité (admise).}
+Une preuve complète du fait que tout corps fini de cardinal $p^n$ est isomorphe
+à tout autre repose sur quelques notions de théorie des corps que nous ne
+développons pas ici :
+\begin{itemize}
+  \item la \emph{caractéristique} d'un corps fini, et l'existence d'un sous-corps
+        premier isomorphe à $\F_p$ ;
+  \item la description des corps finis comme extensions finies de $\F_p$ de
+        degré $n$ ;
+  \item l'endomorphisme de Frobenius $x \mapsto x^p$, qui implique que tout
+        élément d'un corps fini de cardinal $p^n$ vérifie $x^{p^n} = x$ ;
+  \item le fait que $X^{p^n} - X \in \F_p[X]$ a pour racines exactement les
+        éléments de tout corps fini de cardinal $p^n$, et que son corps de
+        décomposition sur $\F_p$ est unique à isomorphisme près.
+\end{itemize}
 
-Soit $\alpha$ un élément primitif de $K$ (générateur du groupe multiplicatif $K^\times$). Soit $m_\alpha(X) \in \F_p[X]$ son polynôme minimal sur $\F_p$. Alors $\deg(m_\alpha) = n$ et $K \simeq \F_p[X]/(m_\alpha(X))$.
-
-De même, soit $\beta$ un élément primitif de $L$ et $m_\beta(X)$ son polynôme minimal. Comme $m_\alpha$ et $m_\beta$ sont deux polynômes irréductibles de degré $n$ sur $\F_p$, ils sont tous deux facteurs du polynôme $X^{p^n} - X$ (qui se décompose en produit de tous les polynômes irréductibles de degré divisant $n$). En particulier, les corps de rupture $\F_p[X]/(m_\alpha(X))$ et $\F_p[X]/(m_\beta(X))$ sont isomorphes (ce sont des corps de décomposition du même polynôme $X^{p^n} - X$).
-
-Ainsi, $K \simeq \F_p[X]/(m_\alpha(X)) \simeq \F_p[X]/(m_\beta(X)) \simeq L$.
 \end{proof}
 
 \begin{remark}[Construction pratique]
@@ -689,12 +721,7 @@ En pratique, pour construire $\F_{p^n}$, on choisit un polynôme irréductible $
 \]
 Les éléments sont les polynômes de degré au plus $n-1$ à coefficients dans $\F_p$, et les opérations sont effectuées modulo $m(X)$.
 
-Cette construction est fondamentale pour de nombreux schémas cryptographiques :
-\begin{itemize}
-  \item AES utilise $\F_{2^8} = \F_2[X]/(X^8 + X^4 + X^3 + X + 1)$
-  \item Les courbes elliptiques utilisent souvent des extensions de $\F_p$
-  \item Certains schémas de partage de secret utilisent des corps finis non premiers
-\end{itemize}
+Cette construction est fondamentale pour de nombreux schémas cryptographiques, par exemple AES utilise $\F_{2^8} = \F_2[X]/(X^8 + X^4 + X^3 + X + 1)$.
 \end{remark}
 
 \begin{example}[Corps $\F_4$ comme $\FdeuxQuot$]
@@ -900,7 +927,7 @@ $f(x_j)=y_j$ pour tout $j\in\{1,\dots,k\}$.
 \end{theorem}
 
 \begin{proof}
-Par le lemme sur le nombre de racines, deux polynômes de degré $<k$
+Par le lemme~\ref{lem:racines-poly} sur le nombre de racines, deux polynômes de degré $<k$
 coïncidant en $k$ points distincts sont égaux. L'existence s'obtient par la
 formule d'interpolation de Lagrange :
 \[
