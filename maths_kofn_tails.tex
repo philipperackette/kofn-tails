@@ -42,6 +42,7 @@
 \newtheorem{definition}[theorem]{Définition}
 \newtheorem{propriete}[theorem]{Propriété}
 \newtheorem{remark}[theorem]{Remarque}
+\newtheorem{example}[theorem]{Exemple}
 
 % ============================
 % Raccourcis usuels
@@ -56,6 +57,11 @@
 \newcommand{\bin}{\{0,1\}}
 \newcommand{\concat}{\,\Vert\,}
 \newcommand{\xor}{\oplus}
+
+% Macros pour éviter les problèmes de crochets dans les arguments optionnels
+\newcommand{\FdeuxX}{\F_2[X]}  % F_2[X]
+\newcommand{\FdeuxQuot}{\F_2[X]/(X^2+X+1)}  % F_2[X]/(X^2+X+1)
+\newcommand{\Kpolys}{\mathbb{K}[X]}  % Anneau de polynômes
 
 \DeclareMathOperator{\HKDF}{HKDF}
 \DeclareMathOperator{\PBKDF}{PBKDF2}
@@ -174,9 +180,541 @@ N,\,N_i & Nonces AES-GCM \\
 \newpage
 
 %=========================================================
+
+
+
+%=========================================================
 \section{Cadre algébrique de base}
 
-\subsection{Mots binaires et encodage}
+\subsection*{Préambule et motivation}
+
+Cette section rassemble les notions d'algèbre abstraite et d'arithmétique modulaire utilisées dans la suite du document. Nous suivons une progression logique : 
+\begin{itemize}
+  \item L'\textbf{arithmétique modulaire} (entiers, pgcd, inverses) définit le socle concret pour $\Z/n\Z$ et prépare $\F_p = \Z/p\Z$.
+  \item Les \textbf{théorèmes d'isomorphisme} généralisent ces structures, s'appuyant sur les exemples concrets.
+  \item Les \textbf{corps finis et extensions} construisent sur les deux précédents (utilisation des isomorphismes pour l'unicité de $\F_p$).
+  \item Les \textbf{mots binaires et encodages} formalisent la conversion vers les représentations cryptographiques.
+\end{itemize}
+
+\subsection{Arithmétique modulaire et groupe multiplicatif $(\Z/n\Z)^\times$}
+
+\begin{definition}[Anneau $\Z/n\Z$ et groupe multiplicatif $(\Z/n\Z)^\times$]
+Soit $n \in \N^*$. L'anneau $\Z/n\Z$ est l'ensemble $\{0,1,\dots,n-1\}$ muni des opérations $+$ et $\cdot$ modulo $n$.
+
+Le groupe multiplicatif $(\Z/n\Z)^\times$ est l'ensemble des éléments inversibles de $\Z/n\Z$ :
+\[
+(\Z/n\Z)^\times = \{a \in \{0,1,\dots,n-1\} \mid \gcd(a,n)=1\}.
+\]
+\end{definition}
+
+\begin{remark}[Inversibilité modulo $n$]
+L'élément $a \in \Z/n\Z$ est inversible si et seulement si $\gcd(a,n)=1$. En effet, si $\gcd(a,n)=1$, alors par l'identité de Bézout, il existe $u,v$ tels que $au + nv = 1$, donc $au \equiv 1 \pmod{n}$. Réciproquement, si $a$ est inversible, il existe $b$ tel que $ab \equiv 1 \pmod{n}$, donc $ab  -kn = 1$ pour un certain $k$, ce qui implique que tout diviseur commun à $a$ et $n$ divise 1, donc $\gcd(a,n)=1$.
+\end{remark}
+
+\begin{definition}[Indicatrice d'Euler]
+L'indicatrice d'Euler $\varphi(n)$ est définie pour tout entier $n \geq 1$ comme le nombre d'entiers compris entre $1$ et $n$ qui sont premiers avec $n$ :
+\[
+\varphi(n) = \#\{k \in \{1, 2, \dots, n\} \mid \gcd(k, n) = 1\}
+\]
+\end{definition}
+
+\begin{proposition}[Valeur de $\varphi(n)$ pour $n = pq$]
+\label{prop:phi-pq}
+Si $p$ et $q$ sont deux nombres premiers distincts et $n = pq$, alors :
+\[
+\varphi(n) = (p-1)(q-1)
+\]
+\end{proposition}
+
+\begin{proof}
+Parmi les $n = pq$ entiers de $1$ à $n$, les entiers qui ne sont pas premiers avec $n$ sont :
+\begin{itemize}
+\item Les multiples de $p$ : $p, 2p, 3p, \dots, qp$ → il y en a $q$
+\item Les multiples de $q$ : $q, 2q, 3q, \dots, pq$ → il y en a $p$
+\end{itemize}
+L'entier $pq$ a été compté deux fois. Par le principe d'inclusion-exclusion :
+\[
+\varphi(n) = n - q - p + 1 = pq - p - q + 1 = (p-1)(q-1)
+\]
+\end{proof}
+
+\begin{theorem}[Théorème de Lagrange pour les groupes finis]
+\label{thm:lagrange-groupes}
+Soit $G$ un groupe fini et $H$ un sous-groupe de $G$. Alors l'ordre de $H$ divise l'ordre de $G$ :
+\[
+|H| \ \big|\ |G|
+\]
+En particulier, pour tout $g \in G$, l'ordre de $g$ divise $|G|$.
+\end{theorem}
+
+\begin{proof}
+Considérons la relation d'équivalence sur $G$ définie par :
+\[
+x \sim y \quad \Leftrightarrow \quad x^{-1}y \in H
+\]
+Les classes d'équivalence sont les \emph{classes à gauche} $gH = \{gh : h \in H\}$. 
+
+Pour montrer que toutes les classes à gauche ont le même cardinal que $H$, considérons l'application $f : H \to gH$ définie par $f(h) = gh$. Cette application est :
+\begin{itemize}
+  \item \textbf{Surjective} : Par définition de $gH$
+  \item \textbf{Injective} : Si $gh_1 = gh_2$, alors en multipliant à gauche par $g^{-1}$, on obtient $h_1 = h_2$
+\end{itemize}
+Ainsi, $|gH| = |H|$ pour tout $g \in G$.
+
+Puisque les classes à gauche forment une partition de $G$, on a :
+\[
+|G| = \sum_{\text{classes}} |gH| = (\text{nombre de classes}) \times |H|
+\]
+Donc $|H|$ divise $|G|$.
+
+Pour la deuxième partie, si $g \in G$, considérons le sous-groupe engendré par $g$, noté $\langle g \rangle = \{g^n : n \in \Z\}$. 
+
+Montrons que l'ordre de $\langle g \rangle$ est égal à l'ordre de $g$. Soit $d$ l'ordre de $g$, c'est-à-dire le plus petit entier positif tel que $g^d = e$. Alors les éléments $g^0 = e, g^1, g^2, \dots, g^{d-1}$ sont tous distincts. En effet, si $g^i = g^j$ avec $0 \le i < j < d$, alors $g^{j-i} = e$ avec $0 < j-i < d$, ce qui contredit la minimalité de $d$.
+
+De plus, pour tout $n \in \Z$, par division euclidienne, on peut écrire $n = qd + r$ avec $0 \le r < d$, et donc $g^n = g^{qd+r} = (g^d)^q \cdot g^r = e^q \cdot g^r = g^r$. Ainsi, tout élément de $\langle g \rangle$ est l'un des $g^r$ avec $0 \le r < d$.
+
+Donc $\langle g \rangle = \{e, g, g^2, \dots, g^{d-1}\}$ a exactement $d$ éléments, ce qui signifie que l'ordre du sous-groupe $\langle g \rangle$ est égal à l'ordre de $g$.
+
+Par la première partie du théorème, l'ordre de $\langle g \rangle$ divise $|G|$, donc l'ordre de $g$ divise $|G|$.
+\end{proof}
+
+\begin{theorem}[Théorème d'Euler]
+\label{thm:euler}
+Si $a$ et $n$ sont premiers entre eux, alors :
+\[
+a^{\varphi(n)} \equiv 1 \pmod{n}
+\]
+\end{theorem}
+
+\begin{proof}
+L'ensemble $(\Z/n\Z)^\times$ est un groupe multiplicatif d'ordre $\varphi(n)$. Pour tout $a \in (\Z/n\Z)^\times$, par le théorème de Lagrange (Théorème~\ref{thm:lagrange-groupes}) appliqué au sous-groupe $\langle a \rangle$, l'ordre de $a$ divise $\varphi(n)$. Donc $a^{\varphi(n)} = 1$ dans $(\Z/n\Z)^\times$, c'est-à-dire $a^{\varphi(n)} \equiv 1 \pmod{n}$.
+\end{proof}
+
+\begin{theorem}[Petit théorème de Fermat]
+\label{thm:fermat}
+Si $p$ est premier et $a$ n'est pas divisible par $p$, alors :
+\[
+a^{p-1} \equiv 1 \pmod{p}
+\]
+\end{theorem}
+
+\begin{proof}
+C'est un cas particulier du théorème d'Euler, car pour $p$ premier, $\varphi(p) = p-1$.
+\end{proof}
+
+\begin{theorem}[Théorème de Gauss (lemme d'Euclide)]
+\label{thm:gauss-div}
+Soient $a, b, c$ des entiers. Si $a$ et $b$ sont premiers entre eux et $a$ divise $bc$, alors $a$ divise $c$.
+\end{theorem}
+
+\begin{proof}
+Puisque $\gcd(a,b) = 1$, par l'identité de Bézout, il existe des entiers $u,v$ tels que :
+\[
+au + bv = 1
+\]
+Multiplions cette égalité par $c$ :
+\[
+auc + bvc = c
+\]
+Par hypothèse, $a$ divise $bc$, donc $a$ divise $bvc$. De plus, $a$ divise évidemment $auc$. Donc $a$ divise la somme $auc + bvc = c$.
+\end{proof}
+
+\begin{proposition}[Algorithme d'Euclide étendu et inverse modulaire]
+\label{prop:euclide-etendu}
+Soient $a,n\in\mathbb{Z}$ avec $\gcd(a,n)=1$. L'algorithme d'Euclide étendu calcule des entiers $u,v$ tels que
+\[
+au + nv = 1.
+\]
+En particulier, $u \bmod n$ est l'inverse de $a$ modulo $n$.
+\end{proposition}
+
+\begin{proof}[Algorithme d'Euclide étendu]
+Soient $a \in \{1, 2, \dots, n-1\}$ et $n$ premier avec $a$.
+\begin{enumerate}
+  \item Initialiser : $r_0 \gets n$, $r_1 \gets a$, $u_0 \gets 0$, $u_1 \gets 1$.
+  \item Tant que $r_1 \neq 0$ :
+    \begin{enumerate}
+      \item Calculer $q \gets \lfloor r_0 / r_1 \rfloor$ (division euclidienne).
+      \item Mettre à jour : $r_2 \gets r_0 - q \cdot r_1$, $u_2 \gets u_0 - q \cdot u_1$.
+      \item Décaler : $r_0 \gets r_1$, $r_1 \gets r_2$, $u_0 \gets u_1$, $u_1 \gets u_2$.
+    \end{enumerate}
+  \item Le pgcd est $r_0 = 1$, et l'inverse de $a$ modulo $n$ est $u_0 \bmod n$.
+\end{enumerate}
+\end{proof}
+
+\begin{remark}[À retenir pour RSA]
+Pour RSA, nous utiliserons :
+\begin{itemize}
+  \item Le théorème d'Euler (ou le petit théorème de Fermat) dans la preuve de correction (section~\ref{thm:rsa-correct}).
+  \item L'algorithme d'Euclide étendu pour calculer $d = e^{-1} \bmod \varphi(n)$.
+
+\end{itemize}
+\end{remark}
+
+\subsection{Théorèmes fondamentaux d'isomorphisme}
+
+\begin{definition}[Homomorphisme de groupes]
+Soient $(G,\cdot)$ et $(H,\ast)$ deux groupes. Une application $f: G \to H$ est un \emph{homomorphisme de groupes} si pour tous $g_1, g_2 \in G$ :
+\[
+f(g_1 \cdot g_2) = f(g_1) \ast f(g_2).
+\]
+Le \emph{noyau} de $f$ est $\ker(f) = \{g \in G \mid f(g) = e_H\}$.
+\end{definition}
+
+\begin{definition}[Homomorphisme d'anneaux]
+Soient $(A,+_A,\cdot_A)$ et $(B,+_B,\cdot_B)$ deux anneaux. Une application $f: A \to B$ est un \emph{homomorphisme d'anneaux} si pour tous $a_1, a_2 \in A$ :
+\begin{align*}
+f(a_1 +_A a_2) &= f(a_1) +_B f(a_2) \\
+f(a_1 \cdot_A a_2) &= f(a_1) \cdot_B f(a_2) \\
+f(1_A) &= 1_B
+\end{align*}
+Le \emph{noyau} de $f$ est $\ker(f) = \{a \in A \mid f(a) = 0_B\}$.
+\end{definition}
+
+\begin{theorem}[Premier théorème d'isomorphisme pour les groupes]
+\label{thm:iso-groupes}
+Soit $f: G \to H$ un homomorphisme de groupes. Alors :
+\begin{enumerate}
+  \item $\ker(f)$ est un sous-groupe distingué de $G$
+  \item $\mathrm{Im}(f)$ est un sous-groupe de $H$
+  \item $G/\ker(f) \simeq \mathrm{Im}(f)$
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(1) et (2) sont des vérifications directes. Pour (3), définissons :
+\[
+\overline{f}: G/\ker(f) \to \mathrm{Im}(f),\quad g\ker(f) \mapsto f(g).
+\]
+Vérifions que $\overline{f}$ est bien définie : si $g_1\ker(f) = g_2\ker(f)$, alors $g_1^{-1}g_2 \in \ker(f)$, donc $f(g_1^{-1}g_2) = e_H$, d'où $f(g_1) = f(g_2)$. Ceci montre que $\overline{f}$ ne dépend pas du choix du représentant de la classe $g\ker(f)$, ce qui est possible car $\ker(f)$ est distingué.
+
+Montrons que $\overline{f}$ est un homomorphisme : 
+\[
+\overline{f}((g_1\ker(f))(g_2\ker(f))) = \overline{f}(g_1g_2\ker(f)) = f(g_1g_2) = f(g_1)f(g_2) = \overline{f}(g_1\ker(f))\overline{f}(g_2\ker(f)).
+\]
+
+L'injectivité vient de : si $\overline{f}(g\ker(f)) = e_H$, alors $f(g) = e_H$, donc $g \in \ker(f)$, d'où $g\ker(f) = \ker(f)$ (classe de l'élément neutre).
+
+La surjectivité est immédiate par définition de $\mathrm{Im}(f)$.
+
+Ainsi $\overline{f}$ est un isomorphisme.
+\end{proof}
+
+\begin{definition}[Idéal d'un anneau]
+Un sous-ensemble $I$ d'un anneau $A$ est un \emph{idéal} si :
+\begin{enumerate}
+  \item $(I, +)$ est un sous-groupe de $(A, +)$
+  \item Pour tout $a \in A$ et tout $x \in I$, on a $a \cdot x \in I$ et $x \cdot a \in I$ (stabilité par multiplication par tout élément de l'anneau)
+\end{enumerate}
+\end{definition}
+
+\begin{theorem}[Premier théorème d'isomorphisme pour les anneaux]
+\label{thm:iso-anneaux}
+Soit $f: A \to B$ un homomorphisme d'anneaux. Alors :
+\begin{enumerate}
+  \item $\ker(f)$ est un idéal de $A$
+  \item $\mathrm{Im}(f)$ est un sous-anneau de $B$
+  \item $A/\ker(f) \simeq \mathrm{Im}(f)$
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(1) Montrons que $\ker(f)$ est un idéal. Soient $x, y \in \ker(f)$. Alors $f(x - y) = f(x) - f(y) = 0_B - 0_B = 0_B$, donc $x - y \in \ker(f)$. Soit $a \in A$ et $x \in \ker(f)$. Alors $f(a \cdot x) = f(a) \cdot f(x) = f(a) \cdot 0_B = 0_B$, donc $a \cdot x \in \ker(f)$. De même, $x \cdot a \in \ker(f)$. Ainsi $\ker(f)$ est un idéal.
+
+(2) Soient $b_1, b_2 \in \mathrm{Im}(f)$. Il existe $a_1, a_2 \in A$ tels que $f(a_1) = b_1$ et $f(a_2) = b_2$. Alors $b_1 - b_2 = f(a_1) - f(a_2) = f(a_1 - a_2) \in \mathrm{Im}(f)$ et $b_1 \cdot b_2 = f(a_1) \cdot f(a_2) = f(a_1 \cdot a_2) \in \mathrm{Im}(f)$. De plus, $1_B = f(1_A) \in \mathrm{Im}(f)$. Donc $\mathrm{Im}(f)$ est un sous-anneau de $B$.
+
+(3) Définissons $\overline{f}: A/\ker(f) \to \mathrm{Im}(f)$ par $\overline{f}(a + \ker(f)) = f(a)$. Cette application est bien définie car si $a + \ker(f) = a' + \ker(f)$, alors $a - a' \in \ker(f)$, donc $f(a - a') = 0_B$, soit $f(a) = f(a')$. C'est un homomorphisme d'anneaux car :
+\begin{align*}
+\overline{f}((a + \ker(f)) + (b + \ker(f))) &= \overline{f}(a + b + \ker(f)) = f(a + b) = f(a) + f(b) \\
+&= \overline{f}(a + \ker(f)) + \overline{f}(b + \ker(f)), \\
+\overline{f}((a + \ker(f)) \cdot (b + \ker(f))) &= \overline{f}(a \cdot b + \ker(f)) = f(a \cdot b) = f(a) \cdot f(b) \\
+&= \overline{f}(a + \ker(f)) \cdot \overline(f)(b + \ker(f)), \\
+\overline{f}(1_A + \ker(f)) &= f(1_A) = 1_B.
+\end{align*}
+L'injectivité : si $\overline{f}(a + \ker(f)) = 0_B$, alors $f(a) = 0_B$, donc $a \in \ker(f)$, d'où $a + \ker(f) = 0_A + \ker(f)$. La surjectivité est évidente. Donc $\overline{f}$ est un isomorphisme.
+\end{proof}
+
+\begin{remark}[Utilisation en cryptographie]
+Ces théorèmes justifient plusieurs isomorphismes fondamentaux :
+\begin{itemize}
+  \item $\Z/p\Z \simeq \F_p$ (corps premier) - essentiel pour RSA et Shamir
+  \item $\F_2[X]/(m(X)) \simeq \F_{2^8}$ pour AES - représentation canonique du corps de Galois
+  \item $\Z_\ell \simeq \langle B \rangle$ pour Ed25519 - isomorphisme entre scalaires et points du sous-groupe
+\end{itemize}
+Ils garantissent que différentes représentations d'une même structure algébrique sont équivalentes, ce qui permet de choisir la représentation la plus efficace pour l'implémentation.
+\end{remark}
+
+\subsection{Corps finis et extensions}
+
+\begin{theorem}[Unicité du corps à $p$ éléments]
+\label{thm:unicite-corps-premier}
+Soit $p$ un nombre premier. Alors :
+\begin{enumerate}
+  \item $\F_p = \Z/p\Z$ est un corps à $p$ éléments.
+  \item Tout corps $K$ de cardinal $p$ est isomorphe à $\F_p$.
+  \item Cet isomorphisme est unique : si $\phi_1, \phi_2 : K \to \F_p$ sont deux isomorphismes, alors $\phi_1 = \phi_2$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(1) Puisque $p$ est premier, tout élément non nul de $\Z/p\Z$ est inversible modulo $p$, donc $\Z/p\Z$ est un corps.
+
+(2) Soit $K$ un corps de cardinal $p$. Puisque $K$ est fini, sa caractéristique est un nombre premier. Comme $p \cdot 1_K = 0$ (d'après le théorème de Lagrange appliqué au groupe additif), la caractéristique divise $p$, donc est égale à $p$.
+
+Considérons l'homomorphisme d'anneaux canonique :
+\[
+\iota : \Z \to K,\quad n \mapsto n \cdot 1_K
+\]
+Son noyau est un idéal de $\Z$, donc de la forme $m\Z$ avec $m \ge 0$. Puisque $\iota(p) = p \cdot 1_K = 0$, on a $p \in \ker\iota$, donc $m$ divise $p$. Comme $\iota$ n'est pas l'application nulle (car $\iota(1) = 1_K \neq 0$), on a $m = p$.
+
+Ainsi $\ker\iota = p\Z$. Par le théorème fondamental d'isomorphisme (Théorème~\ref{thm:iso-anneaux}), on obtient un homomorphisme injectif :
+\[
+\overline{\iota} : \Z/p\Z \hookrightarrow K
+\]
+Puisque les deux ensembles ont le même cardinal fini $p$, $\overline{\iota}$ est un isomorphisme.
+
+(3) Soient $\phi_1, \phi_2 : K \to \F_p$ deux isomorphismes. Alors $\psi = \phi_2^{-1} \circ \phi_1$ est un automorphisme de $K$. Pour tout $x \in K$, on a $p \cdot x = 0$, donc $K$ est un $\F_p$-espace vectoriel de dimension $1$. Tout automorphisme de $\F_p$-espaces vectoriels est une multiplication par un scalaire non nul $\lambda \in \F_p^*$. Mais comme $\psi(1) = 1$, on a $\lambda = 1$, donc $\psi = \mathrm{id}_K$, d'où $\phi_1 = \phi_2$.
+\end{proof}
+
+\begin{definition}[Corps fini premier]
+Soit $p$ un nombre premier. On note
+\[
+  \F_p = \Z/p\Z
+\]
+le corps fini à $p$ éléments. Les opérations arithmétiques dans $\F_p$ sont effectuées modulo $p$. Plus précisément, pour $a, b \in \F_p$ :
+\begin{itemize}
+  \item $a + b = (a + b) \bmod p$
+  \item $a \cdot b = (a \cdot b) \bmod p$
+  \item L'inverse additif de $a$ est $p - a$ (modulo $p$)
+  \item L'inverse multiplicatif de $a \neq 0$ est l'unique élément $a^{-1} \in \F_p$ tel que $a \cdot a^{-1} \equiv 1 \pmod{p}$
+\end{itemize}
+\end{definition}
+
+\begin{example}[Corps $\F_5$]
+Le corps $\F_5 = \{0,1,2,3,4\}$ avec les opérations modulo 5.
+
+Tables d'addition et de multiplication :
+\[
+\begin{array}{c|ccccc}
++ & 0 & 1 & 2 & 3 & 4 \\ \hline
+0 & 0 & 1 & 2 & 3 & 4 \\
+1 & 1 & 2 & 3 & 4 & 0 \\
+2 & 2 & 3 & 4 & 0 & 1 \\
+3 & 3 & 4 & 0 & 1 & 2 \\
+4 & 4 & 0 & 1 & 2 & 3
+\end{array}
+\qquad
+\begin{array}{c|ccccc}
+\times & 0 & 1 & 2 & 3 & 4 \\ \hline
+0 & 0 & 0 & 0 & 0 & 0 \\
+1 & 0 & 1 & 2 & 3 & 4 \\
+2 & 0 & 2 & 4 & 1 & 3 \\
+3 & 0 & 3 & 1 & 4 & 2 \\
+4 & 0 & 4 & 3 & 2 & 1
+\end{array}
+\]
+
+Calcul de l'inverse de 3 modulo 5 : on cherche $x$ tel que $3x \equiv 1 \pmod{5}$. En inspectant la table, $3 \times 2 = 6 \equiv 1 \pmod{5}$, donc $3^{-1} = 2$.
+\end{example}
+
+\begin{definition}[Corps $\F_P$ pour le partage de Shamir]
+Dans le cadre du schéma $k$-sur-$n$, on utilise un corps fini premier particulier de cardinal 
+\[
+P = 2^{521} - 1
+\]
+qui est un nombre premier de Mersenne. Ce choix est motivé par :
+\begin{itemize}
+  \item Sa taille (521 bits) est suffisamment grande pour garantir la sécurité du partage de secret.
+  \item Les opérations modulo $P$ peuvent être optimisées grâce à la forme $2^{521} - 1$ (réduction rapide).
+  \item Le corps $\F_P$ permet de représenter de manière injective un secret maître $S \in \bin^{256}$ (car $P > 2^{256}$).
+\end{itemize}
+Ce corps sera le support algébrique des polynômes de Shamir utilisés pour le partage du secret maître.
+\end{definition}
+
+\begin{definition}[Anneau de polynômes]
+Soit $\mathbb{K}$ un corps commutatif. L'anneau des polynômes à coefficients dans $\mathbb{K}$ est l'ensemble des suites $(a_0, a_1, a_2, \dots)$ d'éléments de $\mathbb{K}$ qui sont presque toutes nulles (c'est-à-dire qu'il existe un rang $N$ tel que $a_n = 0$ pour tout $n \geq N$). Un tel polynôme s'écrit usuellement $P(X) = a_0 + a_1X + a_2X^2 + \dots + a_dX^d$ où $d$ est le plus grand indice tel que $a_d \neq 0$ (degré). Les opérations sont :
+\begin{itemize}
+  \item Addition : $(a_n) + (b_n) = (a_n + b_n)$
+  \item Multiplication : $(a_n) \cdot (b_n) = (c_n)$ avec $c_n = \sum_{i+j=n} a_i b_j$
+\end{itemize}
+On note cet anneau $\mathbb{K}[X]$.
+\end{definition}
+
+\begin{lemma}[Division euclidienne dans l'anneau $\Kpolys$]
+Soient $A(X), B(X) \in \Kpolys$ avec $B(X) \neq 0$. Il existe un unique couple $(Q(X), R(X)) \in \Kpolys^2$ tel que :
+\[
+A(X) = B(X)Q(X) + R(X) \quad \text{avec} \quad \deg(R(X)) < \deg(B(X)) \quad \text{ou} \quad R(X) = 0.
+\]
+\end{lemma}
+
+\begin{lemma}[Nombre de racines d'un polynôme]
+\label{lem:racines-poly}
+Soit $\mathbb{K}$ un corps et soit $f\in\Kpolys$ un polynôme non nul de degré $d\ge 0$. Alors $f$ admet au plus $d$ racines dans $\mathbb{K}$.
+\end{lemma}
+
+\begin{proof}
+Par récurrence sur $d$. Le cas $d=0$ est immédiat (un polynôme constant non nul n'a aucune racine). Pour $d\ge 1$, si $f$ a une racine $a\in\mathbb{K}$, alors par division euclidienne dans $\Kpolys$, on peut écrire $f(X) = (X-a)g(X)$ avec $g\in\Kpolys$ de degré $d-1$.
+
+Soit maintenant $b\neq a$ une autre racine de $f$. Alors $0=f(b)=(b-a)g(b)$. Comme $b-a\neq 0$ et que $\mathbb{K}$ est un corps (donc intègre), on en déduit $g(b)=0$. Ainsi, toutes les racines de $f$ distinctes de $a$ sont des racines de $g$. Par hypothèse de récurrence, $g$ a au plus $d-1$ racines, donc $f$ a au plus $d$ racines.
+\end{proof}
+
+\begin{proposition}[Anneau principal des polynômes]
+\label{prop:anneau-principal}
+Soit $\mathbb{K}$ un corps. Alors $\Kpolys$ est un anneau principal, c'est-à-dire que tout idéal de $\Kpolys$ est engendré par un unique polynôme unitaire (le générateur unitaire de l'idéal).
+\end{proposition}
+
+\begin{proof}
+Soit $J$ un idéal non nul de $\Kpolys$. Considérons l'ensemble :
+\[
+D = \{\deg(P(X)) \mid P(X) \in J,\ P(X) \neq 0\}.
+\]
+Comme $J$ est non nul, $D$ est une partie non vide de $\mathbb{N}$. Soit $d_0$ le plus petit élément de $D$, et soit $P_0(X) \in J$ non nul de degré $d_0$. On peut supposer $P_0(X)$ unitaire (quitte à le normaliser). Montrons que $J = (P_0(X))$.
+
+Soit $A(X) \in J$. Par division euclidienne, il existe $Q(X), R(X) \in \Kpolys$ tels que :
+\[
+A(X) = P_0(X)Q(X) + R(X) \quad \text{avec} \quad \deg(R(X)) < \deg(P_0(X)) \quad \text{ou} \quad R(X) = 0.
+\]
+Or $R(X) = A(X) - P_0(X)Q(X) \in J$ (car $A(X), P_0(X) \in J$). Si $R(X) \neq 0$, alors $\deg(R(X)) < d_0$, ce qui contredit la minimalité de $d_0$. Donc $R(X) = 0$ et $A(X) = P_0(X)Q(X) \in (P_0(X))$. Ainsi $J \subset (P_0(X))$. L'inclusion inverse est évidente car $P_0(X) \in J$. Donc $J = (P_0(X))$.
+\end{proof}
+
+\begin{proposition}[Quotient par un idéal maximal]
+\label{prop:quotient-maximal}
+Soit $A$ un anneau commutatif unitaire et $I$ un idéal maximal de $A$. Alors l'anneau quotient $A/I$ est un corps.
+\end{proposition}
+
+\begin{proof}
+Soit $\overline{x} \neq 0$ dans $A/I$. Alors $x \notin I$. Considérons l'idéal $J = I + (x)$ (l'idéal engendré par $I$ et $x$). Puisque $I$ est maximal et $I \subsetneq J$ (car $x \in J$ mais $x \notin I$), on a nécessairement $J = A$.
+
+Ainsi, il existe $i \in I$ et $a \in A$ tels que :
+\[
+1 = i + a \cdot x
+\]
+En passant au quotient dans $A/I$, on obtient :
+\[
+\overline{1} = \overline{i} + \overline{a} \cdot \overline{x} = 0 + \overline{a} \cdot \overline{x} = \overline{a} \cdot \overline{x}
+\]
+Donc $\overline{a}$ est l'inverse de $\overline{x}$ dans $A/I$. Ainsi, tout élément non nul de $A/I$ est inversible, et $A/I$ est un corps.
+\end{proof}
+
+\begin{corollary}[Construction de corps par quotient avec un polynôme irréductible]
+\label{prop:corps-quotient}
+Soit $\mathbb{K}$ un corps commutatif et soit $m(X) \in \Kpolys$ un polynôme irréductible. Alors l'anneau quotient $\Kpolys/(m(X))$ est un corps.
+\end{corollary}
+
+\begin{proof}
+Soit $I = (m(X))$ l'idéal engendré par $m(X)$. 
+
+Puisque $\Kpolys$ est principal (Proposition~\ref{prop:anneau-principal}), et que $m(X)$ est irréductible, l'idéal $I$ est maximal. En effet, soit $J$ un idéal tel que $I \subset J \subset \Kpolys$. Alors $J = (p(X))$ pour un certain $p(X) \in \Kpolys$. Puisque $m(X) \in J$, on a $p(X) \mid m(X)$. Mais $m(X)$ est irréductible, donc soit $p(X)$ est une constante non nulle (auquel cas $J = \mathbb{K[X]}$), soit $p(X)$ est associé à $m(X)$ (auquel cas $J = I$). Ainsi, $I$ est maximal.
+
+Par la Proposition~\ref{prop:quotient-maximal}, le quotient $\Kpolys/I$ est un corps.
+\end{proof}
+
+\begin{theorem}[Théorème de Moore]
+\label{thm:moore}
+Pour tout $q = p^n$ avec $p$ premier et $n \ge 1$, il existe un corps fini de cardinal $q$, unique à isomorphisme près.
+\end{theorem}
+
+\begin{proof}[Idée de la preuve]
+\textbf{Existence} : Soit $\F_p$ le corps premier à $p$ éléments. Soit $m(X) \in \F_p[X]$ un polynôme irréductible de degré $n$ (un tel polynôme existe toujours). Alors par la Proposition~\ref{prop:corps-quotient}, l'anneau quotient $\F_p[X]/(m(X))$ est un corps. Comme $\F_p[X]/(m(X))$ est un $\F_p$-espace vectoriel de dimension $n$, il contient exactement $p^n = q$ éléments.
+
+\textbf{Unicité} : Soient $K$ et $L$ deux corps finis de cardinal $q = p^n$. Alors $K$ et $L$ ont pour caractéristique $p$ (car un corps fini a pour cardinal une puissance de sa caractéristique). Le sous-corps premier de $K$ et de $L$ est isomorphe à $\F_p$. Notons $\F_p$ ce sous-corps commun.
+
+Soit $\alpha$ un élément primitif de $K$ (générateur du groupe multiplicatif $K^\times$). Soit $m_\alpha(X) \in \F_p[X]$ son polynôme minimal sur $\F_p$. Alors $\deg(m_\alpha) = n$ et $K \simeq \F_p[X]/(m_\alpha(X))$.
+
+De même, soit $\beta$ un élément primitif de $L$ et $m_\beta(X)$ son polynôme minimal. Comme $m_\alpha$ et $m_\beta$ sont deux polynômes irréductibles de degré $n$ sur $\F_p$, ils sont tous deux facteurs du polynôme $X^{p^n} - X$ (qui se décompose en produit de tous les polynômes irréductibles de degré divisant $n$). En particulier, les corps de rupture $\F_p[X]/(m_\alpha(X))$ et $\F_p[X]/(m_\beta(X))$ sont isomorphes (ce sont des corps de décomposition du même polynôme $X^{p^n} - X$).
+
+Ainsi, $K \simeq \F_p[X]/(m_\alpha(X)) \simeq \F_p[X]/(m_\beta(X)) \simeq L$.
+\end{proof}
+
+\begin{remark}[Construction pratique]
+En pratique, pour construire $\F_{p^n}$, on choisit un polynôme irréductible $m(X) \in \F_p[X]$ de degré $n$ et on pose :
+\[
+\F_{p^n} = \F_p[X]/(m(X))
+\]
+Les éléments sont les polynômes de degré au plus $n-1$ à coefficients dans $\F_p$, et les opérations sont effectuées modulo $m(X)$.
+
+Cette construction est fondamentale pour de nombreux schémas cryptographiques :
+\begin{itemize}
+  \item AES utilise $\F_{2^8} = \F_2[X]/(X^8 + X^4 + X^3 + X + 1)$
+  \item Les courbes elliptiques utilisent souvent des extensions de $\F_p$
+  \item Certains schémas de partage de secret utilisent des corps finis non premiers
+\end{itemize}
+\end{remark}
+
+\begin{example}[Corps $\F_4$ comme $\FdeuxQuot$]
+Le polynôme $X^2 + X + 1$ est irréductible sur $\F_2$ (il n'a pas de racine dans $\F_2$ : $0^2+0+1=1$, $1^2+1+1=1$). On a $\F_4 \simeq \FdeuxQuot$.
+
+Les éléments de ce corps sont les polynômes de degré au plus 1 : $0, 1, X, X+1$. Notons $\alpha$ la classe de $X$ modulo $X^2+X+1$, donc $\alpha^2 + \alpha + 1 = 0$, soit $\alpha^2 = \alpha + 1$ (car $-1 = 1$ dans $\F_2$).
+
+Tables d'opérations (en notant les éléments comme $0,1,\alpha,\alpha+1$) :
+\[
+\begin{array}{c|cccc}
++ & 0 & 1 & \alpha & \alpha+1 \\ \hline
+0 & 0 & 1 & \alpha & \alpha+1 \\
+1 & 1 & 0 & \alpha+1 & \alpha \\
+\alpha & \alpha & \alpha+1 & 0 & 1 \\
+\alpha+1 & \alpha+1 & \alpha & 1 & 0
+\end{array}
+\qquad
+\begin{array}{c|cccc}
+\times & 0 & 1 & \alpha & \alpha+1 \\ \hline
+0 & 0 & 0 & 0 & 0 \\
+1 & 0 & 1 & \alpha & \alpha+1 \\
+\alpha & 0 & \alpha & \alpha+1 & 1 \\
+\alpha+1 & 0 & \alpha+1 & 1 & \alpha
+\end{array}
+\]
+
+\textbf{Calcul de l'inverse de $\alpha$ par l'algorithme d'Euclide étendu :}
+
+Dans $\F_2[X]$, on cherche l'inverse de $X$ modulo $X^2+X+1$, c'est-à-dire un polynôme $u(X) \in \F_2[X]$ de degré au plus 1 tel que :
+\[
+X \cdot u(X) \equiv 1 \pmod{X^2+X+1}
+\]
+
+Appliquons l'algorithme d'Euclide étendu à $A(X) = X^2+X+1$ et $B(X) = X$ :
+
+\begin{enumerate}
+\item Division de $A(X)$ par $B(X)$ :
+\[
+X^2+X+1 = X \cdot (X+1) + 1
+\]
+Donc $Q_1(X) = X+1$ et $R_1(X) = 1$.
+
+\item Division de $B(X)$ par $R_1(X)$ :
+\[
+X = 1 \cdot X + 0
+\]
+Le pgcd est donc $1 = R_1(X)$.
+
+\item Remontons l'algorithme pour exprimer 1 comme combinaison de $X^2+X+1$ et $X$ :
+\[
+1 = (X^2+X+1) - X \cdot (X+1)
+\]
+Ainsi, modulo $X^2+X+1$, on a :
+\[
+X \cdot (X+1) \equiv -1 \equiv 1 \pmod{X^2+X+1}
+\]
+car dans $\F_2$, $-1 = 1$.
+\end{enumerate}
+
+Donc l'inverse de $X$ modulo $X^2+X+1$ est $X+1$. En termes d'éléments de $\F_4$, cela donne $\alpha^{-1} = \alpha+1$.
+
+Vérification dans la table : $\alpha \times (\alpha+1) = 1$, donc $\alpha^{-1} = \alpha+1$.
+\end{example}
+
+\begin{remark}[À retenir sur les corps finis]\leavevmode\\[0.3em]
+\begin{itemize}
+  \item $\F_p = \mathbb{Z}/p\mathbb{Z}$ est un corps si et seulement si $p$ est premier.
+  \item Pour tout $a$ non multiple de $p$, il existe un unique inverse $a^{-1} \in \F_p$.
+  \item Un polynôme irréductible $m(X)$ sur $\F_2$ donne un corps $\F_{2^m} \simeq \F_2[X]/(m(X))$.
+  \item Tout corps fini de cardinal $q = p^n$ est isomorphe à $\F_p[X]/(m(X))$ pour un polynôme irréductible $m(X)$ de degré $n$.
+\end{itemize}
+\end{remark}
+
+\subsection{Mots binaires et conventions d'encodage}
+
+Les primitives cryptographiques sont spécifiées en termes de mots binaires (octets, séquences d'octets) tandis que nous raisonnons souvent dans des corps finis $\F_n$. Cette section fixe les conventions d'encodage qui permettent de passer de l'un à l'autre sans ambiguïté.
 
 \begin{definition}[Mots binaires]
 Pour $t\in\N$, on note
@@ -226,173 +764,22 @@ Cet encodage est utilisé dans les standards Ed25519.
 \begin{remark}[Convention d'écriture]
 Dans la suite du document :
 \begin{itemize}
-\item L'encodage big-endian est utilisé pour le partage de Shamir et les représentations internes dans $\F_P$
-\item L'encodage little-endian est utilisé pour Ed25519 (scalaires et points)
+\item L'encodage big-endian est utilisé pour :
+  \begin{itemize}
+    \item Le partage de Shamir (représentation des éléments de $\F_P$)
+    \item Les représentations internes dans $\F_p$ pour RSA
+    \item Les compteurs AES-GCM
+  \end{itemize}
+\item L'encodage little-endian est utilisé pour :
+  \begin{itemize}
+    \item Ed25519 (scalaires et points)
+    \item Certaines opérations internes d'AES
+  \end{itemize}
 \item Le contexte déterminera clairement quel encodage est employé
 \end{itemize}
 \end{remark}
 
-\subsection{Corps finis premiers}
 
-\begin{definition}[Corps fini premier]
-Soit $P$ un nombre premier. On note
-\[
-  \F_P = \Z/P\Z
-\]
-le corps fini à $P$ éléments. Les opérations arithmétiques dans $\F_P$ sont effectuées modulo $P$.
-\end{definition}
-
-\subsection{Théorèmes arithmétiques fondamentaux}
-
-\begin{definition}[Indicatrice d'Euler]
-L'indicatrice d'Euler $\varphi(n)$ est définie pour tout entier $n \geq 1$ comme le nombre d'entiers compris entre $1$ et $n$ qui sont premiers avec $n$ :
-\[
-\varphi(n) = \#\{k \in \{1, 2, \dots, n\} \mid \gcd(k, n) = 1\}
-\]
-\end{definition}
-
-\begin{theorem}[Théorème d'Euler]
-\label{thm:euler}
-Si $a$ et $n$ sont premiers entre eux, alors :
-\[
-a^{\varphi(n)} \equiv 1 \pmod{n}
-\]
-\end{theorem}
-
-\begin{proof}[Preuve utilisant la théorie des groupes]
-L'ensemble des éléments inversibles de l'anneau $\Z/n\Z$ est noté $(\Z/n\Z)^\times$. 
-Par l'identité de Bézout, un élément $a \in \{0,1,\dots,n-1\}$ est inversible modulo $n$ si et seulement si $\gcd(a,n)=1$.
-Ainsi, le groupe multiplicatif $(\Z/n\Z)^\times$ a pour ordre $\varphi(n)$. 
-Par le théorème de Lagrange, l'ordre de tout élément du groupe divise l'ordre du groupe. 
-Donc, pour tout $a$ inversible modulo $n$, on a $a^{\varphi(n)} \equiv 1 \pmod{n}$.
-\end{proof}
-
-\begin{theorem}[Petit théorème de Fermat]
-\label{thm:fermat}
-Si $p$ est premier et $a$ n'est pas divisible par $p$, alors :
-\[
-a^{p-1} \equiv 1 \pmod{p}
-\]
-\end{theorem}
-
-\begin{proof}
-C'est un cas particulier du théorème d'Euler, car pour $p$ premier, $\varphi(p) = p-1$.
-\end{proof}
-
-\begin{theorem}[Théorème de Gauss (lemme d'Euclide)]
-\label{thm:gauss-div}
-Soient $a, b, c$ des entiers. Si $a$ et $b$ sont premiers entre eux et $a$ divise $bc$, alors $a$ divise $c$.
-\end{theorem}
-
-\begin{proof}
-Puisque $\gcd(a,b) = 1$, par l'identité de Bézout, il existe des entiers $u,v$ tels que :
-\[
-au + bv = 1
-\]
-Multiplions cette égalité par $c$ :
-\[
-auc + bvc = c
-\]
-Par hypothèse, $a$ divise $bc$, donc $a$ divise $bvc$. De plus, $a$ divise évidemment $auc$. Donc $a$ divise la somme $auc + bvc = c$.
-\end{proof}
-
-\subsection{Polynômes}
-
-\begin{definition}[Anneau de polynômes]
-Soit $\mathbb{K}$ un corps commutatif. On note
-\[
-  \mathbb{K}[X]
-\]
-l'anneau des polynômes à coefficients dans $\mathbb{K}$.
-\end{definition}
-
-\begin{definition}[Espace des polynômes de degré borné]
-Soit $\mathbb{K}$ un corps commutatif et $k \in \N$. On pose
-\[
-  \mathcal{P}_{<k}
-  = \{f\in\mathbb{K}[X] \mid \deg(f)<k\}.
-\]
-\end{definition}
-
-\begin{definition}[Division euclidienne des polynômes]
-Soit $\mathbb{K}$ un corps. Pour tous $A(X), B(X) \in \mathbb{K}[X]$ avec $B(X) \neq 0$, il existe un unique couple $(Q(X), R(X))$ tel que :
-\[
-A(X) = B(X)Q(X) + R(X) \quad \text{avec} \quad \deg(R(X)) < \deg(B(X)) \quad \text{ou} \quad R(X) = 0.
-\]
-\end{definition}
-
-\subsection{Propriétés algébriques fondamentales}
-
-\begin{proposition}[Anneau principal des polynômes]
-\label{prop:anneau-principal}
-Soit $\mathbb{K}$ un corps. Alors $\mathbb{K}[X]$ est un anneau principal, c'est-à-dire que tout idéal de $\mathbb{K}[X]$ est engendré par un unique polynôme unitaire (le générateur unitaire de l'idéal).
-\end{proposition}
-
-\begin{proof}
-Soit $J$ un idéal non nul de $\mathbb{K}[X]$. Considérons l'ensemble :
-\[
-D = \{\deg(P(X)) \mid P(X) \in J,\ P(X) \neq 0\}.
-\]
-Comme $J$ est non nul, $D$ est une partie non vide de $\mathbb{N}$. Soit $d_0$ le plus petit élément de $D$, et soit $P_0(X) \in J$ non nul de degré $d_0$. On peut supposer $P_0(X)$ unitaire (quitte à le normaliser). Montrons que $J = (P_0(X))$.
-
-Soit $A(X) \in J$. Par division euclidienne, il existe $Q(X), R(X) \in \mathbb{K}[X]$ tels que :
-\[
-A(X) = P_0(X)Q(X) + R(X) \quad \text{avec} \quad \deg(R(X)) < \deg(P_0(X)) \quad \text{ou} \quad R(X) = 0.
-\]
-Or $R(X) = A(X) - P_0(X)Q(X) \in J$ (car $A(X), P_0(X) \in J$). Si $R(X) \neq 0$, alors $\deg(R(X)) < d_0$, ce qui contredit la minimalité de $d_0$. Donc $R(X) = 0$ et $A(X) = P_0(X)Q(X) \in (P_0(X))$. Ainsi $J \subset (P_0(X))$. L'inclusion inverse est évidente car $P_0(X) \in J$. Donc $J = (P_0(X))$.
-\end{proof}
-
-\begin{lemma}[Nombre de racines d'un polynôme]
-Soit $\mathbb{K}$ un corps et soit $f\in\mathbb{K}[X]$ un polynôme non nul de degré $d\ge 0$. Alors $f$ admet au plus $d$ racines dans $\mathbb{K}$.
-\end{lemma}
-
-\begin{proof}
-Par récurrence sur $d$. Le cas $d=0$ est immédiat (un polynôme constant non nul n'a aucune racine). Pour $d\ge 1$, si $f$ a une racine $a\in\mathbb{K}$, alors par division euclidienne dans $\mathbb{K}[X]$, on peut écrire $f(X) = (X-a)g(X)$ avec $g\in\mathbb{K}[X]$ de degré $d-1$. En effet, la division de $f$ par $(X-a)$ donne un quotient $g$ et un reste $r$ de degré $<1$, donc constant. En évaluant en $X=a$, on obtient $f(a)=0 = 0\cdot g(a) + r$, donc $r=0$.
-
-Soit maintenant $b\neq a$ une autre racine de $f$. Alors $0=f(b)=(b-a)g(b)$. Comme $b-a\neq 0$ et que $\mathbb{K}$ est un corps (donc intègre), on en déduit $g(b)=0$. Ainsi, toutes les racines de $f$ distinctes de $a$ sont des racines de $g$. Par hypothèse de récurrence, $g$ a au plus $d-1$ racines, donc $f$ a au plus $d$ racines.
-\end{proof}
-
-\subsection{Construction de corps finis par extension}
-
-\begin{proposition}[Quotient par un idéal maximal]
-\label{prop:quotient-maximal}
-Soit $A$ un anneau commutatif unitaire et $I$ un idéal maximal de $A$. Alors l'anneau quotient $A/I$ est un corps.
-\end{proposition}
-
-\begin{proof}
-Soit $\overline{x} \neq 0$ dans $A/I$. Alors $x \notin I$. Considérons l'idéal $J = I + (x)$ (l'idéal engendré par $I$ et $x$). Puisque $I$ est maximal et $I \subsetneq J$ (car $x \in J$ mais $x \notin I$), on a nécessairement $J = A$.
-
-Ainsi, il existe $i \in I$ et $a \in A$ tels que :
-\[
-1 = i + a \cdot x
-\]
-En passant au quotient dans $A/I$, on obtient :
-\[
-\overline{1} = \overline{i} + \overline{a} \cdot \overline{x} = 0 + \overline{a} \cdot \overline{x} = \overline{a} \cdot \overline{x}
-\]
-Donc $\overline{a}$ est l'inverse de $\overline{x}$ dans $A/I$. Ainsi, tout élément non nul de $A/I$ est inversible, et $A/I$ est un corps.
-\end{proof}
-
-\begin{remark}[Construction de corps finis par quotient]
-Soit $\mathbb{F}$ un corps commutatif (par exemple $\F_p$ pour $p$ premier). Soit $m(X) \in \mathbb{F}[X]$ un polynôme irréductible de degré $d$. Alors l'anneau quotient $\mathbb{F}[X]/(m(X))$ est un corps commutatif de cardinal $|\mathbb{F}|^d$. Les éléments de ce corps sont les polynômes de degré au plus $d-1$ à coefficients dans $\mathbb{F}$. Les opérations d'addition et de multiplication sont effectuées modulo $m(X)$. Cette construction est fondamentale pour de nombreux schémas cryptographiques, notamment AES qui utilise $\F_{2^8} = \F_2[X]/(X^8 + X^4 + X^3 + X + 1)$.
-\end{remark}
-
-\begin{proposition}[Corps obtenu par quotient avec un polynôme irréductible]
-\label{prop:corps-quotient}
-Soit $\mathbb{K}$ un corps commutatif et soit $m(X) \in \mathbb{K}[X]$ un polynôme irréductible. Alors l'anneau quotient $\mathbb{K}[X]/(m(X))$ est un corps.
-\end{proposition}
-
-\begin{proof}
-Soit $I = (m(X))$ l'idéal engendré par $m(X)$. 
-
-Puisque $\mathbb{K}[X]$ est principal (Proposition~\ref{prop:anneau-principal}), et que $m(X)$ est irréductible, l'idéal $I$ est maximal. En effet, soit $J$ un idéal tel que $I \subset J \subset \mathbb{K}[X]$. Alors $J = (p(X))$ pour un certain $p(X) \in \mathbb{K}[X]$. Puisque $m(X) \in J$, on a $p(X) \mid m(X)$. Mais $m(X)$ est irréductible, donc soit $p(X)$ est une constante non nulle (auquel cas $J = \mathbb{K}[X]$), soit $p(X)$ est associé à $m(X)$ (auquel cas $J = I$). Ainsi, $I$ est maximal.
-
-Par la Proposition~\ref{prop:quotient-maximal}, le quotient $\mathbb{K}[X]/I$ est un corps.
-\end{proof}
-
-\begin{remark}[Cas des anneaux non principaux]
-La démonstration utilise crucialement le fait que $\mathbb{K}[X]$ est un anneau principal. Si on part d'un anneau $A$ quelconque et d'un polynôme $P(X) \in A[X]$ irréductible, l'anneau quotient $A[X]/(P(X))$ n'est généralement pas un corps. Par exemple, $\mathbb{Z}[X]/(X^2 + 1)$ n'est pas un corps (c'est l'anneau des entiers de Gauss $\mathbb{Z}[i]$, où seuls $\pm 1, \pm i$ sont inversibles).
-\end{remark}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -694,13 +1081,52 @@ Le sous-groupe cyclique d'ordre $\ell$ est :
 \[
 \langle B \rangle = \{aB \mid a \in \mathbb{Z}_\ell\}
 \]
-qui est isomorphe à $\mathbb{Z}_\ell$.
 \end{definition}
 
-\begin{remark}[Utilisation cryptographique]
-Seuls les points du sous-groupe $\langle B \rangle$ d'ordre premier $\ell$ sont utilisés pour la cryptographie. Le clampage dans Ed25519 garantit que les scalaires appartiennent à $\mathbb{Z}_\ell$.
+\begin{proposition}[Isomorphisme $\Z_\ell \simeq \langle B \rangle$]
+\label{prop:iso-z-ell-b}
+L'application
+\[
+\psi : \Z_\ell \to \langle B \rangle, \quad a \mapsto aB
+\]
+est un isomorphisme de groupes. Plus précisément :
+\begin{enumerate}
+  \item $\psi$ est un homomorphisme de groupes.
+  \item $\ker(\psi) = \{0\}$ (injectivité).
+  \item $\psi$ est surjectif par définition de $\langle B \rangle$.
+\end{enumerate}
+Par le premier théorème d'isomorphisme (Théorème~\ref{thm:iso-groupes}), on a donc $\Z_\ell/\ker(\psi) \simeq \mathrm{Im}(\psi)$, c'est-à-dire $\Z_\ell/\{0\} \simeq \langle B \rangle$.
+\end{proposition}
+
+\begin{proof}
+Vérifions les propriétés :
+\begin{enumerate}
+  \item \textbf{Homomorphisme} : Pour tous $a, b \in \Z_\ell$, on a 
+        \[
+        \psi(a + b) = (a + b)B = aB + bB = \psi(a) + \psi(b),
+        \]
+        où l'addition dans $\Z_\ell$ est modulo $\ell$ et l'addition dans $\langle B \rangle$ est l'addition de points sur la courbe elliptique.
+  
+  \item \textbf{Noyau} : Soit $a \in \Z_\ell$ tel que $\psi(a) = \mathcal{O}$ (élément neutre). Alors $aB = \mathcal{O}$. Puisque $B$ est d'ordre $\ell$, cela implique que $\ell$ divise $a$. Comme $a \in \{0, \dots, \ell-1\}$, on a nécessairement $a = 0$. Donc $\ker(\psi) = \{0\}$.
+  
+  \item \textbf{Surjectivité} : Par définition, $\langle B \rangle = \{aB \mid a \in \Z_\ell\}$, donc tout élément de $\langle B \rangle$ est de la forme $aB$ pour un certain $a \in \Z_\ell$, c'est-à-dire $\psi(a)$.
+\end{enumerate}
+Ainsi, $\psi$ est un isomorphisme de groupes. L'application du premier théorème d'isomorphisme donne directement $\Z_\ell/\{0\} \simeq \langle B \rangle$.
+\end{proof}
+
+\begin{remark}[Application du théorème d'isomorphisme]
+Le premier théorème d'isomorphisme pour les groupes (Théorème~\ref{thm:iso-groupes}) s'applique ici avec $G = \Z_\ell$, $H = \langle B \rangle$, et $f = \psi$. On a :
+\begin{itemize}
+  \item $\ker(\psi) = \{0\}$ qui est un sous-groupe distingué de $\Z_\ell$
+  \item $\mathrm{Im}(\psi) = \langle B \rangle$
+  \item $\Z_\ell/\{0\} \simeq \langle B \rangle$, ce qui est bien l'isomorphisme exhibé.
+\end{itemize}
+Cet isomorphisme est crucial pour Ed25519 : il permet d'identifier les scalaires (clés privées) avec les points du sous-groupe cyclique (clés publiques).
 \end{remark}
 
+\begin{remark}[Utilisation cryptographique]
+Seuls les points du sous-groupe $\langle B \rangle$ d'ordre premier $\ell$ sont utilisés pour la cryptographie. Le clampage dans Ed25519 garantit que les scalaires appartiennent à $\mathbb{Z}_\ell$, et l'isomorphisme $\Z_\ell \simeq \langle B \rangle$ assure que chaque scalaire correspond à un unique point du sous-groupe.
+\end{remark}
 \subsection{Encodage des points et scalaires}
 
 \begin{definition}[Encodage des points et scalaires]
