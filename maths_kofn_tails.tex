@@ -2587,7 +2587,6 @@ pas ici.
 
 \section{Annexe A --- Corps finis et notation $\F_{2^n}$}
 \label{sec:annexe-moore}
-
 Cette annexe rassemble les compléments d'algèbre nécessaires pour justifier entièrement
 l'utilisation de la notation $\F_{2^n}$ (et, plus généralement, $\F_{p^n}$) dans le reste
 du document. Toutes les démonstrations reposent sur des arguments élémentaires portant sur
@@ -2634,11 +2633,37 @@ appelé \emph{sous-corps premier} de $K$, isomorphe à $\F_p$.
 \end{proposition}
 
 \begin{proof}
-L'application est bien définie car dans $\F_p$ on identifie $\overline{n}$ et
-$\overline{m}$ si $p$ divise $n-m$, et dans $K$ on a alors
-$(n-m)\cdot 1_K = p\cdot q\cdot 1_K = 0$. On vérifie facilement que $\varphi$
-respecte l'addition et la multiplication, et que $\varphi(1)=1_K$.
-L'injectivité vient de ce que le noyau ne peut pas contenir de $1_K$ non nul.
+L'application est bien définie : dans $\F_p$, on a $\overline{n}=\overline{m}$
+si et seulement si $p$ divise $n-m$. Dans ce cas, il existe $q\in\Z$ tel que
+$n-m = pq$, et donc dans $K$,
+\[
+(n-m)\cdot 1_K = pq\cdot 1_K = p\cdot (q\cdot 1_K) = 0
+\]
+puisque $K$ est de caractéristique $p$. On a donc bien $n\cdot 1_K = m\cdot 1_K$,
+ce qui montre que $\varphi$ ne dépend pas du représentant choisi.
+
+Pour tout $\overline{n},\overline{m}\in\F_p$, on vérifie directement
+\[
+\varphi(\overline{n}+\overline{m})
+= (n+m)\cdot 1_K
+= n\cdot 1_K + m\cdot 1_K
+= \varphi(\overline{n}) + \varphi(\overline{m}),
+\]
+et
+\[
+\varphi(\overline{n}\,\overline{m})
+= (nm)\cdot 1_K
+= (n\cdot 1_K)(m\cdot 1_K)
+= \varphi(\overline{n})\,\varphi(\overline{m}),
+\]
+ainsi que $\varphi(1)=1_K$. L'application $\varphi$ est donc un homomorphisme
+de corps.
+
+Pour l'injectivité, supposons $\varphi(\overline{n}) = 0$. Alors
+$n\cdot 1_K = 0$. Par définition de la caractéristique $p$, cela implique que
+$p$ divise $n$, donc $\overline{n} = 0$ dans $\F_p$. Ainsi, $\ker(\varphi) =
+\{0\}$ et $\varphi$ est injective. Son image est donc un sous-corps de $K$
+isomorphe à $\F_p$, appelé sous-corps premier de $K$.
 \end{proof}
 
 Ainsi, tout corps fini $K$ contient un sous-corps isomorphe à $\F_p$, et on
@@ -2657,21 +2682,103 @@ de dimension finie $n$, et
 \end{proposition}
 
 \begin{proof}
-Par la Proposition~\ref{prop:sous-corps-premier}, $k$ est un sous-corps de $K$.
-La structure de corps fait de $K$ un $k$-espace vectoriel. Comme $K$ est fini,
-il admet une base finie $(e_1,\dots,e_n)$ sur $k$, et chaque élément de $K$
-s'écrit de manière unique comme combinaison linéaire
+Par la Proposition~\ref{prop:sous-corps-premier}, $k$ est un sous-corps de $K$,
+isomorphe à $\F_p$. On définit sur $K$ une structure de $k$-espace vectoriel
+en posant :
+\begin{itemize}
+  \item pour $x,y \in K$, la somme vectorielle est l'addition dans $K$ ;
+  \item pour $\lambda \in k$ (donc $\lambda \in K$) et $x \in K$, la
+        multiplication scalaire est donnée par
+        \[
+        \lambda \cdot x := \lambda x,
+        \]
+        où le produit est celui de $K$.
+\end{itemize}
+Les axiomes d'espace vectoriel se vérifient alors directement à partir des
+axiomes de corps dans $K$ :
+\begin{itemize}
+  \item la distributivité de la multiplication dans $K$ donne
+        $\lambda\cdot(x+y) = \lambda x + \lambda y$ et
+        $(\lambda+\mu)\cdot x = \lambda x + \mu x$ ;
+  \item l'associativité de la multiplication donne
+        $(\lambda\mu)\cdot x = \lambda\cdot(\mu\cdot x)$ ;
+  \item l'élément neutre $1_k = 1_K$ vérifie $1_k\cdot x = x$ pour tout $x\in K$.
+\end{itemize}
+Ainsi, $K$ est bien un $k$-espace vectoriel.
+
+Comme $K$ est fini, il existe une base finie $(e_1,\dots,e_n)$ de $K$ sur $k$.
+Tout élément $x\in K$ s'écrit alors de manière unique comme combinaison linéaire
 \[
 x = \lambda_1 e_1 + \cdots + \lambda_n e_n,\quad \lambda_i \in k.
 \]
-Comme $|k| = p$, il y a exactement $p^n$ $n$-uplets $(\lambda_1,\dots,\lambda_n)$,
-donc $|K| = p^n$.
+Il y a exactement $p^n$ $n$-uplets $(\lambda_1,\dots,\lambda_n)$ puisque
+$|k|=p$. Donc $|K| = p^n$.
 \end{proof}
 
 Cela justifie l'écriture \og $|K|=p^n$ \fg{} et le fait de noter un corps fini
 $K$ de cardinal $p^n$ par $\F_{p^n}$.
 
 \subsection{Frobenius et polynôme $X^{p^n}-X$}
+
+\begin{theorem}[Théorème fondamental de l'arithmétique]
+\label{lem:thm-fond-arith}
+Tout entier $n \ge 2$ peut s'écrire comme un produit fini de nombres premiers.
+De plus, cette écriture est unique à l'ordre près des facteurs.
+\end{theorem}
+
+\begin{proof}
+Nous divisons la preuve en deux parties : existence puis unicité.
+
+\medskip
+\noindent\textbf{Existence.}
+Nous montrons par récurrence sur $n \ge 2$ que tout entier $n$ s'écrit comme un
+produit de nombres premiers (en autorisant le cas d'un seul facteur premier).
+
+\begin{itemize}
+  \item Pour $n=2$, l'entier $2$ est premier, la propriété est donc vraie.
+  \item Supposons la propriété vraie pour tous les entiers $m$ tels que
+        $2 \le m < n$, et montrons-la pour $n$.
+        \begin{itemize}
+          \item Si $n$ est premier, alors $n$ est déjà un produit de nombres
+                premiers (un seul facteur).
+          \item Si $n$ n'est pas premier, il existe des entiers $a,b$ tels que
+                $1 < a < n$, $1 < b < n$ et $n = ab$. Par hypothèse de
+                récurrence, $a$ et $b$ s'écrivent chacun comme produit de
+                nombres premiers. Le produit $n = ab$ est alors lui-même un
+                produit de nombres premiers.
+        \end{itemize}
+\end{itemize}
+Par récurrence, tout entier $n \ge 2$ s'écrit comme produit de nombres premiers.
+
+\medskip
+\noindent\textbf{Unicité.}
+Supposons que l'on ait deux écritures de $n$ en produit de nombres premiers :
+\[
+n = p_1 p_2 \cdots p_r = q_1 q_2 \cdots q_s,
+\]
+où les $p_i$ et les $q_j$ sont des nombres premiers (pas nécessairement
+distincts). Nous allons montrer que $r=s$ et, à permutation près, $p_i = q_i$
+pour tout $i$.
+
+Comme $p_1$ est premier et divise le produit $q_1 \cdots q_s$, le
+Théorème~\ref{thm:gauss-div} (lemme d'Euclide) implique que $p_1$ divise l'un
+des $q_j$. Or chacun des $q_j$ est premier, donc si un nombre premier $p_1$
+divise $q_j$, on a nécessairement $p_1 = q_j$. En renommant si besoin les
+$q_j$, on peut supposer $p_1 = q_1$.
+
+En simplifiant par $p_1 = q_1$ (qui est non nul), on obtient
+\[
+\frac{n}{p_1} = p_2 \cdots p_r = q_2 \cdots q_s.
+\]
+Si $r=1$, alors $n = p_1$ est premier et il n'y a rien d'autre à prouver.
+Sinon, l'entier $n/p_1$ est $\ge 2$ et strictement plus petit que $n$. On
+applique le même raisonnement à $n/p_1$ (récurrence sur le nombre total de
+facteurs premiers) et on conclut que $r=s$ et que, à réordonnement près,
+$p_i = q_i$ pour tout $i$.
+
+Ainsi, la décomposition de $n$ en produit de nombres premiers est unique à
+l'ordre près des facteurs.
+\end{proof}
 
 \begin{proposition}[Endomorphisme de Frobenius]
 \label{prop:frobenius}
@@ -2683,15 +2790,59 @@ est un homomorphisme de corps, appelé \emph{endomorphisme de Frobenius}.
 \end{proposition}
 
 \begin{proof}
-Pour $x,y \in K$, on a
+Pour $x,y \in K$, on a dans $\Z$
 \[
 (x+y)^p = \sum_{k=0}^p \binom{p}{k} x^k y^{p-k}.
 \]
-Pour $0<k<p$, le coefficient binomial $\binom{p}{k}$ est divisible par $p$,
-donc $\binom{p}{k}=0$ dans un corps de caractéristique $p$. Il reste donc
-$(x+y)^p = x^p + y^p$. La compatibilité à la multiplication est évidente :
-$(xy)^p = x^p y^p$. Enfin, $\varphi(1) = 1$, donc $\varphi$ est un homomorphisme
-de corps.
+
+Pour $0<k<p$, montrons que le coefficient binomial $\binom{p}{k}$ est multiple
+de $p$. Dans $\Z$, on dispose de l'égalité
+\[
+\binom{p}{k}\,k! \;=\; p(p-1)(p-2)\cdots(p-k+1).
+\]
+Le produit du membre de droite contient le facteur $p$, donc $p$ divise
+$\binom{p}{k}\,k!$.
+
+Montrons maintenant que $p$ ne divise pas $k!$. Par le Théorème~%
+\ref{lem:thm-fond-arith}, on peut écrire la décomposition en facteurs premiers
+de $k!$ sous la forme
+\[
+k! = \prod_{i=1}^r \ell_i^{\alpha_i},
+\]
+où les $\ell_i$ sont des nombres premiers et $\alpha_i \ge 1$. Chaque $\ell_i$
+divise l'un des entiers $1,2,\dots,k$, donc $\ell_i \le k < p$. Si l'on supposait
+que $p$ divise $k!$, alors $p$ devrait être égal à l'un des $\ell_i$, ce qui
+entraînerait une contradiction avec l'hypothèse $k<p$. Ainsi, $p$ ne
+divise pas $k!$.
+
+
+Comme $p$ divise $\binom{p}{k}\,k!$ et que $p$ ne divise pas $k!$, les seuls
+diviseurs positifs possibles de $p$ étant $1$ et $p$, on a donc
+$\gcd(p,k!) = 1$. Le Théorème~\ref{thm:gauss-div} s'applique alors avec
+$a=p$ et $b=k!$, ce qui implique que $p$ divise $\binom{p}{k}$.
+
+
+
+Dans un corps $K$ de caractéristique $p$, cela signifie que l'image de
+$\binom{p}{k}$ est nulle : si $\binom{p}{k} = p q$ dans $\Z$, alors dans $K$
+\[
+\binom{p}{k}\cdot 1_K = (pq)\cdot 1_K = p\cdot(q\cdot 1_K) = 0,
+\]
+puisque $p\cdot 1_K = 0$. Pour $0<k<p$, on a donc bien $\binom{p}{k}=0$
+dans $K$.
+
+Dans le développement binomial de $(x+y)^p$, tous les termes intermédiaires
+disparaissent donc dans $K$, et il reste
+\[
+(x+y)^p = x^p + y^p.
+\]
+
+La compatibilité à la multiplication est immédiate :
+\[
+(xy)^p = x^p y^p,
+\]
+et enfin $\varphi(1) = 1^p = 1$, donc $\varphi$ respecte l'addition,
+la multiplication et l'élément neutre. C'est donc un homomorphisme de corps.
 \end{proof}
 
 \begin{proposition}
@@ -2704,7 +2855,7 @@ $\varphi : x \mapsto x^p$ est bijectif.
 Un homomorphisme de corps est injectif dès que son noyau est réduit à $\{0\}$.
 Mais si $\varphi(x)=0$, alors $x^p=0$ implique $x=0$ dans un corps. Ainsi
 $\varphi$ est injectif. Comme $K$ est fini, une application injective est
-automatiquement surjective.
+automatiquement surjective, donc $\varphi$ est bijective.
 \end{proof}
 
 \begin{corollary}
@@ -2713,50 +2864,120 @@ Soit $K$ un corps fini de cardinal $p^n$. Pour tout $x \in K$, on a
 \[
 x^{p^n} = x.
 \]
-Autrement dit, tout élément de $K$ est racine du polynôme $X^{p^n}-X \in \F_p[X]$.
+En identifiant $\F_p$ avec le sous-corps premier de $K$ 
+(Proposition~\ref{prop:sous-corps-premier}), on peut considérer 
+$X^{p^n}-X$ comme un polynôme de $\F_p[X] \subseteq K[X]$. Autrement dit,
+tout élément de $K$ est racine du polynôme $X^{p^n}-X \in \F_p[X]$.
 \end{corollary}
 
 \begin{proof}
-Par la Proposition~\ref{prop:frobenius-bij}, $\varphi$ est bijective, donc
-$\varphi^n$ aussi. Or
+Notons $q = |K| = p^n$. Pour $x=0$, on a trivialement $0^q = 0$.
+
+Supposons maintenant $x \in K^\times$. Le groupe multiplicatif $K^\times$ a
+pour cardinal $q-1$. Par le théorème de Lagrange sur les groupes finis,
+l'ordre de $x$ divise $q-1$, donc $x^{\,q-1} = 1$. En multipliant par $x$,
+on obtient
 \[
-\varphi^n(x) = x^{p^n}.
+x^q = x,
 \]
-Comme $\varphi^n$ est une permutation de $K$, son ensemble de points fixes
-contient tout $K$ (ou, plus simplement, dans un corps fini, l'endomorphisme
-$z \mapsto z^{p^n}-z$ a au plus $p^n$ zéros et on en a déjà $|K| = p^n$),
-d'où $x^{p^n}-x=0$ pour tout $x\in K$.
+c'est-à-dire $x^{p^n} = x$.
+
+Ainsi, pour tout $x \in K$ (nul ou non nul), on a bien $x^{p^n} = x$, ce qui
+signifie que tout élément de $K$ est racine du polynôme $X^{p^n}-X \in \F_p[X]$.
 \end{proof}
+
+\begin{lemma}[Corps de décomposition d'un polynôme]
+\label{lem:corps-decomp}
+Soit $K$ un corps et soit $P(X) \in K[X]$ un polynôme non constant. Il existe
+une extension de corps $L \supseteq K$ dans laquelle $P$ se scinde dans $L[X]$
+en produit de facteurs linéaires.
+\end{lemma}
+
+\begin{proof}
+On procède par récurrence sur le degré $d = \deg(P) \ge 1$.
+
+Si $d=1$, le polynôme $P$ est déjà linéaire et se scinde sur $K$ ; on peut
+prendre $L = K$.
+
+Supposons $d \ge 2$ et le résultat vrai pour tous les polynômes de degré
+strictement inférieur à $d$. Comme $K[X]$ est un anneau principal euclidien,
+tout polynôme non constant admet un facteur irréductible non constant.
+Choisissons un tel facteur irréductible $f_1(X)$ de $P(X)$ dans $K[X]$.
+
+On considère alors le quotient
+\[
+K_1 = K[X]/(f_1).
+\]
+C'est un corps, et si l'on note $\alpha_1$ la classe de $X$ dans $K_1$, on a
+$f_1(\alpha_1) = 0$ dans $K_1$. Le polynôme $P$ admet donc une racine $\alpha_1$
+dans l'extension $K_1$ de $K$.
+
+Nous regardons maintenant $P$ comme élément de $K_1[X]$. Comme $f_1(X)$ est un
+facteur de $P$ et admet $\alpha_1$ comme racine, on peut écrire
+\[
+P(X) = (X-\alpha_1)^m Q_1(X),
+\]
+où $m \ge 1$ et $Q_1(X) \in K_1[X]$ ne s'annule pas en $X=\alpha_1$. Le degré
+de $Q_1$ est strictement inférieur à $d$.
+
+Par hypothèse de récurrence appliquée au corps $K_1$ et au polynôme $Q_1$, il
+existe une extension de corps $L$ de $K_1$ dans laquelle $Q_1$ se scinde en
+produit de facteurs linéaires. Dans ce même corps $L$, le facteur
+$(X-\alpha_1)^m$ est déjà produit de facteurs linéaires. Ainsi, dans $L[X]$,
+le polynôme $P$ s'écrit comme produit de facteurs linéaires.
+
+Comme $K \subseteq K_1 \subseteq L$, le corps $L$ est bien une extension de $K$
+dans laquelle $P$ se scinde.
+\end{proof}
+
 
 \subsection{Polynôme $X^{p^n}-X$ et polynômes irréductibles}
 
-On se place dans une extension de $\F_p$ dans laquelle le polynôme $$X^{p^n} - X \in \F_p[X]$$ est scindé (par exemple dans un corps fini de cardinal $p^n$). Dans toute la suite, nous raisonnons à l'intérieur d'un tel corps, sans avoir besoin de décrire cette extension de manière plus précise.
+Dans cette sous-section, on fixe un entier $n \ge 1$. D'après le
+Lemme~\ref{lem:corps-decomp} appliqué au polynôme $X^{p^n}-X \in \F_p[X]$,
+il existe une extension de corps $L$ de $\F_p$ dans laquelle $X^{p^n}-X$ se
+scinde en produit de facteurs linéaires. Nous travaillerons dans une telle
+extension $L$ (que l'on garde fixée pour ce $n$).
+
 
 \begin{proposition}
 \label{prop:racines-XpnX}
-Les racines du polynôme $X^{p^n} - X \in \F_p[X]$ dans $\overline{\F_p}$
-forment un corps de cardinal $p^n$, que l'on note $\F_{p^n}$.
+Dans l'extension $L$ fixée ci-dessus, l'ensemble des racines du polynôme
+$X^{p^n} - X \in \F_p[X]$ forme un sous-corps $S$ de $L$ contenant $\F_p$.
+En particulier, $S$ est un corps fini de caractéristique $p$.
 \end{proposition}
 
 \begin{proof}
-Soit
+Posons
 \[
-S = \{\,x \in \overline{\F_p} \mid x^{p^n} = x\,\}.
+S = \{\,x \in L \mid x^{p^n} = x\,\}.
 \]
-Par le Corollaire~\ref{cor:pn-frobenius}, pour tout corps fini $K$ de cardinal
-$p^n$ contenant $\F_p$, on a $K \subset S$. Réciproquement, on vérifie que $S$
-est stable par addition, multiplication et passage à l'inverse (pour $x\neq 0$) :
+Par définition, $S$ est exactement l'ensemble des racines de $X^{p^n}-X$ dans
+$L$.
+
+Montrons d'abord que $S$ est stable par les opérations de corps. Soient
+$x,y \in S$. Alors
 \[
-(x+y)^{p^n} = x^{p^n} + y^{p^n} = x+y,\quad (xy)^{p^n} = x^{p^n} y^{p^n} = xy,
-\quad (x^{-1})^{p^n} = (x^{p^n})^{-1} = x^{-1}.
+(x+y)^{p^n} = x^{p^n} + y^{p^n} = x + y,
 \]
-Donc $S$ est un sous-corps de $\overline{\F_p}$ contenant $\F_p$. Par
-la Proposition~\ref{prop:cardinal-pn}, tout corps fini contenu dans
-$\overline{\F_p}$ a un cardinal d'une puissance de $p$. En fait, on vérifie
-facilement que $|S| = p^n$ (par exemple en remarquant que $X^{p^n}-X$ a au plus
-$p^n$ racines dans un corps, et que $S$ est exactement cet ensemble de racines).
-On note ce corps $\F_{p^n}$.
+où l'on a utilisé la Proposition~\ref{prop:frobenius} (endomorphisme de
+Frobenius) itérée $n$ fois. De même,
+\[
+(xy)^{p^n} = x^{p^n} y^{p^n} = xy.
+\]
+Enfin, si $x \in S$ est non nul, alors $x^{-1}$ vérifie
+\[
+(x^{-1})^{p^n} = (x^{p^n})^{-1} = x^{-1}.
+\]
+Ainsi, $S$ est stable par addition, multiplication et passage à l'inverse
+(pour les éléments non nuls), et contient $0$ et $1$. C'est donc un
+sous-corps de $L$.
+
+Comme $S$ est constitué des racines d'un polynôme de degré $p^n$, le
+Lemme~\ref{lem:racines-poly} implique que $S$ est fini (et même
+$|S| \le p^n$). En particulier, $S$ est un corps fini de caractéristique $p$.
 \end{proof}
+
 
 \begin{proposition}
 \label{prop:XpnX-irreductibles}
@@ -2770,7 +2991,8 @@ divise $n$, chaque facteur apparaissant une seule fois.
 
 \begin{proof}
 Soit $f \in \F_p[X]$ irréductible unitaire et soit $\alpha$ une racine de $f$
-dans $\overline{\F_p}$. Alors $f$ est le polynôme minimal de $\alpha$ sur $\F_p$
+dans une extension de corps de $\F_p$ (par exemple dans le corps quotient $\F_p[X]/(f)$).
+Alors $f$ est le polynôme minimal de $\alpha$ sur $\F_p$
 et $\F_p(\alpha)$ est un corps de cardinal $p^d$, où $d = \deg(f)$
 (cf. Proposition~\ref{prop:cardinal-pn}).
 On a $\alpha^{p^d} = \alpha$ (Corollaire~\ref{cor:pn-frobenius} appliqué à
@@ -2823,7 +3045,8 @@ Le Corollaire~\ref{cor:irreductible-degre-n} redonne l'argument admis dans
 la preuve « courte » du Théorème~\ref{thm:moore} : il existe toujours un
 polynôme irréductible de degré $n$ sur $\F_p$.
 
-\begin{lemma}
+
+\begin{lemma}[Somme des valeurs de l'indicatrice d'Euler]
 \label{lem:phi-somme-diviseurs}
 Pour tout entier $n \ge 1$, on a
 \[
@@ -2832,88 +3055,33 @@ Pour tout entier $n \ge 1$, on a
 \end{lemma}
 
 \begin{proof}
-Notons
-\[
-A = \{1,2,\dots,n\}.
-\]
-Nous allons partitionner $A$ suivant la valeur du plus grand diviseur commun
-avec $n$.
+On compte le nombre d'entiers $k$ tels que $1 \le k \le n$ de deux façons.
 
-Pour chaque diviseur $d$ de $n$, posons
-\[
-A_d = \{\,k \in A \mid \gcd(k,n) = d\,\}.
-\]
-Les ensembles $(A_d)_{d\mid n}$ sont deux à deux disjoints et leur union est
-tout $A$ (puisque pour tout $k$ il existe un unique $d = \gcd(k,n)$). On a
-donc
-\[
-|A| = n = \sum_{d\mid n} |A_d|.
-\]
+Pour chaque entier $k \in \{1,\dots,n\}$, posons $d = \gcd(k,n)$. Alors $d$
+est un diviseur de $n$, et on peut écrire $k = d \cdot k'$ avec
+$1 \le k' \le n/d$ et $\gcd(k',n/d)=1$. Inversement, pour tout diviseur
+$d \mid n$ et tout entier $k'$ tel que $1 \le k' \le n/d$ et
+$\gcd(k',n/d)=1$, le produit $k = d k'$ vérifie $1 \le k \le n$ et
+$\gcd(k,n)=d$.
 
-Fixons un diviseur $d$ de $n$. Nous allons établir une bijection entre $A_d$
-et l'ensemble
-\[
-B_{n/d} = \{\,m \in \{1,\dots,n/d\} \mid \gcd(m,n/d) = 1\,\},
-\]
-qui est, par définition, de cardinal $\varphi(n/d)$.
+Ainsi, pour chaque diviseur $d$ de $n$, le nombre d'entiers $k$ entre $1$ et
+$n$ tels que $\gcd(k,n)=d$ est exactement égal au nombre d'entiers $k'$ entre
+$1$ et $n/d$ qui sont premiers avec $n/d$, c'est-à-dire $\varphi(n/d)$.
 
-\medskip
-\noindent\emph{Construction de la bijection.}
-Définissons une application
+En regroupant les entiers $k$ selon la valeur de $\gcd(k,n)$, on obtient donc
 \[
-\Phi_d : A_d \longrightarrow B_{n/d},\qquad k \longmapsto \frac{k}{d}.
+n = \#\{1,\dots,n\}
+  = \sum_{d \mid n} \varphi\!\left(\frac{n}{d}\right).
 \]
-Cette application est bien définie : si $k \in A_d$, on a $\gcd(k,n) = d$,
-donc $d$ divise $k$ et il existe un entier $m$ tel que $k = d m$. Comme
-$d$ divise aussi $n$, on écrit $n = d n'$ avec $n' = n/d$. Alors
+En faisant le changement de variable $e = n/d$, on voit que $e$ parcourt
+exactement l'ensemble des diviseurs de $n$, et l'on obtient
 \[
-\gcd(m,n') = \gcd\!\left(\frac{k}{d}, \frac{n}{d}\right) = 1,
+n = \sum_{e \mid n} \varphi(e),
 \]
-car tout diviseur commun de $m$ et $n'$ donnerait, en le multipliant par $d$,
-un diviseur commun de $k$ et $n$ plus grand que $d$, ce qui contredirait
-$\gcd(k,n) = d$. De plus, $1 \le k \le n$ implique $1 \le m \le n'$, donc
-$m \in B_{n/d}$.
-
-Réciproquement, définissons
-\[
-\Psi_d : B_{n/d} \longrightarrow A_d,\qquad m \longmapsto d m.
-\]
-Cette application est bien définie : si $m \in B_{n/d}$, alors
-$\gcd(m,n/d) = 1$. En posant $k = d m$ et $n = d (n/d)$, tout diviseur commun
-de $k$ et $n$ est de la forme $d q$, où $q$ divise à la fois $m$ et $n/d$.
-Comme $\gcd(m,n/d) = 1$, on a $q = 1$, donc $\gcd(k,n) = d$, ce qui montre
-que $k \in A_d$.
-
-Il est immédiat que $\Phi_d$ et $\Psi_d$ sont réciproques l'une de l'autre :
-pour $k \in A_d$, écrit $k = d m$,
-\[
-\Psi_d(\Phi_d(k)) = \Psi_d\!\left(\frac{k}{d}\right) = d \cdot \frac{k}{d} = k,
-\]
-et pour $m \in B_{n/d}$,
-\[
-\Phi_d(\Psi_d(m)) = \Phi_d(d m) = \frac{d m}{d} = m.
-\]
-Ainsi, $\Phi_d$ est une bijection de $A_d$ sur $B_{n/d}$, et donc
-\[
-|A_d| = |B_{n/d}| = \varphi\!\left(\frac{n}{d}\right).
-\]
-
-\medskip
-En reportant cette égalité dans la décomposition de $A$, on obtient
-\[
-n = |A| = \sum_{d\mid n} |A_d|
-        = \sum_{d\mid n} \varphi\!\left(\frac{n}{d}\right).
-\]
-En faisant le changement de variable $e = n/d$, qui établit une bijection
-entre les diviseurs $d$ de $n$ et les diviseurs $e$ de $n$, on en déduit
-\[
-n = \sum_{e\mid n} \varphi(e),
-\]
-ce qui est exactement l'égalité annoncée.
+ce qui est la formule annoncée.
 \end{proof}
+
 \subsection{Cyclicité du groupe multiplicatif}
-
-
 
 \begin{lemma}
 \label{lem:groupe-mult-cyclique}
@@ -2922,87 +3090,83 @@ $K^\times$. Alors $G$ est un groupe cyclique.
 \end{lemma}
 
 \begin{proof}
-Notons $n = |G|$. Pour chaque diviseur $d$ de $n$, on note
-\[
-G_d = \{\,g \in G \mid \text{l'ordre de } g \text{ est exactement } d\,\}.
-\]
-Les ensembles $G_d$ sont deux à deux disjoints et recouvrent $G$, donc
+Notons $n = |G|$. Pour chaque diviseur $d$ de $n$, on introduit les ensembles
+suivants :
+\begin{itemize}
+  \item $A_d = \{x \in G \mid \text{l'ordre de $x$ est exactement } d\}$ et
+        $a_d = |A_d|$ ;
+  \item $B_d = \{x \in G \mid \text{l'ordre de $x$ divise } d\}$ et
+        $b_d = |B_d|$.
+\end{itemize}
+Les ensembles $A_d$ pour $d \mid n$ forment une partition de $G$, donc
 \begin{equation}
-\label{eq:partition-G}
-n = |G| = \sum_{d \mid n} |G_d|.
+\label{eq:partition-ordre}
+n = |G| = \sum_{d \mid n} a_d.
 \end{equation}
 
-\medskip
-\noindent\textbf{Étape 1 : si $G_d$ est non vide, alors $|G_d| = \varphi(d)$.}
+Par définition, un élément $x \in G$ appartient à $B_d$ si et seulement si
+son ordre $m$ divise $d$ ; autrement dit,
+\begin{equation}
+\label{eq:Bd-somme-Ad}
+b_d = \sum_{m \mid d} a_m \quad \text{pour tout } d \mid n.
+\end{equation}
 
-Fixons un diviseur $d$ de $n$ et supposons $G_d \neq \varnothing$. Il existe alors
-$y \in G_d$ d'ordre exactement $d$. Le sous-groupe engendré par $y$,
-\[
-H = \langle y \rangle = \{ y^0, y^1, \dots, y^{d-1} \},
-\]
-est cyclique d'ordre $d$.
+D'autre part, $B_d$ est exactement l'ensemble des solutions dans $G$ de
+l'équation $x^d = 1$. Comme $G \subseteq K^\times$, ces solutions sont aussi
+des solutions dans $K$ du polynôme $X^d - 1 \in K[X]$. Par le
+Lemme~\ref{lem:racines-poly}, ce polynôme a au plus $d$ racines dans $K$, donc
+\begin{equation}
+\label{eq:bd-le-d}
+b_d \le d \quad \text{pour tout } d \mid n.
+\end{equation}
 
-Considérons l'ensemble des solutions de l'équation $x^d = 1$ dans $G$ :
-\[
-R_d = \{\,x \in G \mid x^d = 1\,\}.
-\]
-On a toujours $H \subseteq R_d$, puisque pour tout $k$, $(y^k)^d = y^{kd} = 1$.
+Nous allons maintenant montrer, par récurrence sur $d$, que pour tout
+diviseur $d$ de $n$,
+\begin{equation}
+\label{eq:ad-le-phi}
+a_d \le \varphi(d),
+\end{equation}
+où $\varphi$ désigne l'indicatrice d'Euler.
 
-D'autre part, l'équation $x^d = 1$ est l'équation $x^d-1 = 0$, dont le membre de
-gauche est un polynôme de degré $d$ à coefficients dans $K$. Par le
-Lemme~\ref{lem:racines-poly}, ce polynôme a au plus $d$ racines dans $K$, d'où
-\[
-|R_d| \le d.
-\]
-Mais $H$ est de cardinal $d$ et contenu dans $R_d$, donc nécessairement
-$R_d = H$.
+Pour $d=1$, le seul élément d'ordre $1$ est l'élément neutre $1_G$, donc
+$a_1 = 1 = \varphi(1)$.
 
-Ainsi, $G_d$ est exactement l'ensemble des éléments de $H$ d'ordre \emph{exactement}
-$d$, c'est-à-dire l'ensemble des générateurs du groupe cyclique $H$. Or un groupe
-cyclique d'ordre $d$ possède exactement $\varphi(d)$ générateurs. On en conclut
+Supposons la propriété \eqref{eq:ad-le-phi} vraie pour tous les diviseurs
+stricts de $d$, et montrons-la pour $d$. En utilisant
+\eqref{eq:Bd-somme-Ad}, \eqref{eq:bd-le-d} et le
+Lemme~\ref{lem:phi-somme-diviseurs}, on obtient :
 \[
-|G_d| = \varphi(d).
+b_d = \sum_{m \mid d} a_m
+    = a_d + \sum_{\substack{m \mid d \\ m<d}} a_m
+  \le a_d + \sum_{\substack{m \mid d \\ m<d}} \varphi(m)
+  \le d = \sum_{m \mid d} \varphi(m)
+  = \varphi(d) + \sum_{\substack{m \mid d \\ m<d}} \varphi(m).
 \]
+En retranchant $\sum_{m \mid d,\,m<d} \varphi(m)$ des deux côtés, on obtient
+bien $a_d \le \varphi(d)$.
 
-\medskip
-\noindent\textbf{Étape 2 : existence d'un élément d'ordre $n$.}
+En particulier, pour $d = n$, on a $a_n \le \varphi(n)$.
 
-Pour chaque diviseur $d$ de $n$, on vient de montrer que
+Montrons maintenant qu'il existe un élément d'ordre $n$ dans $G$. Supposons
+par l'absurde que $a_n = 0$. Alors, comme $a_d \le \varphi(d)$ pour tout
+$d \mid n$ et que $\varphi(n) \ge 1$, on a
 \[
-|G_d| = 0 \quad \text{ou} \quad |G_d| = \varphi(d).
+\sum_{d \mid n} a_d
+  \le \sum_{\substack{d \mid n \\ d<n}} \varphi(d)
+   = \sum_{d \mid n} \varphi(d) - \varphi(n)
+   < \sum_{d \mid n} \varphi(d)
+   = n,
 \]
-Comme $\varphi(d) \ge 1$ pour tout $d \ge 1$, on a alors
-\[
-|G_d| \le \varphi(d).
-\]
-En reportant cela dans \eqref{eq:partition-G}, on obtient
-\[
-n = \sum_{d \mid n} |G_d| \le \sum_{d \mid n} \varphi(d).
-\]
-D'un autre côté, en appliquant le Lemme~\ref{lem:phi-somme-diviseurs} (démontré
-dans la section sur l'indicatrice d'Euler), on sait que
-\[
-\sum_{d \mid n} \varphi(d) = n.
-\]
-On en déduit que toutes les inégalités précédentes sont en fait des égalités,
-ce qui n'est possible que si, pour chaque diviseur $d$ de $n$, on a
-\[
-|G_d| = \varphi(d),
-\]
-c'est-à-dire qu'aucun $G_d$ n'est vide.
+où l'on a utilisé le Lemme~\ref{lem:phi-somme-diviseurs} pour la dernière
+égalité. Cela contredit \eqref{eq:partition-ordre}, qui affirme que
+$\sum_{d \mid n} a_d = n$.
 
-En particulier, pour $d = n$, on a $G_n \neq \varnothing$ : il existe au moins
-un élément de $G$ d'ordre exactement $n$.
-
-\medskip
-\noindent\textbf{Conclusion.}
-Si $g \in G$ a pour ordre $n = |G|$, le sous-groupe $\langle g \rangle$ a lui
-aussi $n$ éléments. Comme $G$ est un groupe d'ordre $n$ contenant $\langle g \rangle$,
-on doit avoir $G = \langle g \rangle$. Le groupe $G$ est donc cyclique.
+Ainsi, $a_n > 0$ : il existe au moins un élément de $G$ d'ordre $n$. Un tel
+élément engendre tout le groupe $G$, qui est donc cyclique.
 \end{proof}
 
-En particulier, pour un corps fini $K$ de cardinal $p^n$, le groupe multiplicatif
-$K^\times$ est cyclique d'ordre $p^n - 1$.
+En particulier, pour un corps fini $K$ de cardinal $p^n$, le groupe
+multiplicatif $K^\times$ est cyclique d'ordre $p^n-1$.
 
 \begin{proposition}[Élément primitif]
 \label{prop:element-primitif}
@@ -3016,18 +3180,12 @@ sur $\F_p$ est de degré $n$.
 \end{proposition}
 
 \begin{proof}
-Par le Lemme~\ref{lem:groupe-mult-cyclique}, le groupe multiplicatif $K^\times$
-est cyclique : il existe $\alpha \in K^\times$ tel que
-\[
-K^\times = \langle \alpha \rangle.
-\]
-Le sous-corps $\F_p(\alpha)$ contient alors tous les éléments non nuls de $K$,
-donc $\F_p(\alpha)$ est un sous-corps de $K$ ayant le même cardinal que $K$.
-Par conséquent, $\F_p(\alpha)=K$.
-
-Enfin, par la Proposition~\ref{prop:cardinal-pn}, la dimension du corps
-$\F_p(\alpha)$ comme $\F_p$-espace vectoriel vaut $n$, ce qui signifie que
-le polynôme minimal de $\alpha$ sur $\F_p$ est de degré $n$.
+Par le Lemme~\ref{lem:groupe-mult-cyclique}, $K^\times$ est cyclique :
+il existe $\alpha$ tel que $K^\times = \langle \alpha \rangle$. Le sous-corps
+$\F_p(\alpha)$ contient alors tous les éléments non nuls de $K$, donc
+$\F_p(\alpha)=K$. Par la Proposition~\ref{prop:cardinal-pn}, le degré
+$[\F_p(\alpha):\F_p]$ vaut $n$, ce qui signifie que le polynôme minimal de
+$\alpha$ sur $\F_p$ est de degré $n$.
 \end{proof}
 
 \subsection{Unicité de $\F_{p^n}$ à isomorphisme près}
@@ -3080,13 +3238,6 @@ Proposition~\ref{prop:corps-quotient}), donne la version complète du
 Théorème~\ref{thm:moore} utilisé dans le corps du texte : pour tout
 $q=p^n$, il existe un corps fini de cardinal $q$, unique à isomorphisme près,
 et l'on peut le noter sans ambiguïté $\F_{p^n}$.
-
-\begin{corollary}
-En particulier, pour tout entier $n \ge 1$, il existe un unique (à isomorphisme
-près) corps fini d'ordre $2^n$, noté $\F_{2^n}$. La notation $\F_{2^n}$ utilisée
-dans le reste du document est donc entièrement justifiée.
-\end{corollary}
-
 
 \newpage
 
