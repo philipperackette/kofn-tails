@@ -188,7 +188,7 @@ N,\,N_i & Nonces AES-GCM \\
 %=========================================================
 \section{Cadre algébrique de base}
 
-\subsection*{Préambule et motivation}
+\subsection{Préambule et motivation}
 
 Cette section rassemble les notions d'algèbre et d'arithmétique modulaire utilisées dans la suite du document. Nous suivons une progression logique : 
 \begin{itemize}
@@ -612,7 +612,7 @@ Puisque les deux ensembles ont le même cardinal fini $p$, $\overline{\iota}$ es
 
 (3) Soient $\phi_1, \phi_2 : K \to \F_p$ deux isomorphismes. Alors $\psi = \phi_2^{-1} \circ \phi_1$ est un automorphisme de $K$.
 
-Montrons que $K$ est un $\F_p$-espace vectoriel de dimension $1$. D'abord, comme $K$ est de caractéristique $p$, le sous-corps premier de $K$ est isomorphe à $\F_p$. On peut donc identifier $\F_p$ au sous-corps de $K$ engendré par $1_K$, et définir une structure de $\F_p$-espace vectoriel sur $K$ par la multiplication interne de $K$.
+Montrons que $K$ est un $\F_p$-espace vectoriel de dimension $1$. D'abord, comme $K$ est de caractéristique $p$, le sous-corps premier (voir \ref{sec:sous-corps-premier}) de $K$ est isomorphe à $\F_p$. On peut donc identifier $\F_p$ au sous-corps de $K$ engendré par $1_K$, et définir une structure de $\F_p$-espace vectoriel sur $K$ par la multiplication interne de $K$.
 
 Pour la dimension : si $\dim_{\F_p} K = d$, alors $K$ est isomorphe à $\F_p^d$ comme espace vectoriel, donc $|K| = p^d$. Or $|K| = p$, donc $p^d = p$ et $d = 1$. Ainsi, $K$ est un $\F_p$-espace vectoriel de dimension $1$.
 
@@ -1079,15 +1079,17 @@ Comme $f(X)=s + a_1X + \dots + a_{k-1}X^{k-1}$, on a $f(0)=s$. En évaluant en $
 avec $\lambda_j=\ell_j(0)$.
 \end{proof}
 
-\begin{proposition}[Confidentialité parfaite du schéma de Shamir]
+\subsection{Confidentialité parfaite du schéma de Shamir}
+
+\begin{proposition}
 \label{prop:perfect-secrecy}
 Soit $t<k$ et $I=\{i_1,\dots,i_t\}\subset\{1,\dots,n\}$. On suppose que
 $(s,a_1,\dots,a_{k-1})$ est uniforme dans $\F_P^k$. Alors, pour toute réalisation
 fixée des parts $\bigl( (x_{i_j},y_{i_j}) \bigr)_{1\le j\le t}$ et pour
 tous $s_0,s_1\in\F_P$,
 \[
-  \Pr[s = s_0 \mid (x_{i_j},y_{i_j})]
-  = \Pr[s = s_1 \mid (x_{i_j},y_{i_j})].
+  \mathbb{P}[s = s_0 \mid (x_{i_j},y_{i_j})]
+  = \mathbb{P}[s = s_1 \mid (x_{i_j},y_{i_j})].
 \]
 En particulier, la loi a posteriori de $s$ conditionnellement à $t<k$ parts
 reste uniforme sur $\F_P$.
@@ -1100,7 +1102,7 @@ Pour toute valeur fixée $s_0 \in \F_P$, le système restreint aux $(a_1,\dots,a
 
 Par Bayes et l'uniformité a priori sur $\F_P^k$ :
 \[
-\Pr[s = s_0 \mid \text{parts}] = \frac{\Pr[\text{parts} \mid s = s_0] \cdot \Pr[s = s_0]}{\Pr[\text{parts}]} = \frac{P^{-t} \cdot P^{-1}}{P^{-t}} = \frac{1}{P}.
+\mathbb{P}[s = s_0 \mid \text{parts}] = \frac{\mathbb{P}[\text{parts} \mid s = s_0] \cdot \mathbb{P}[s = s_0]}{\mathbb{P}[\text{parts}]} = \frac{P^{-t} \cdot P^{-1}}{P^{-t}} = \frac{1}{P}.
 \]
 Ainsi, la loi conditionnelle reste uniforme sur $\F_P$.
 \end{proof}
@@ -1139,7 +1141,7 @@ Soit $M \in \bin^*$ un message de longueur $L$ bits. L'algorithme procède comme
 \end{enumerate}
 \end{definition}
 
-\subsubsection{Préparation du message et découpage}
+\paragraph{Préparation du message et découpage}
 
 \begin{definition}[Padding SHA-256]
 Soit $M \in \bin^*$ un message de longueur $L$ bits. On construit le message préparé $M'$ comme suit :
@@ -1166,7 +1168,7 @@ M^{(i)} = M_0^{(i)} \parallel M_1^{(i)} \parallel \dots \parallel M_{15}^{(i)}.
 \]
 \end{definition}
 
-\subsubsection{Constantes et fonctions internes}
+\paragraph{Constantes et fonctions internes}
 
 \begin{definition}[Constantes initiales SHA-256]
 Les 8 variables initiales (registres) sont définies par les constantes suivantes (en hexadécimal) :
@@ -1203,7 +1205,7 @@ Pour des mots de 32 bits $x, y, z$, on définit les fonctions suivantes :
 où $\mathrm{ROTR}^n$ désigne la rotation vers la droite de $n$ bits, $\mathrm{SHR}^n$ le décalage vers la droite de $n$ bits (remplissage par des zéros), $\land$ le ET bit à bit, $\oplus$ le XOR, et $\neg$ la négation bit à bit.
 \end{definition}
 
-\subsubsection{Planning des mots}
+\paragraph{Planning des mots}
 
 \begin{definition}[Planning des mots]
 Pour chaque bloc $M^{(i)}$, on construit 64 mots de 32 bits $W_0, \dots, W_{63}$ appelés planning des mots. Les 16 premiers mots sont les 16 mots du bloc courant :
@@ -1217,7 +1219,7 @@ W_t = \sigma_1(W_{t-2}) \boxplus W_{t-7} \boxplus \sigma_0(W_{t-15}) \boxplus W_
 où $\boxplus$ désigne l'addition modulo $2^{32}$.
 \end{definition}
 
-\subsubsection{Fonction de compression}
+\paragraph{Fonction de compression}
 
 \begin{definition}[Fonction de compression SHA-256]
 La fonction de compression $C$ prend en entrée un état de 256 bits (représenté par 8 mots de 32 bits $H^{(i-1)} = (H_0^{(i-1)}, \dots, H_7^{(i-1)})$) et un bloc de message $M^{(i)}$ de 512 bits, et produit un nouvel état $H^{(i)}$ de 256 bits.
@@ -1253,7 +1255,7 @@ La fonction de compression $C$ prend en entrée un état de 256 bits (représent
 \end{enumerate}
 \end{definition}
 
-\subsubsection{Algorithme complet et sortie}
+\paragraph{Algorithme complet et sortie}
 
 \begin{definition}[Algorithme SHA-256]
 Les étapes sont :
@@ -1819,26 +1821,84 @@ La sécurité d'Ed25519 repose sur la difficulté du problème du logarithme dis
 
 
 
-\subsection{Clés RSA}
+\subsection{Chiffrement asymétrique RSA}
 
-\begin{definition}[Clés RSA (Rivest-Shamir-Adleman)]
+\begin{definition}[Clés RSA (Rivest--Shamir--Adleman)]
 On choisit deux nombres premiers $p,q$ de taille comparable (typiquement $p,q \approx 2^{2048}$ pour un module de 4096 bits) et on pose $n = pq$. 
 
 On calcule $\varphi(n) = (p-1)(q-1)$ (voir Proposition~\ref{prop:phi-pq}).
 
 On choisit un exposant public $e$ tel que $\gcd(e,\varphi(n)) = 1$ (typiquement $e = 65537$). L'exposant privé $d$ est l'inverse de $e$ modulo $\varphi(n)$ :
 \[
-d \equiv e^{-1} \pmod{\varphi(n)}
+d \equiv e^{-1} \pmod{\varphi(n)}.
 \]
 La clé publique est $(n,e)$ et la clé privée est $(n,d)$.
 \end{definition}
 
+\begin{remark}[Taille, primalité et génération concrète d'une clé RSA de 4096 bits]
+Lorsque l'on parle d'une \og clé RSA de 4096 bits \fg, on fait référence à la taille du module $n = pq$, c'est-à-dire au nombre de bits de son écriture binaire. Par convention, un module RSA de 4096 bits vérifie
+\[
+2^{4095} \leq n < 2^{4096},
+\]
+ce qui équivaut à dire que $n$ a exactement $4096$ bits en binaire.
+
+\medskip
+\noindent\textbf{Taille exacte du module.}
+En pratique, les bibliothèques cryptographiques génèrent deux nombres premiers $p$ et $q$ de 2048 bits (avec le bit de poids fort forcé à $1$ pour garantir la taille), puis calculent $n = pq$. Si l'on modélise $p$ et $q$ comme uniformément répartis parmi les entiers de 2048 bits, on peut écrire
+\[
+p = 2^{2047} u,\quad q = 2^{2047} v,\quad \text{avec } u,v \in [1,2[.
+\]
+On obtient alors $n = pq = 2^{4094} uv$. Le module $n$ a 4095 bits si et seulement si $uv < 2$, ce qui conduit à
+\[
+\mathbb{P}(\text{$n$ a 4095 bits}) = \mathbb{P}(uv < 2)
+= \int_{1}^{2} \left(\frac{2}{u} - 1\right)\,du
+= 2 \ln 2 - 1 \approx 0{,}386,
+\]
+et donc
+\[
+\mathbb{P}(\text{$n$ a 4096 bits}) = 1 - (2 \ln 2 - 1)
+= 2 - 2 \ln 2 \approx 0{,}614.
+\]
+Autrement dit, si l'on se contentait de choisir $p$ et $q$ de 2048 bits puis de prendre $n = pq$, on obtiendrait un module de 4096 bits dans un peu plus de 60\,\% des cas.
+
+Pour garantir que le module a bien 4096 bits, deux stratégies standard sont utilisées :
+\begin{itemize}
+  \item soit on applique un \emph{rejection sampling} : on génère $p$ et $q$ (premiers de 2048 bits), on calcule $n = pq$, puis on rejette les couples pour lesquels $n$ n'a que 4095 bits, jusqu'à obtenir un $n$ vérifiant $\lfloor \log_2 n \rfloor + 1 = 4096$ ;
+  \item soit on contraint légèrement la forme de $p$ et de $q$ (en fixant quelques bits de poids fort) de manière à ce que le produit $pq$ soit automatiquement dans l'intervalle $[2^{4095},2^{4096})$.
+\end{itemize}
+Dans les deux cas, la taille annoncée de la clé (4096 bits) correspond effectivement à la taille mathématique du module.
+
+
+
+
+\medskip
+\noindent\textbf{Génération pratique de premiers de 2048 bits.}
+En pratique, les bibliothèques cryptographiques génèrent $p$ et $q$ de la manière suivante :
+\begin{enumerate}
+  \item \emph{Tirage d'un candidat impair de 2048 bits.} On tire aléatoirement un entier $N$ de 2048 bits à l'aide d'un générateur pseudo-aléatoire cryptographiquement sûr, on force le bit de poids fort à $1$ (pour garantir la taille) et le bit de poids faible à $1$ (pour que $N$ soit impair).
+  \item \emph{Filtrage par petits premiers.} On élimine rapidement les candidats manifestement composés en testant la divisibilité de $N$ par une liste de petits nombres premiers (par exemple les premiers $\leq 1000$).
+  \item \emph{Test de primalité probabiliste (Miller--Rabin).} Pour les candidats survivants, on applique plusieurs itérations du test de Miller--Rabin. On écrit $N-1 = 2^s d$ avec $d$ impair, puis, pour chaque base $a$ choisie (aléatoire ou selon une liste standard), on examine la suite
+  \[
+    a^d,\; a^{2d},\; a^{4d},\; \dots,\; a^{2^{s-1}d} \pmod{N}.
+  \]
+  Si, pour une base donnée, cette suite ne se comporte pas comme elle le ferait modulo un nombre premier, on peut conclure que $N$ est composé et rejeter ce candidat. Si $N$ passe le test pour toutes les bases choisies, on le déclare \emph{premier probable}.
+\end{enumerate}
+On montre que, pour un entier impair composé $N$, la proportion de bases $a$ pour lesquelles le test de Miller--Rabin échoue à détecter la composité est au plus $1/4$. Ainsi, si l'on utilise $k$ bases indépendantes, la probabilité qu'un nombre \emph{composé} passe tous les tests est majorée par $(1/4)^k = 2^{-2k}$. Avec un nombre raisonnable de bases (quelques dizaines au plus), la probabilité de déclarer \og premier \fg{} un entier en réalité composé devient négligeable (par exemple $\le 2^{-128}$), ce qui est largement suffisant pour les usages cryptographiques.
+
+\medskip
+\noindent\textbf{Ordre de grandeur du nombre de premiers disponibles.}
+Le nombre de nombres premiers de 2048 bits est colossal : le théorème des nombres premiers donne l'approximation
+\[
+\#\{\text{premiers de 2048 bits}\} \approx \frac{2^{2047}}{2048 \ln 2} \approx 10^{613}.
+\]
+Même en rejetant une fraction non négligeable des couples $(p,q)$ pour des raisons de taille du module ou de tests de primalité, l'espace de recherche reste astronomique, et ces contraintes n'affaiblissent pas la sécurité de RSA.
+\end{remark}
 
 \begin{theorem}[Correction du chiffrement RSA]
 \label{thm:rsa-correct}
 Pour tout message $M \in \{0,\dots,n-1\}$ et toute clé RSA valide $(n,e,d)$, on a :
 \[
-(M^e)^d \equiv M \pmod{n}
+(M^e)^d \equiv M \pmod{n}.
 \]
 \end{theorem}
 
@@ -1847,10 +1907,10 @@ Puisque $ed \equiv 1 \pmod{\varphi(n)}$, il existe $k$ tel que $ed = 1 + k(p-1)(
 
 \textbf{Modulo $p$} :
 \begin{itemize}
-\item Si $p \mid M$ : alors $M \equiv 0 \pmod{p}$, donc $M^{ed} \equiv 0 \equiv M \pmod{p}$
+\item Si $p \mid M$ : alors $M \equiv 0 \pmod{p}$, donc $M^{ed} \equiv 0 \equiv M \pmod{p}$.
 \item Si $p \nmid M$ : par le petit théorème de Fermat (théorème \ref{thm:fermat}), $M^{p-1} \equiv 1 \pmod{p}$, donc
   \[
-  M^{ed} = M^{1 + k(p-1)(q-1)} = M \cdot (M^{p-1})^{k(q-1)} \equiv M \cdot 1^{k(q-1)} = M \pmod{p}
+  M^{ed} = M^{1 + k(p-1)(q-1)} = M \cdot (M^{p-1})^{k(q-1)} \equiv M \cdot 1^{k(q-1)} = M \pmod{p}.
   \]
 \end{itemize}
 
@@ -1858,10 +1918,10 @@ Ainsi, dans tous les cas, $M^{ed} \equiv M \pmod{p}$, donc $p \mid (M^{ed} - M)$
 
 \textbf{Modulo $q$} :
 \begin{itemize}
-\item Si $q \mid M$ : alors $M \equiv 0 \pmod{q}$, donc $M^{ed} \equiv 0 \equiv M \pmod{q}$
+\item Si $q \mid M$ : alors $M \equiv 0 \pmod{q}$, donc $M^{ed} \equiv 0 \equiv M \pmod{q}$.
 \item Si $q \nmid M$ : par le petit théorème de Fermat (théorème \ref{thm:fermat}), $M^{q-1} \equiv 1 \pmod{q}$, donc
   \[
-  M^{ed} = M^{1 + k(p-1)(q-1)} = M \cdot (M^{q-1})^{k(p-1)} \equiv M \cdot 1^{k(p-1)} = M \pmod{q}
+  M^{ed} = M^{1 + k(p-1)(q-1)} = M \cdot (M^{q-1})^{k(p-1)} \equiv M \cdot 1^{k(p-1)} = M \pmod{q}.
   \]
 \end{itemize}
 
@@ -1873,11 +1933,11 @@ Comme $p \mid N$, on peut écrire $N = p \cdot K$ pour un certain entier $K$.
 Puisque $q \mid N = p \cdot K$ et que $\gcd(p,q) = 1$, par le théorème de Gauss (théorème \ref{thm:gauss-div}), $q \mid K$.
 Donc $K = q \cdot L$ pour un certain entier $L$, et ainsi :
 \[
-N = p \cdot K = p \cdot q \cdot L = n \cdot L
+N = p \cdot K = p \cdot q \cdot L = n \cdot L,
 \]
-Ce qui montre que $n \mid N$, c'est-à-dire :
+ce qui montre que $n \mid N$, c'est-à-dire :
 \[
-M^{ed} \equiv M \pmod{n}
+M^{ed} \equiv M \pmod{n}.
 \]
 \end{proof}
 
@@ -1887,10 +1947,10 @@ Si $\gcd(M,n) \neq 1$, alors $M$ est divisible par $p$ ou par $q$, ce qui permet
 Bien que théoriquement possible, cette attaque est pratiquement irréalisable :
 
 \begin{itemize}
-\item Pour un module RSA de 4096 bits, la probabilité qu'un message aléatoire $M$ (de 4096 bits après encodage OAEP) ait un facteur commun avec $n$ est d'environ $2^{-2048}$
-\item Cette probabilité est bien inférieure à l'inverse du nombre estimé de particules dans l'univers observable ($\approx 10^{80} \approx 2^{266}$)
-\item Même en chiffrant un milliard de messages par seconde pendant l'âge de l'univers ($\approx 4 \times 10^{17}$ secondes), le nombre total de messages serait d'environ $10^{26} \approx 2^{86}$, et l'espérance du nombre de messages \og vulnérables \fg{} serait de $2^{86} \cdot 2^{-2048} = 2^{-1962}$, ce qui reste bien inférieur à 1
-\item Si un tel événement se produisait par miracle, le chiffrement et le déchiffrement fonctionneraient parfaitement normalement, et personne ne s'en rendrait compte sans calculer explicitement $\gcd(M,n)$
+\item Pour un module RSA de 4096 bits, la probabilité qu'un message aléatoire $M$ (de 4096 bits après encodage OAEP) ait un facteur commun avec $n$ est d'environ $2^{-2048}$.
+\item Cette probabilité est bien inférieure à l'inverse du nombre estimé de particules dans l'univers observable ($\approx 10^{80} \approx 2^{266}$).
+\item Même en chiffrant un milliard de messages par seconde pendant l'âge de l'univers ($\approx 4 \times 10^{17}$ secondes), le nombre total de messages serait d'environ $10^{26} \approx 2^{86}$, et l'espérance du nombre de messages \og vulnérables \fg{} serait de $2^{86} \cdot 2^{-2048} = 2^{-1962}$, ce qui reste bien inférieur à 1.
+\item Si un tel événement se produisait par miracle, le chiffrement et le déchiffrement fonctionneraient parfaitement normalement, et personne ne s'en rendrait compte sans calculer explicitement $\gcd(M,n)$.
 \end{itemize}
 
 En pratique, cette attaque n'est donc pas une préoccupation réaliste pour la sécurité de RSA avec des paramètres standard.
@@ -1899,15 +1959,21 @@ En pratique, cette attaque n'est donc pas une préoccupation réaliste pour la s
 \begin{definition}[Paramètres concrets pour le schéma $k$-sur-$n$]
 Dans notre implémentation :
 \begin{itemize}[leftmargin=2em]
-  \item Module $n$ : 4096 bits
-  \item Exposant public $e = 65537$
-  \item Exposant privé $d \equiv e^{-1} \pmod{\varphi(n)}$
+  \item Module $n$ : 4096 bits ;
+  \item Exposant public $e = 65537$ ;
+  \item Exposant privé $d \equiv e^{-1} \pmod{\varphi(n)}$.
 \end{itemize}
 \end{definition}
 
 \begin{remark}[Sécurité RSA]
-La sécurité de RSA repose sur la difficulté de la factorisation du module $n$. Pour un module de 4096 bits, cela offre une sécurité suffisante selon les standards actuels.
+La sécurité de RSA repose sur la difficulté de la factorisation du module $n$. Pour un module de 4096 bits, construit comme indiqué ci-dessus, cela offre une sécurité suffisante selon les standards actuels.
 \end{remark}
+
+
+
+
+
+
 
 \subsection{MGF1}
 
@@ -2836,7 +2902,7 @@ On considère un adversaire $\mathcal{A}$ ayant accès aux oracles :
 \begin{theorem}[Confidentialité conditionnelle]
 Soit $\mathcal{A}$ un adversaire polynomial n'ayant accès qu'à $t < k$ parts. Alors pour toute fonction $f$ calculable en temps polynomial :
 \[
-\left|\Pr[\mathcal{A}(f(S)) = 1] - \Pr[\mathcal{A}(f(U)) = 1]\right| \leq \epsilon(\lambda)
+\left|\mathbb{P}[\mathcal{A}(f(S)) = 1] - \mathbb{P}[\mathcal{A}(f(U)) = 1]\right| \leq \epsilon(\lambda)
 \]
 où $U$ est uniforme dans $\bin^{256}$ et $\epsilon$ est négligeable dans le paramètre de sécurité $\lambda$.
 \end{theorem}
@@ -2872,6 +2938,7 @@ qui justifient complètement le Théorème~\ref{thm:moore}. On travaille
 toujours avec un nombre premier $p$ et des corps de caractéristique $p$.
 
 \subsection{Caractéristique et sous-corps premier}
+\label{sec:sous-corps-premier}
 
 \begin{definition}[Caractéristique d'un corps]
 Soit $K$ un corps. La \emph{caractéristique} de $K$ est le plus petit entier
