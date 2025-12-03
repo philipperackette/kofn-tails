@@ -87,10 +87,10 @@ formulation mathématique rigoureuse}
 Ce texte formalise, dans un cadre entièrement mathématique, le schéma
 $k$-sur-$n$ mis en \oe uvre par la procédure opérationnelle sous Tails
 pour la gestion d'un secret maître, telle qu'elle est décrite dans le
-document HTML \texttt{procedure\_kofn\_tails\_v1.html} dont l'empreinte
+document \texttt{procedure\_kofn\_tails\_v1.html} du dépôt \cite{git-hub} dont l'empreinte
 SHA-256 est
 \[
-  \texttt{ed223dd055108b0c08cd6d7b3011962d5bdc5f92dd38760c5c6a202982fcde84}.
+  \texttt{ed223dd055108b0c08cd6d7b3011962d5bdc5f92dd38760c5c6a202982fcde84}
 \]
 Le protocole repose sur les briques cryptographiques suivantes :
 \begin{itemize}[leftmargin=2em]
@@ -156,10 +156,10 @@ a \in \Z_\ell & Clé privée Ed25519 \\
 A = aB & Clé publique Ed25519 \\
 (n,e,d) & Paramètres RSA : module, exposants public/privé \\
 h & Fonction de hachage $h:\bin^* \to \bin^d$ \\
-\HMAC_h & MAC HMAC basé sur $h$ \\
-\HKDF_h & Dérivation de clé HKDF (RFC 5869) \\
-\PBKDF_h & Dérivation par mot de passe (PBKDF2, RFC 8018) \\
-\MGF_h & Génération de masque MGF1 (RFC 8017) \\
+\HMAC_h & MAC HMAC basé sur $h$ (avec $h$ fonction de hachage sous-jacente) \\
+\HKDF_h & Dérivation de clé HKDF (RFC 5869) basée sur $h$ \\
+\PBKDF_h & Dérivation par mot de passe (PBKDF2, RFC 8018) basée sur $h$ \\
+\MGF_h & Génération de masque MGF1 (RFC 8017) basée sur $h$ \\
 \RSAOAEP & RSA avec rembourrage OAEP (RFC 8017) \\
 \AESGCM_K & AES-GCM sous clé symétrique $K$ \\
 \mathrm{IKM} & Input Keying Material (ici $S$) \\
@@ -190,12 +190,12 @@ N,\,N_i & Nonces AES-GCM \\
 
 \subsection*{Préambule et motivation}
 
-Cette section rassemble les notions d'algèbre abstraite et d'arithmétique modulaire utilisées dans la suite du document. Nous suivons une progression logique : 
+Cette section rassemble les notions d'algèbre et d'arithmétique modulaire utilisées dans la suite du document. Nous suivons une progression logique : 
 \begin{itemize}
-  \item L'\textbf{arithmétique modulaire} (entiers, pgcd, inverses) définit le socle concret pour $\Z/n\Z$ et prépare $\F_p = \Z/p\Z$.
+  \item L'\textbf{arithmétique modulaire} (entiers, pgcd, inverses) définit le socle concret pour l'anneau $\Z/n\Z$ et prépare le corps $\F_p = \Z/p\Z$.
   \item Les \textbf{théorèmes d'isomorphisme} généralisent ces structures, s'appuyant sur les exemples concrets.
-  \item Les \textbf{corps finis et extensions} construisent sur les deux précédents (utilisation des isomorphismes pour l'unicité de $\F_p$).
-  \item Les \textbf{mots binaires et encodages} formalisent la conversion vers les représentations cryptographiques.
+  \item Les \textbf{corps finis et extensions} s'appuient sur les deux précédents (utilisation des isomorphismes pour l'unicité de $\F_p$).
+  \item Les \textbf{mots binaires et encodages} formalisent la conversion vers les représentations informatiques.
 \end{itemize}
 
 \subsection{Arithmétique modulaire et groupe multiplicatif $(\Z/n\Z)^\times$}
@@ -225,7 +225,7 @@ si $b \neq 0$, alors $a\cdot 0 + b\cdot 1 = |b| > 0$, donc $|b| \in S$.
 \medskip
 
 \noindent\textbf{Soit $m$ le plus petit élément de $S$.} 
-Par le principe du bon ordre (tout ensemble non vide d'entiers positifs possède un plus petit élément), 
+Par le principe du bon ordre (l'ensemble des entiers positifs est bien ordonné, donc tout sous-ensemble non vide d'entiers positifs possède un plus petit élément), 
 $S$ a un plus petit élément que nous notons $m$. Par définition de $S$, il existe $u_0, v_0 \in \Z$ tels que :
 \[
 m = au_0 + bv_0 > 0.
@@ -263,7 +263,7 @@ Ainsi, $\gcd(a, b) = au_0 + bv_0$.
 
 
 \begin{remark}[Nombres premiers entre eux]
-Deux entiers $a$ et $b$ sont dits \emph{premiers entre eux} (ou \emph{copremiers}) si et seulement si $\gcd(a, b) = 1$. Cette propriété est fondamentale pour l'inversibilité modulo $n$ et pour le théorème d'Euler.
+Deux entiers $a$ et $b$ sont dits \emph{premiers entre eux} (ou \emph{copremiers}) si et seulement si $\gcd(a, b) = 1$. Cette propriété est fondamentale pour l'inversibilité modulo $n$ et pour les théorèmes d'Euler et de Fermat.
 \end{remark}
 
 \begin{theorem}[Théorème de Gauss (lemme d'Euclide)]
@@ -340,6 +340,13 @@ Considérons la relation d'équivalence sur $G$ définie par :
 \[
 x \sim y \quad \Leftrightarrow \quad x^{-1}y \in H
 \]
+Vérifions que c'est une relation d'équivalence :
+\begin{itemize}
+\item Réflexivité : $x^{-1}x = e \in H$, donc $x \sim x$.
+\item Symétrie : si $x \sim y$, alors $x^{-1}y \in H$. Comme $H$ est un sous-groupe, l'inverse $(x^{-1}y)^{-1} = y^{-1}x$ est aussi dans $H$, donc $y \sim x$.
+\item Transitivité : si $x \sim y$ et $y \sim z$, alors $x^{-1}y \in H$ et $y^{-1}z \in H$. Le produit $(x^{-1}y)(y^{-1}z) = x^{-1}z$ est dans $H$, donc $x \sim z$.
+\end{itemize}
+
 Les classes d'équivalence sont les \emph{classes à gauche} $gH = \{gh : h \in H\}$. 
 
 Pour montrer que toutes les classes à gauche ont le même cardinal que $H$, considérons l'application $f : H \to gH$ définie par $f(h) = gh$. Cette application est :
@@ -349,7 +356,7 @@ Pour montrer que toutes les classes à gauche ont le même cardinal que $H$, con
 \end{itemize}
 Ainsi, $|gH| = |H|$ pour tout $g \in G$.
 
-Puisque les classes à gauche forment une partition de $G$, on a :
+Puisque les classes d'équivalence forment une partition de $G$, on a :
 \[
 |G| = \sum_{\text{classes}} |gH| = (\text{nombre de classes}) \times |H|
 \]
@@ -357,13 +364,13 @@ Donc $|H|$ divise $|G|$.
 
 Pour la deuxième partie, si $g \in G$, considérons le sous-groupe engendré par $g$, noté $\langle g \rangle = \{g^n : n \in \Z\}$. 
 
-Montrons que l'ordre de $\langle g \rangle$ est égal à l'ordre de $g$. Soit $d$ l'ordre de $g$, c'est-à-dire le plus petit entier positif tel que $g^d = e$. Alors les éléments $g^0 = e, g^1, g^2, \dots, g^{d-1}$ sont tous distincts. En effet, si $g^i = g^j$ avec $0 \le i < j < d$, alors $g^{j-i} = e$ avec $0 < j-i < d$, ce qui contredit la minimalité de $d$.
+Puisque $G$ est fini, les puissances successives de $g$ ne peuvent être toutes distinctes. Il existe donc deux entiers $i < j$ tels que $g^i = g^j$, d'où $g^{j-i} = e$. Ainsi, l'ensemble $\{k \in \mathbb{N}^* : g^k = e\}$ est non vide, et par le principe du bon ordre, il possède un plus petit élément, noté $d$. Cet entier $d$ est appelé l'ordre de $g$.
 
-De plus, pour tout $n \in \Z$, par division euclidienne, on peut écrire $n = qd + r$ avec $0 \le r < d$, et donc $g^n = g^{qd+r} = (g^d)^q \cdot g^r = e^q \cdot g^r = g^r$. Ainsi, tout élément de $\langle g \rangle$ est l'un des $g^r$ avec $0 \le r < d$.
+Montrons que $\langle g \rangle = \{e, g, g^2, \dots, g^{d-1}\}$. Soit $n \in \Z$. Par division euclidienne, on peut écrire $n = qd + r$ avec $0 \le r < d$, et donc $g^n = g^{qd+r} = (g^d)^q \cdot g^r = e^q \cdot g^r = g^r$. Ainsi, tout élément de $\langle g \rangle$ est l'un des $g^r$ avec $0 \le r < d$. Ces éléments sont distincts, car si $g^i = g^j$ avec $0 \le i < j < d$, alors $g^{j-i} = e$ avec $0 < j-i < d$, ce qui contredit la minimalité de $d$.
 
-Donc $\langle g \rangle = \{e, g, g^2, \dots, g^{d-1}\}$ a exactement $d$ éléments, ce qui signifie que l'ordre du sous-groupe $\langle g \rangle$ est égal à l'ordre de $g$.
+Donc $\langle g \rangle = \{e, g, g^2, \dots, g^{d-1}\}$ a exactement $d$ éléments, ce qui signifie que le cardinal du sous-groupe $\langle g \rangle$ est égal à l'ordre de $g$.
 
-Par la première partie du théorème, l'ordre de $\langle g \rangle$ divise $|G|$, donc l'ordre de $g$ divise $|G|$.
+Par la première partie du théorème, l'ordre de $\langle g \rangle$ (c'est-à-dire son cardinal) divise $|G|$, donc l'ordre de $g$ divise $|G|$.
 \end{proof}
 
 \begin{theorem}[Théorème d'Euler]
@@ -375,7 +382,7 @@ a^{\varphi(n)} \equiv 1 \pmod{n}
 \end{theorem}
 
 \begin{proof}
-L'ensemble $(\Z/n\Z)^\times$ est un groupe multiplicatif d'ordre $\varphi(n)$. Pour tout $a \in (\Z/n\Z)^\times$, par le théorème de Lagrange (Théorème~\ref{thm:lagrange-groupes}) appliqué au sous-groupe $\langle a \rangle$, l'ordre de $a$ divise $\varphi(n)$. Donc $a^{\varphi(n)} = 1$ dans $(\Z/n\Z)^\times$, c'est-à-dire $a^{\varphi(n)} \equiv 1 \pmod{n}$.
+L'ensemble $(\Z/n\Z)^\times$ est un groupe multiplicatif (définition précédente) d'ordre $\varphi(n)$. Pour tout $a \in (\Z/n\Z)^\times$, par le théorème de Lagrange (Théorème~\ref{thm:lagrange-groupes}) appliqué au sous-groupe $\langle a \rangle$, l'ordre de $a$ divise $\varphi(n)$. Donc $a^{\varphi(n)} = 1$ dans $(\Z/n\Z)^\times$, c'est-à-dire $a^{\varphi(n)} \equiv 1 \pmod{n}$.
 \end{proof}
 
 \begin{theorem}[Petit théorème de Fermat]
@@ -402,19 +409,74 @@ En particulier, $u \bmod n$ est l'inverse de $a$ modulo $n$.
 \end{proposition}
 
 \begin{proof}[Algorithme d'Euclide étendu]
-Soient $a \in \{1, 2, \dots, n-1\}$ et $n$ premier avec $a$.
-\begin{enumerate}
-  \item Initialiser : $r_0 \gets n$, $r_1 \gets a$, $u_0 \gets 0$, $u_1 \gets 1$.
-  \item Tant que $r_1 \neq 0$ :
-    \begin{enumerate}
-      \item Calculer $q \gets \lfloor r_0 / r_1 \rfloor$ (division euclidienne).
-      \item Mettre à jour : $r_2 \gets r_0 - q \cdot r_1$, $u_2 \gets u_0 - q \cdot u_1$.
-      \item Décaler : $r_0 \gets r_1$, $r_1 \gets r_2$, $u_0 \gets u_1$, $u_1 \gets u_2$.
-    \end{enumerate}
-  \item Le pgcd est $r_0 = 1$, et l'inverse de $a$ modulo $n$ est $u_0 \bmod n$.
-\end{enumerate}
-\end{proof}
+Soient \(a \in \{1, 2, \dots, n-1\}\) et \(n\) premier avec \(a\). L'algorithme calcule l'inverse de \(a\) modulo \(n\).
 
+\textbf{Initialisation :}  
+Posons \(r_0 \gets n\), \(r_1 \gets a\), \(u_0 \gets 0\), \(u_1 \gets 1\).  
+Par définition, on a :
+\[
+r_0 = n = a \cdot 0 + n \cdot 1 \quad\text{et}\quad r_1 = a = a \cdot 1 + n \cdot 0.
+\]
+Ainsi, en introduisant des coefficients \(v_0 = 1\) et \(v_1 = 0\) (non stockés explicitement), on obtient les relations initiales :
+\[
+r_0 = a u_0 + n v_0, \qquad r_1 = a u_1 + n v_1.
+\]
+
+\textbf{Invariants de boucle :}  
+À chaque étape de l'algorithme, on maintient les deux propriétés suivantes pour les valeurs courantes de \(r_0, r_1, u_0, u_1\) :
+\begin{enumerate}
+    \item \textbf{Expression linéaire :} Il existe des entiers \(v_0, v_1\) tels que
+          \[
+          r_0 = a u_0 + n v_0 \quad \text{et} \quad r_1 = a u_1 + n v_1.
+          \]
+    \item \textbf{PGCD préservé :} \(\gcd(r_0, r_1) = \gcd(n, a) = 1\).
+\end{enumerate}
+
+\textbf{Déroulement de la boucle :}  
+Tant que \(r_1 \neq 0\) :
+\begin{enumerate}
+    \item Calculer \(q \gets \lfloor r_0 / r_1 \rfloor\) (division euclidienne).
+    \item Mettre à jour :
+          \[
+          \begin{aligned}
+          r_2 &\gets r_0 - q \cdot r_1, \\
+          u_2 &\gets u_0 - q \cdot u_1.
+          \end{aligned}
+          \]
+    \item Décaler les variables :
+          \[
+          \begin{aligned}
+          r_0 &\gets r_1, & r_1 &\gets r_2, \\
+          u_0 &\gets u_1, & u_1 &\gets u_2.
+          \end{aligned}
+          \]
+\end{enumerate}
+
+\textbf{Preuve de l'invariant (1) :}  
+Supposons qu'avant une itération on ait \(r_0 = a u_0 + n v_0\) et \(r_1 = a u_1 + n v_1\).  
+Alors, après calcul de \(q\) et mise à jour, on a :
+\[
+\begin{aligned}
+r_2 &= r_0 - q r_1 \\
+    &= (a u_0 + n v_0) - q (a u_1 + n v_1) \\
+    &= a (u_0 - q u_1) + n (v_0 - q v_1) \\
+    &= a u_2 + n v_2,
+\end{aligned}
+\]
+en posant \(v_2 = v_0 - q v_1\). Après le décalage, les nouvelles valeurs \(r_0, r_1, u_0, u_1\) vérifient à nouveau la forme linéaire avec les coefficients correspondants.
+
+\textbf{Preuve de l'invariant (2) :}  
+La propriété \(\gcd(r_0, r_1) = \gcd(r_1, r_0 \bmod r_1)\) assure que le PGCD reste inchangé à chaque itération. Comme initialement \(\gcd(n, a) = 1\), on a \(\gcd(r_0, r_1) = 1\) tout au long.
+
+\textbf{Terminaison et résultat :}  
+La suite \((r_i)\) est strictement décroissante et positive, donc \(r_1\) finit par devenir nul. À la fin, on a \(r_1 = 0\) et \(r_0 = \gcd(n, a) = 1\) (par l'invariant 2).  
+D'après l'invariant 1 appliqué à l'avant-dernière itération, on a alors :
+\[
+1 = r_0 = a u_0 + n v_0.
+\]
+Ainsi, modulo \(n\), on obtient \(a u_0 \equiv 1 \pmod{n}\).  
+L'inverse de \(a\) modulo \(n\) est donc \(u_0\) modulo \(n\) (c'est-à-dire \(u_0 \bmod n\), pour le ramener dans \(\{0,\dots,n-1\}\)).
+\end{proof}
 \begin{remark}[À retenir pour RSA]
 Pour RSA, nous utiliserons :
 \begin{itemize}
@@ -442,8 +504,10 @@ f(a_1 \cdot_A a_2) &= f(a_1) \cdot_B f(a_2) \\
 f(1_A) &= 1_B
 \end{align*}
 Le \emph{noyau} de $f$ est $\ker(f) = \{a \in A \mid f(a) = 0_B\}$.
-\end{definition}
 
+\begin{remark} Les deux premières conditions impliquent automatiquement $f(0_A) = 0_B$. En effet, pour tout $a \in A$, on a $f(a) = f(a +_A 0_A) = f(a) +_B f(0_A)$, d'où $f(0_A) = 0_B$ par simplification dans le groupe additif $(B, +_B)$.
+\end{remark}
+\end{definition}
 \begin{theorem}[Premier théorème d'isomorphisme pour les groupes]
 \label{thm:iso-groupes}
 Soit $f: G \to H$ un homomorphisme de groupes. Alors :
@@ -499,9 +563,9 @@ Soit $f: A \to B$ un homomorphisme d'anneaux. Alors :
 (3) Définissons $\overline{f}: A/\ker(f) \to \mathrm{Im}(f)$ par $\overline{f}(a + \ker(f)) = f(a)$. Cette application est bien définie car si $a + \ker(f) = a' + \ker(f)$, alors $a - a' \in \ker(f)$, donc $f(a - a') = 0_B$, soit $f(a) = f(a')$. C'est un homomorphisme d'anneaux car :
 \begin{align*}
 \overline{f}((a + \ker(f)) + (b + \ker(f))) &= \overline{f}(a + b + \ker(f)) = f(a + b) = f(a) + f(b) \\
-&= \overline{f}(a + \ker(f)) + \overline{f}(b + \ker(f)), \\
+&= \overline{f}(a + \ker(f)) + \overline(f)(b + \ker(f)), \\
 \overline{f}((a + \ker(f)) \cdot (b + \ker(f))) &= \overline{f}(a \cdot b + \ker(f)) = f(a \cdot b) = f(a) \cdot f(b) \\
-&= \overline{f}(a + \ker(f)) \cdot \overline{f}(b + \ker(f)), \\
+&= \overline{f}(a + \ker(f)) \cdot \overline(f)(b + \ker(f)), \\
 \overline{f}(1_A + \ker(f)) &= f(1_A) = 1_B.
 \end{align*}
 L'injectivité : si $\overline{f}(a + \ker(f)) = 0_B$, alors $f(a) = 0_B$, donc $a \in \ker(f)$, d'où $a + \ker(f) = 0_A + \ker(f)$. La surjectivité est évidente. Donc $\overline{f}$ est un isomorphisme.
@@ -511,7 +575,7 @@ L'injectivité : si $\overline{f}(a + \ker(f)) = 0_B$, alors $f(a) = 0_B$, donc 
 Ces théorèmes justifient plusieurs isomorphismes fondamentaux :
 \begin{itemize}
   \item $\Z/p\Z \simeq \F_p$ (corps premier) - essentiel pour RSA et Shamir
-  \item $\F_2[X]/(m(X)) \simeq \F_{2^8}$ pour AES - représentation canonique du corps de Galois
+  \item $\F_2[X]/(m(X)) \simeq \F_{2^8}$ pour AES
   \item $\Z_\ell \simeq \langle B \rangle$ pour Ed25519 - isomorphisme entre scalaires et points du sous-groupe
 \end{itemize}
 Ils garantissent que différentes représentations d'une même structure algébrique sont équivalentes, ce qui permet de choisir la représentation la plus efficace pour l'implémentation.
@@ -538,7 +602,7 @@ Considérons l'homomorphisme d'anneaux canonique :
 \[
 \iota : \Z \to K,\quad n \mapsto n \cdot 1_K
 \]
-Son noyau est un idéal de $\Z$, donc de la forme $m\Z$ avec $m \ge 0$. Puisque $\iota(p) = p \cdot 1_K = 0$, on a $p \in \ker\iota$, donc $m$ divise $p$. Comme $\iota$ n'est pas l'application nulle (car $\iota(1) = 1_K \neq 0$), on a $m = p$.
+Son noyau est un idéal de $\Z$. Comme tout idéal de $\Z$ est principal, il existe un entier $m \ge 0$ tel que $\ker\iota = m\Z$. Puisque $\iota(p) = p \cdot 1_K = 0$, on a $p \in \ker\iota$, donc $m$ divise $p$. Comme $\iota$ n'est pas l'application nulle (car $\iota(1) = 1_K \neq 0$), on a $m = p$.
 
 Ainsi $\ker\iota = p\Z$. Par le théorème fondamental d'isomorphisme (Théorème~\ref{thm:iso-anneaux}), on obtient un homomorphisme injectif :
 \[
@@ -546,7 +610,15 @@ Ainsi $\ker\iota = p\Z$. Par le théorème fondamental d'isomorphisme (Théorèm
 \]
 Puisque les deux ensembles ont le même cardinal fini $p$, $\overline{\iota}$ est un isomorphisme.
 
-(3) Soient $\phi_1, \phi_2 : K \to \F_p$ deux isomorphismes. Alors $\psi = \phi_2^{-1} \circ \phi_1$ est un automorphisme de $K$. Pour tout $x \in K$, on a $p \cdot x = 0$, donc $K$ est un $\F_p$-espace vectoriel de dimension $1$. Tout automorphisme de $\F_p$-espaces vectoriels est une multiplication par un scalaire non nul $\lambda \in \F_p^*$. Mais comme $\psi(1) = 1$, on a $\lambda = 1$, donc $\psi = \mathrm{id}_K$, d'où $\phi_1 = \phi_2$.
+(3) Soient $\phi_1, \phi_2 : K \to \F_p$ deux isomorphismes. Alors $\psi = \phi_2^{-1} \circ \phi_1$ est un automorphisme de $K$.
+
+Montrons que $K$ est un $\F_p$-espace vectoriel de dimension $1$. D'abord, comme $K$ est de caractéristique $p$, le sous-corps premier de $K$ est isomorphe à $\F_p$. On peut donc identifier $\F_p$ au sous-corps de $K$ engendré par $1_K$, et définir une structure de $\F_p$-espace vectoriel sur $K$ par la multiplication interne de $K$.
+
+Pour la dimension : si $\dim_{\F_p} K = d$, alors $K$ est isomorphe à $\F_p^d$ comme espace vectoriel, donc $|K| = p^d$. Or $|K| = p$, donc $p^d = p$ et $d = 1$. Ainsi, $K$ est un $\F_p$-espace vectoriel de dimension $1$.
+
+Un automorphisme d'anneaux de $K$ est en particulier un automorphisme de $\F_p$-espaces vectoriels. Tout endomorphisme d'un espace vectoriel de dimension $1$ est la multiplication par un scalaire. Il existe donc $\lambda \in \F_p^*$ tel que $\psi(x) = \lambda \cdot x$ pour tout $x \in K$.
+
+En particulier, $\psi(1_K) = \lambda \cdot 1_K = \lambda$. Comme $\psi$ est un isomorphisme d'anneaux, on a $\psi(1_K) = 1_K$, donc $\lambda = 1_K = 1$ (dans $\F_p$). Ainsi $\psi = \mathrm{id}_K$, ce qui implique $\phi_1 = \phi_2$.
 \end{proof}
 
 \begin{definition}[Corps fini premier]
@@ -605,7 +677,15 @@ Ce corps sera le support algébrique des polynômes de Shamir utilisés pour le 
 \end{definition}
 
 \begin{definition}[Anneau de polynômes]
-Soit $\mathbb{K}$ un corps commutatif. L'anneau des polynômes à coefficients dans $\mathbb{K}$ est l'ensemble des suites $(a_0, a_1, a_2, \dots)$ d'éléments de $\mathbb{K}$ qui sont presque toutes nulles (c'est-à-dire qu'il existe un rang $N$ tel que $a_n = 0$ pour tout $n \geq N$). Un tel polynôme s'écrit usuellement $P(X) = a_0 + a_1X + a_2X^2 + \dots + a_dX^d$ où $d$ est le plus grand indice tel que $a_d \neq 0$ (degré). Les opérations sont :
+Soit $\mathbb{K}$ un corps commutatif. L'anneau des polynômes à coefficients dans $\mathbb{K}$ est l'ensemble des suites $(a_0, a_1, a_2, \dots)$ d'éléments de $\mathbb{K}$ qui sont presque toutes nulles (c'est-à-dire qu'il existe un rang $N$ tel que $a_n = 0$ pour tout $n \geq N$). Un tel polynôme s'écrit usuellement $P(X) = a_0 + a_1X + a_2X^2 + \dots + a_dX^d$ où $d$ est le plus grand indice tel que $a_d \neq 0$ (degré). 
+
+\medskip
+
+\textbf{Cas particulier :} Le polynôme nul $(0,0,0,\dots)$ est noté $0$. Par convention, on pose $\deg(0) = -\infty$ (avec les conventions $-\infty < n$ pour tout $n \in \mathbb{N}$ et $-\infty + n = -\infty$).
+
+\medskip
+
+Les opérations sont :
 \begin{itemize}
   \item Addition : $(a_n) + (b_n) = (a_n + b_n)$
   \item Multiplication : $(a_n) \cdot (b_n) = (c_n)$ avec $c_n = \sum_{i+j=n} a_i b_j$
@@ -619,6 +699,42 @@ Soient $A(X), B(X) \in \Kpolys$ avec $B(X) \neq 0$. Il existe un unique couple $
 A(X) = B(X)Q(X) + R(X) \quad \text{avec} \quad \deg(R(X)) < \deg(B(X)) \quad \text{ou} \quad R(X) = 0.
 \]
 \end{lemma}
+
+\begin{proof}
+\textbf{Existence.} On procède par récurrence forte sur $\deg(A)$.
+
+- Si $A = 0$ ou $\deg(A) < \deg(B)$, on pose $Q = 0$ et $R = A$, et on a bien $A = B \cdot 0 + R$ avec $\deg(R) < \deg(B)$ ou $R=0$.
+
+- Supposons $\deg(A) \geq \deg(B)$. Écrivons :
+\[
+A(X) = a_n X^n + \dots + a_0, \quad B(X) = b_m X^m + \dots + b_0,
+\]
+avec $a_n \neq 0$, $b_m \neq 0$ et $n \geq m$. Formons le polynôme :
+\[
+A_1(X) = A(X) - \frac{a_n}{b_m} X^{n-m} B(X).
+\]
+Le terme de degré $n$ s'annule, donc $\deg(A_1) < n$ ou $A_1 = 0$. Par hypothèse de récurrence forte, il existe $Q_1, R_1$ tels que :
+\[
+A_1 = B Q_1 + R_1, \quad \text{avec } \deg(R_1) < \deg(B) \text{ ou } R_1 = 0.
+\]
+Alors :
+\[
+A = \frac{a_n}{b_m} X^{n-m} B + A_1 = B \left( \frac{a_n}{b_m} X^{n-m} + Q_1 \right) + R_1,
+\]
+ce qui donne l'existence avec $Q = \frac{a_n}{b_m} X^{n-m} + Q_1$ et $R = R_1$.
+
+\medskip
+
+\textbf{Unicité.} Supposons deux décompositions :
+\[
+A = BQ + R = BQ' + R',
+\]
+avec $\deg(R), \deg(R') < \deg(B)$ ou $R,R'=0$. Alors :
+\[
+B(Q - Q') = R' - R.
+\]
+Si $Q \neq Q'$, alors $\deg(B(Q-Q')) \geq \deg(B)$ (car $\mathbb{K}[X]$ est intègre). Mais $\deg(R' - R) < \deg(B)$ (car $\deg(R' - R) \leq \max(\deg(R), \deg(R')) < \deg(B)$). Contradiction. Donc $Q = Q'$, et par suite $R = R'$.
+\end{proof}
 
 \begin{lemma}[Nombre de racines d'un polynôme]
 \label{lem:racines-poly}
@@ -649,6 +765,10 @@ A(X) = P_0(X)Q(X) + R(X) \quad \text{avec} \quad \deg(R(X)) < \deg(P_0(X)) \quad
 \]
 Or $R(X) = A(X) - P_0(X)Q(X) \in J$ (car $A(X), P_0(X) \in J$). Si $R(X) \neq 0$, alors $\deg(R(X)) < d_0$, ce qui contredit la minimalité de $d_0$. Donc $R(X) = 0$ et $A(X) = P_0(X)Q(X) \in (P_0(X))$. Ainsi $J \subset (P_0(X))$. L'inclusion inverse est évidente car $P_0(X) \in J$. Donc $J = (P_0(X))$.
 \end{proof}
+
+\begin{definition}[Idéal maximal]
+Soit $A$ un anneau commutatif unitaire. Un idéal $I$ de $A$ est dit \emph{maximal} si $I \neq A$ et si pour tout idéal $J$ de $A$ tel que $I \subseteq J \subseteq A$, on a soit $J = I$, soit $J = A$.
+\end{definition}
 
 \begin{proposition}[Quotient par un idéal maximal]
 \label{prop:quotient-maximal}
@@ -785,7 +905,7 @@ Vérification dans la table : $\alpha \times (\alpha+1) = 1$, donc $\alpha^{-1} 
 \begin{remark}[À retenir sur les corps finis]\leavevmode\\[0.3em]
 \begin{itemize}
   \item $\F_p = \mathbb{Z}/p\mathbb{Z}$ est un corps si et seulement si $p$ est premier.
-  \item Pour tout $a$ non multiple de $p$, il existe un unique inverse $a^{-1} \in \F_p$.
+ \item Pour tout $a \in \F_p$, $a \neq 0$, il existe un unique inverse $a^{-1} \in \F_p$.
   \item Un polynôme irréductible $m(X)$ sur $\F_2$ donne un corps $\F_{2^m} \simeq \F_2[X]/(m(X))$.
   \item Tout corps fini de cardinal $q = p^n$ est isomorphe à $\F_p[X]/(m(X))$ pour un polynôme irréductible $m(X)$ de degré $n$.
 \end{itemize}
@@ -1160,6 +1280,7 @@ Le sous-groupe cyclique d'ordre $\ell$ est :
 \[
 \langle B \rangle = \{aB \mid a \in \mathbb{Z}_\ell\}
 \]
+où $aB$ désigne l'addition $B$ avec elle-même $a$ fois (avec la convention $0B = \mathcal{O}$).
 \end{definition}
 
 \begin{proposition}[Isomorphisme $\Z_\ell \simeq \langle B \rangle$]
@@ -1174,7 +1295,6 @@ est un isomorphisme de groupes. Plus précisément :
   \item $\ker(\psi) = \{0\}$ (injectivité).
   \item $\psi$ est surjectif par définition de $\langle B \rangle$.
 \end{enumerate}
-Par le premier théorème d'isomorphisme (Théorème~\ref{thm:iso-groupes}), on a donc $\Z_\ell/\ker(\psi) \simeq \mathrm{Im}(\psi)$, c'est-à-dire $\Z_\ell/\{0\} \simeq \langle B \rangle$.
 \end{proposition}
 
 \begin{proof}
@@ -1190,22 +1310,23 @@ Vérifions les propriétés :
   
   \item \textbf{Surjectivité} : Par définition, $\langle B \rangle = \{aB \mid a \in \Z_\ell\}$, donc tout élément de $\langle B \rangle$ est de la forme $aB$ pour un certain $a \in \Z_\ell$, c'est-à-dire $\psi(a)$.
 \end{enumerate}
-Ainsi, $\psi$ est un isomorphisme de groupes. L'application du premier théorème d'isomorphisme donne directement $\Z_\ell/\{0\} \simeq \langle B \rangle$.
+Ainsi, $\psi$ est un isomorphisme de groupes.
 \end{proof}
 
-\begin{remark}[Application du théorème d'isomorphisme]
-Le premier théorème d'isomorphisme pour les groupes (Théorème~\ref{thm:iso-groupes}) s'applique ici avec $G = \Z_\ell$, $H = \langle B \rangle$, et $f = \psi$. On a :
+\begin{remark}[Interprétation du premier théorème d'isomorphisme]
+Le premier théorème d'isomorphisme pour les groupes (Théorème~\ref{thm:iso-groupes}) permet d'interpréter cet isomorphisme. Pour $G = \Z_\ell$, $H = \langle B \rangle$, et $f = \psi$, on a :
 \begin{itemize}
   \item $\ker(\psi) = \{0\}$ qui est un sous-groupe distingué de $\Z_\ell$
   \item $\mathrm{Im}(\psi) = \langle B \rangle$
-  \item $\Z_\ell/\{0\} \simeq \langle B \rangle$, ce qui est bien l'isomorphisme exhibé.
+  \item Par le théorème : $\Z_\ell/\ker(\psi) \simeq \mathrm{Im}(\psi)$, c'est-à-dire $\Z_\ell/\{0\} \simeq \langle B \rangle$.
 \end{itemize}
-Cet isomorphisme est crucial pour Ed25519 : il permet d'identifier les scalaires (clés privées) avec les points du sous-groupe cyclique (clés publiques).
+Comme le quotient $\Z_\ell/\{0\}$ est canoniquement isomorphe à $\Z_\ell$ lui-même, on retrouve bien l'isomorphisme $\Z_\ell \simeq \langle B \rangle$.
 \end{remark}
 
 \begin{remark}[Utilisation cryptographique]
-Seuls les points du sous-groupe $\langle B \rangle$ d'ordre premier $\ell$ sont utilisés pour la cryptographie. Le clampage dans Ed25519 garantit que les scalaires appartiennent à $\mathbb{Z}_\ell$, et l'isomorphisme $\Z_\ell \simeq \langle B \rangle$ assure que chaque scalaire correspond à un unique point du sous-groupe.
+Seuls les points du sous-groupe $\langle B \rangle$ d'ordre premier $\ell$ sont utilisés pour la cryptographie. Le clampage dans Ed25519 garantit que les scalaires appartiennent à $\mathbb{Z}_\ell$, et l'isomorphisme $\Z_\ell \simeq \langle B \rangle$ assure que chaque scalaire correspond à un unique point du sous-groupe, et réciproquement.
 \end{remark}
+
 \subsection{Encodage des points et scalaires}
 
 \begin{definition}[Encodage des points et scalaires]
@@ -1253,7 +1374,7 @@ Réciproquement, dans $\F_p^*$ qui est cyclique d'ordre $p-1$, considérons l'ho
 
 \begin{lemma}[Lemme de Gauss pour les résidus quadratiques]
 \label{lem:gauss-quadratic}
-Soit $p$ un nombre premier impair et $a$ un entier non divisible por $p$. Considérons l'ensemble :
+Soit $p$ un nombre premier impair et $a$ un entier non divisible par $p$. Considérons l'ensemble :
 \[
 A = \{a, 2a, 3a, \dots, \tfrac{p-1}{2}a\}
 \]
@@ -1758,7 +1879,7 @@ Pour toute clé $(n,e,d)$ valide, pour tout message $M$ de longueur $8k_0$ bits 
 \end{theorem}
 
 \begin{proof}
-La correction découle de la structure réversible de l'encodage OAEP. Les opérations de masquage utilisant MGF sont réversibles car déterministes, et les vérifications assuren l'intégrité du message.
+La correction découle de la structure réversible de l'encodage OAEP. Les opérations de masquage utilisant MGF sont réversibles car déterministe, et les vérifications assuren l'intégrité du message.
 \end{proof}
 
 \begin{remark}[Propriétés de sécurité]
@@ -2644,7 +2765,7 @@ ce qui montre que $\varphi$ ne dépend pas du représentant choisi.
 
 Pour tout $\overline{n},\overline{m}\in\F_p$, on vérifie directement
 \[
-\varphi(\overline{n}+\overline{m})
+varphi(\overline{n}+\overline{m})
 = (n+m)\cdot 1_K
 = n\cdot 1_K + m\cdot 1_K
 = \varphi(\overline{n}) + \varphi(\overline{m}),
@@ -3244,6 +3365,11 @@ et l'on peut le noter sans ambiguïté $\F_{p^n}$.
 \addcontentsline{toc}{section}{Références}
 \begin{thebibliography}{9}
 
+\bibitem{git-hub}
+Philippe Rackette. (2025).
+\textit{K of N Tails - Documentation and Implementation}. \\
+\url{https://github.com/philipperackette/kofn-tails}.
+
 \bibitem{shamir1979share}
 Shamir, A. (1979). 
 \textit{How to share a secret}. 
@@ -3284,41 +3410,7 @@ Dworkin, M. (2007).
 \textit{Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC}.
 NIST Special Publication 800-38D.
 
-\bibitem{wikipedia-shamir}
-Wikipedia. \textit{Shamir's Secret Sharing}.
-\url{https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing}
 
-\bibitem{wikipedia-hmac}
-Wikipedia. \textit{HMAC}.
-\url{https://en.wikipedia.org/wiki/HMAC}
-
-\bibitem{wikipedia-hkdf}
-Wikipedia. \textit{HKDF}.
-\url{https://en.wikipedia.org/wiki/HKDF}
-
-\bibitem{wikipedia-pbkdf2}
-Wikipedia. \textit{PBKDF2}.
-\url{https://en.wikipedia.org/wiki/PBKDF2}
-
-\bibitem{wikipedia-ed25519}
-Wikipedia. \textit{Ed25519}.
-\url{https://en.wikipedia.org/wiki/Ed25519}
-
-\bibitem{wikipedia-rsa}
-Wikipedia. \textit{RSA (cryptosystem)}.
-\url{https://en.wikipedia.org/wiki/RSA_(cryptosystem)}
-
-\bibitem{wikipedia-oaep}
-Wikipedia. \textit{Optimal asymmetric encryption padding}.
-\url{https://en.wikipedia.org/wiki/Optimal_asymmetric_encryption_padding}
-
-\bibitem{wikipedia-aes}
-Wikipedia. \textit{Advanced Encryption Standard}.
-\url{https://en.wikipedia.org/wiki/Advanced_Encryption_Standard}
-
-\bibitem{wikipedia-gcm}
-Wikipedia. \textit{Galois/Counter Mode}.
-\url{https://en.wikipedia.org/wiki/Galois/Counter_Mode}
 
 \end{thebibliography}
 
