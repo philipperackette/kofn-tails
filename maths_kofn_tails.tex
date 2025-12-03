@@ -1110,14 +1110,169 @@ Ainsi, la loi conditionnelle reste uniforme sur $\F_P$.
 
 \subsection{Fonction de hachage}
 
-\begin{definition}[Fonction de hachage]
-Une fonction de hachage est une application
+\begin{definition}[Fonction de hachage cryptographique]
+Une fonction de hachage cryptographique est une application
 \[
   h : \bin^* \to \bin^d,
 \]
-pour un $d$ fixé (par exemple $d=256$ pour SHA-256). Dans ce document,
-$h$ désigne une telle fonction fixée une fois pour toutes.
+pour un $d$ fixé, qui doit satisfaire les propriétés suivantes :
+\begin{itemize}
+  \item \textbf{Résistance à la préimage} : Étant donné $y \in \bin^d$, il est difficile de trouver $x$ tel que $h(x) = y$.
+  \item \textbf{Résistance à la seconde préimage} : Étant donné $x$, il est difficile de trouver $x' \neq x$ tel que $h(x) = h(x')$.
+  \item \textbf{Résistance aux collisions} : Il est difficile de trouver $x \neq x'$ tels que $h(x) = h(x')$.
+\end{itemize}
+Dans ce document, $h$ désigne une telle fonction fixée une fois pour toutes (typiquement SHA-256 avec $d=256$).
 \end{definition}
+
+\subsection{Fonction de hachage cryptographique SHA-256}
+
+\begin{definition}[SHA-256 selon FIPS 180-4 \cite{fips180-4}]
+SHA-256 est une fonction de hachage cryptographique de la famille SHA-2 qui produit une empreinte de 256 bits. Elle opère sur des blocs de 512 bits en utilisant une structure de Merkle-Damgård avec renforcement de Merkle.
+
+Soit $M \in \bin^*$ un message de longueur $L$ bits. L'algorithme procède comme suit :
+\begin{enumerate}
+  \item \textbf{Préparation du message} : Ajout d'un bit $1$, de $k$ bits $0$, et de la longueur $L$ encodée sur 64 bits (big-endian), où $k$ est le plus petit entier non négatif tel que la longueur totale soit un multiple de 512.
+  \item \textbf{Découpage} : Division du message préparé en $N$ blocs de 512 bits : $M^{(1)}, M^{(2)}, \dots, M^{(N)}$.
+  \item \textbf{Initialisation} : Définition de 8 variables de 32 bits initialisées avec des constantes spécifiques (les racines carrées des 8 premiers nombres premiers).
+  \item \textbf{Boucle de compression} : Application itérative d'une fonction de compression $C$ à chaque bloc, mettant à jour les 8 variables.
+  \item \textbf{Sortie} : Concaténation des 8 variables finales (chacune de 32 bits) pour former l'empreinte de 256 bits.
+\end{enumerate}
+\end{definition}
+
+\subsubsection{Préparation du message et découpage}
+
+\begin{definition}[Padding SHA-256]
+Soit $M \in \bin^*$ un message de longueur $L$ bits. On construit le message préparé $M'$ comme suit :
+\[
+M' = M \parallel 1 \parallel 0^k \parallel \mathrm{len}_{64}(L)
+\]
+où :
+\begin{itemize}
+  \item $1$ est un bit unique de valeur $1$,
+  \item $0^k$ est une suite de $k$ bits $0$, avec $k$ choisi tel que $L + 1 + k + 64 \equiv 0 \pmod{512}$,
+  \item $\mathrm{len}_{64}(L)$ est la représentation binaire de $L$ sur 64 bits en convention \emph{big-endian}.
+\end{itemize}
+Le message $M'$ a ainsi une longueur multiple de 512 bits.
+\end{definition}
+
+\begin{definition}[Découpage en blocs de 512 bits]
+Le message préparé $M'$ est divisé en $N$ blocs de 512 bits :
+\[
+M' = M^{(1)} \parallel M^{(2)} \parallel \dots \parallel M^{(N)}.
+\]
+Chaque bloc $M^{(i)}$ est interprété comme 16 mots de 32 bits $M_0^{(i)}, M_1^{(i)}, \dots, M_{15}^{(i)}$ en lecture \emph{big-endian} :
+\[
+M^{(i)} = M_0^{(i)} \parallel M_1^{(i)} \parallel \dots \parallel M_{15}^{(i)}.
+\]
+\end{definition}
+
+\subsubsection{Constantes et fonctions internes}
+
+\begin{definition}[Constantes initiales SHA-256]
+Les 8 variables initiales (registres) sont définies par les constantes suivantes (en hexadécimal) :
+\begin{align*}
+H_0^{(0)} &= \mathtt{6a09e667} & H_1^{(0)} &= \mathtt{bb67ae85} \\
+H_2^{(0)} &= \mathtt{3c6ef372} & H_3^{(0)} &= \mathtt{a54ff53a} \\
+H_4^{(0)} &= \mathtt{510e527f} & H_5^{(0)} &= \mathtt{9b05688c} \\
+H_6^{(0)} &= \mathtt{1f83d9ab} & H_7^{(0)} &= \mathtt{5be0cd19}
+\end{align*}
+Ces valeurs correspondent aux 32 bits de poids fort des parties fractionnaires des racines carrées des 8 premiers nombres premiers.
+\end{definition}
+
+\begin{definition}[Constantes de tour SHA-256]
+Chaque tour $t$ (avec $0 \leq t \leq 63$) utilise une constante $K_t$ de 32 bits, définie comme les 32 bits de poids fort des parties fractionnaires des racines cubiques des 64 premiers nombres premiers. Les premières constantes sont :
+\begin{align*}
+K_0 &= \mathtt{428a2f98} & K_1 &= \mathtt{71374491} & K_2 &= \mathtt{b5c0fbcf} & K_3 &= \mathtt{e9b5dba5} \\
+K_4 &= \mathtt{3956c25b} & K_5 &= \mathtt{59f111f1} & K_6 &= \mathtt{923f82a4} & K_7 &= \mathtt{ab1c5ed5} \\
+K_8 &= \mathtt{d807aa98} & K_9 &= \mathtt{12835b01} & K_{10} &= \mathtt{243185be} & K_{11} &= \mathtt{550c7dc3} \\
+K_{12} &= \mathtt{72be5d74} & K_{13} &= \mathtt{80deb1fe} & K_{14} &= \mathtt{9bdc06a7} & K_{15} &= \mathtt{c19bf174} \\
+& \vdots & & \vdots & & \vdots & & \vdots
+\end{align*}
+\end{definition}
+
+\begin{definition}[Fonctions internes SHA-256]
+Pour des mots de 32 bits $x, y, z$, on définit les fonctions suivantes :
+\begin{align*}
+\mathrm{Ch}(x,y,z) &= (x \land y) \oplus (\neg x \land z) & &\text{(choix)} \\
+\mathrm{Maj}(x,y,z) &= (x \land y) \oplus (x \land z) \oplus (y \land z) & &\text{(majorité)} \\
+\Sigma_0(x) &= \mathrm{ROTR}^{2}(x) \oplus \mathrm{ROTR}^{13}(x) \oplus \mathrm{ROTR}^{22}(x) \\
+\Sigma_1(x) &= \mathrm{ROTR}^{6}(x) \oplus \mathrm{ROTR}^{11}(x) \oplus \mathrm{ROTR}^{25}(x) \\
+\sigma_0(x) &= \mathrm{ROTR}^{7}(x) \oplus \mathrm{ROTR}^{18}(x) \oplus \mathrm{SHR}^{3}(x) \\
+\sigma_1(x) &= \mathrm{ROTR}^{17}(x) \oplus \mathrm{ROTR}^{19}(x) \oplus \mathrm{SHR}^{10}(x)
+\end{align*}
+où $\mathrm{ROTR}^n$ désigne la rotation vers la droite de $n$ bits, $\mathrm{SHR}^n$ le décalage vers la droite de $n$ bits (remplissage par des zéros), $\land$ le ET bit à bit, $\oplus$ le XOR, et $\neg$ la négation bit à bit.
+\end{definition}
+
+\subsubsection{Planning des mots}
+
+\begin{definition}[Planning des mots]
+Pour chaque bloc $M^{(i)}$, on construit 64 mots de 32 bits $W_0, \dots, W_{63}$ appelés planning des mots. Les 16 premiers mots sont les 16 mots du bloc courant :
+\[
+W_t = M_t^{(i)} \quad \text{pour } 0 \leq t \leq 15.
+\]
+Les 48 mots suivants sont calculés récursivement pour $16 \leq t \leq 63$ :
+\[
+W_t = \sigma_1(W_{t-2}) \boxplus W_{t-7} \boxplus \sigma_0(W_{t-15}) \boxplus W_{t-16},
+\]
+où $\boxplus$ désigne l'addition modulo $2^{32}$.
+\end{definition}
+
+\subsubsection{Fonction de compression}
+
+\begin{definition}[Fonction de compression SHA-256]
+La fonction de compression $C$ prend en entrée un état de 256 bits (représenté par 8 mots de 32 bits $H^{(i-1)} = (H_0^{(i-1)}, \dots, H_7^{(i-1)})$) et un bloc de message $M^{(i)}$ de 512 bits, et produit un nouvel état $H^{(i)}$ de 256 bits.
+
+\medskip
+
+\textbf{Algorithme de la fonction de compression} :
+\begin{enumerate}
+  \item Préparer le planning des mots $W_0, \dots, W_{63}$ à partir de $M^{(i)}$.
+  \item Initialiser 8 variables de travail $(a,b,c,d,e,f,g,h)$ avec l'état courant :
+        \[
+        \begin{aligned}
+        a &\gets H_0^{(i-1)}, \quad b \gets H_1^{(i-1)}, \quad c \gets H_2^{(i-1)}, \quad d \gets H_3^{(i-1)}, \\
+        e &\gets H_4^{(i-1)}, \quad f \gets H_5^{(i-1)}, \quad g \gets H_6^{(i-1)}, \quad h \gets H_7^{(i-1)}.
+        \end{aligned}
+        \]
+  \item Pour $t = 0$ à $63$ :
+        \begin{align*}
+        T_1 &\gets h \boxplus \Sigma_1(e) \boxplus \mathrm{Ch}(e,f,g) \boxplus K_t \boxplus W_t, \\
+        T_2 &\gets \Sigma_0(a) \boxplus \mathrm{Maj}(a,b,c), \\
+        h &\gets g, \quad g \gets f, \quad f \gets e, \quad e \gets d \boxplus T_1, \\
+        d &\gets c, \quad c \gets b, \quad b \gets a, \quad a \gets T_1 \boxplus T_2.
+        \end{align*}
+  \item Mettre à jour l'état par addition modulo $2^{32}$ :
+        \[
+        \begin{aligned}
+        H_0^{(i)} &\gets H_0^{(i-1)} \boxplus a, \quad H_1^{(i)} \gets H_1^{(i-1)} \boxplus b, \\
+        H_2^{(i)} &\gets H_2^{(i-1)} \boxplus c, \quad H_3^{(i)} \gets H_3^{(i-1)} \boxplus d, \\
+        H_4^{(i)} &\gets H_4^{(i-1)} \boxplus e, \quad H_5^{(i)} \gets H_5^{(i-1)} \boxplus f, \\
+        H_6^{(i)} &\gets H_6^{(i-1)} \boxplus g, \quad H_7^{(i)} \gets H_7^{(i-1)} \boxplus h.
+        \end{aligned}
+        \]
+\end{enumerate}
+\end{definition}
+
+\subsubsection{Algorithme complet et sortie}
+
+\begin{definition}[Algorithme SHA-256]
+Les étapes sont :
+\begin{enumerate}
+  \item \textbf{Préparation} : Construire $M'$ à partir du message $M$ en appliquant le padding.
+  \item \textbf{Découpage} : Diviser $M'$ en $N$ blocs de 512 bits $M^{(1)}, \dots, M^{(N)}$.
+  \item \textbf{Initialisation} : Initialiser l'état $H^{(0)}$ avec les 8 constantes initiales.
+  \item \textbf{Boucle sur les blocs} : Pour $i = 1$ à $N$, appliquer la fonction de compression $C$ :
+        \[
+        H^{(i)} = C(H^{(i-1)}, M^{(i)}).
+        \]
+  \item \textbf{Sortie} : L'empreinte finale de 256 bits est la concaténation des 8 mots de 32 bits de l'état final $H^{(N)}$ en ordre \emph{big-endian} :
+        \[
+        \text{SHA-256}(M) = H_0^{(N)} \parallel H_1^{(N)} \parallel H_2^{(N)} \parallel H_3^{(N)} \parallel H_4^{(N)} \parallel H_5^{(N)} \parallel H_6^{(N)} \parallel H_7^{(N)}.
+        \]
+\end{enumerate}
+\end{definition}
+
+
 
 \subsection{HMAC}
 
@@ -3405,12 +3560,15 @@ National Institute of Standards and Technology. (2001).
 \textit{Advanced Encryption Standard (AES)}.
 FIPS PUB 197.
 
+\bibitem{fips180-4}
+National Institute of Standards and Technology. (2015).
+\textit{Secure Hash Standard (SHS)}.
+FIPS PUB 180-4.
+
 \bibitem{nist-sp800-38d}
 Dworkin, M. (2007).
 \textit{Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC}.
 NIST Special Publication 800-38D.
-
-
 
 \end{thebibliography}
 
