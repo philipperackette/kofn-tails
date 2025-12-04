@@ -14,6 +14,8 @@
 % Maths et mise en forme
 % ============================
 \usepackage{amsmath,amssymb,amsthm,mathtools}
+%\usepackage{amsmath} % si pas déjà là
+
 \usepackage{bm}
 \usepackage{mathrsfs}
 \usepackage{enumitem}
@@ -70,6 +72,7 @@
 \DeclareMathOperator{\AESGCM}{AES-GCM}
 \DeclareMathOperator{\RSAOAEP}{RSA-OAEP}
 \DeclareMathOperator{\MGF}{MGF1}
+\DeclareMathOperator{\ord}{ord}
 
 % ============================
 % Métadonnées
@@ -3624,11 +3627,353 @@ aléatoirement et uniformément dans \((\Z/n\Z)^\times\), la probabilité que
 \(a \in L(n)\) est au plus \(1/4\).\qedhere
 \end{theorem}
 
-Le cas \(n = p^k\), puissance d'un premier impair, est plus facile et mène en
-fait à une borne strictement meilleure que \(1/4\). Pour ne pas alourdir
-inutilement, nous ne le traitons pas ici : dans les applications de type RSA,
-on travaille précisément avec des modules possédant au moins deux facteurs
-premiers distincts.
+
+
+
+\subsection*{B.0. Le cas \(n = p^k\), puissance d'un premier impair}
+
+Dans cette section, on traite séparément le cas où
+\[
+  n = p^k,\qquad p \text{ premier impair},\ k \ge 2,
+\]
+qui n'était pas couvert par l'énoncé principal du théorème~\ref{thm:MR-borne}
+(voir le début de l'annexe). On conserve la notation
+\[
+  n-1 = 2^s d,\qquad s \ge 1,\ d\ \text{impair},
+\]
+et l'on note, comme dans toute l'annexe,
+\[
+  L(n) = \{ a \in (\Z/n\Z)^\times \mid a \text{ passe le test de Miller--Rabin pour } n \}
+\]
+l'ensemble des \emph{menteurs forts} (strong liars).
+
+Notre but est de donner une description explicite de \(L(n)\) quand \(n=p^k\) et
+d'en déduire une borne simple sur \(|L(n)|\).
+
+\subsubsection*{B.0.1. Structure du groupe multiplicatif}
+
+On note
+\[
+  G = (\Z/n\Z)^\times.
+\]
+On sait que \(G\) est cyclique d'ordre
+\[
+  |G| = \varphi(n) = (p-1)p^{k-1}.
+\]
+On écrit
+\[
+  \varphi(n) = 2^t m,\qquad t \ge 1,\ m\ \text{impair}.
+\]
+Autrement dit, \(2^t\) est la plus grande puissance de \(2\) divisant \(\varphi(n)\).
+
+On a aussi
+\[
+  n-1 = p^k - 1 = (p-1)\bigl(1+p+\dots+p^{k-1}\bigr).
+\]
+En décomposant la partie paire, on peut écrire
+\[
+  p-1 = 2^t A,\qquad A\ \text{impair}.
+\]
+L'égalité ci-dessus montre alors que la partie impaire de \(\varphi(n)\) est
+\[
+  m = A\,p^{k-1},
+\]
+tandis que la partie impaire de \(n-1\) est de la forme
+\[
+  d = A\cdot C,
+\]
+où \(C\) est l'impair obtenu en enlevant les puissances de \(2\) du facteur
+\(\,1+p+\dots+p^{k-1}\).
+
+\begin{lemma}
+\label{lem:B0-gcd-md}
+Avec les notations ci-dessus, on a
+\[
+  \gcd(m,d) = A = \frac{p-1}{2^t}.
+\]
+\end{lemma}
+
+\begin{proof}
+On vient de voir que
+\[
+  m = A\,p^{k-1},\qquad d = A\,C,
+\]
+avec \(A,C\) impairs. Donc
+\[
+  \gcd(m,d) = \gcd(Ap^{k-1},AC) = A\,\gcd(p^{k-1},C).
+\]
+Or \(C\) est obtenu à partir de \(1+p+\dots+p^{k-1}\) en en retirant les facteurs
+de \(2\). Mais on a
+\[
+  1+p+\dots+p^{k-1} \equiv 1 \pmod{p},
+\]
+donc \(p \nmid C\), et \(\gcd(p^{k-1},C) = 1\). D'où le résultat.
+\end{proof}
+
+\subsubsection*{B.0.2. Classification des menteurs via l'ordre de \(a\)}
+
+On rappelle le fonctionnement du test de Miller--Rabin pour un entier impair
+\(n \ge 3\) fixé : pour une base \(a\) première avec \(n\), on écrit
+\(n-1 = 2^s d\) avec \(d\) impair, puis on considère la suite
+\[
+  x_0 = a^d,\qquad x_{r+1} = x_r^2 \pmod{n}\quad (r \ge 0).
+\]
+On dit que \(a\) est un \emph{menteur fort} si l'une des conditions suivantes
+est vérifiée :
+\begin{itemize}
+  \item \(x_0 \equiv 1 \pmod{n}\);
+  \item il existe \(r \in \{0,\dots,s-1\}\) tel que \(x_r \equiv -1 \pmod{n}\).
+\end{itemize}
+
+Dans le cas \(n = p^k\), le groupe \(G\) est cyclique d'ordre \(2^t m\). Soit
+\(g\) un générateur de \(G\).
+
+\begin{lemma}
+\label{lem:B0-ordre-liar}
+Soit \(a \in G\) et écrivons l'ordre de \(a\) sous la forme
+\[
+  \ord(a) = 2^\alpha \beta,\qquad 0 \le \alpha \le t,\ \beta\ \text{impair}.
+\]
+Alors \(a\) est un menteur (pour \(n\)) si et seulement si
+\[
+  \beta \mid d \quad\text{et}\quad \alpha \le s.
+\]
+\end{lemma}
+
+\begin{proof}
+Posons \(x_0 = a^d\). L'ordre de \(x_0\) dans \(G\) est donné par
+\[
+  \ord(x_0) = \frac{\ord(a)}{\gcd(\ord(a),d)}.
+\]
+Écrivons \(\ord(a) = 2^\alpha \beta\) avec \(\beta\) impair. Comme \(d\) est
+impair, le pgcd \(\gcd(\ord(a),d)\) est lui aussi impair, disons
+\(\gcd(\ord(a),d) = \delta\) avec \(\delta \mid \beta\). On obtient donc
+\[
+  \ord(x_0) = 2^\alpha \cdot \frac{\beta}{\delta},
+\]
+avec \(\beta/\delta\) impair. Notons
+\[
+  \ord(x_0) = 2^u v,\qquad u = \alpha,\ v = \frac{\beta}{\delta}\ \text{impair}.
+\]
+
+\emph{(Sens direct).} Supposons que \(a\) soit un menteur.
+
+\begin{itemize}
+  \item Si \(x_0 \equiv 1\), alors \(\ord(x_0) = 1\). Donc \(2^u v = 1\), d'où
+    \(u=0\) et \(v=1\). En particulier, \(\alpha = 0\) et
+    \(\beta = \delta \mid d\). Comme \(s \ge 1\), la condition \(\alpha \le s\)
+    est triviale, et on a bien \(\beta \mid d\) et \(\alpha \le s\).
+
+  \item Sinon, il existe \(r \in \{0,\dots,s-1\}\) tel que \(x_r \equiv -1\).
+    Par définition,
+    \[
+      x_r = x_0^{2^r}.
+    \]
+    Dans le groupe cyclique \(G\), l'élément \(-1\) est l'unique élément d'ordre
+    \(2\). Par conséquent, \(\ord(x_r) = 2\). Or
+    \[
+      \ord(x_r) = \frac{\ord(x_0)}{\gcd(\ord(x_0),2^r)}
+                = \frac{2^u v}{\gcd(2^u v,2^r)}.
+    \]
+    Comme \(v\) est impair, le pgcd vaut \(\gcd(2^u v,2^r) = 2^{\min(u,r)}\), et
+    \[
+      \ord(x_r) = 2^{u-\min(u,r)} v.
+    \]
+    Pour que ceci soit égal à \(2\), il faut d'abord \(v=1\), puis
+    \(u-\min(u,r) = 1\). On en déduit que \(u \ge 1\), \(v = 1\) et
+    \(\min(u,r) = u-1\), donc \(r = u-1\). En particulier, \(r \le s-1\)
+    implique \(u \le s\), i.e.\ \(\alpha \le s\). La condition \(v=1\) signifie
+    que \(\beta/\delta = 1\), donc \(\beta = \delta \mid d\).
+\end{itemize}
+
+Dans tous les cas, on a donc montré que
+\[
+  a \text{ menteur} \;\Longrightarrow\; \beta \mid d\ \text{et}\ \alpha \le s.
+\]
+
+\emph{(Sens réciproque).} Réciproquement, supposons
+\(\beta \mid d\) et \(\alpha \le s\). Écrivons \(d = \beta \cdot d_1\). Alors
+\[
+  x_0 = a^d = \bigl(a^\beta\bigr)^{d_1}.
+\]
+Comme \(\ord(a) = 2^\alpha \beta\), l'élément \(a^\beta\) a pour ordre \(2^\alpha\).
+On distingue deux cas.
+
+\begin{itemize}
+  \item Si \(\alpha = 0\), alors \(\ord(a) = \beta\) est impair et \(\beta \mid d\),
+    ce qui implique \(\ord(a) \mid d\) et donc \(a^d \equiv 1\). Donc \(a\) est un
+    menteur de type « \(a^d \equiv 1\) ».
+
+  \item Si \(\alpha \ge 1\), alors \(\ord(a^\beta) = 2^\alpha\), et
+    \[
+      x_0 = a^d = (a^\beta)^{d_1}
+    \]
+    a encore pour ordre \(2^\alpha\) (car \(d_1\) est impair). La suite
+    \(x_r = x_0^{2^r}\) est donc exactement la suite des puissances
+    \((a^\beta)^{d_1 2^r}\). À l'étape \(r = \alpha-1\), on a
+    \[
+      x_{\alpha-1} = x_0^{2^{\alpha-1}}
+    \]
+    qui est d'ordre \(2\), donc égal à \(-1\) (l'unique élément d'ordre \(2\)
+    dans \(G\)). Comme \(\alpha \le s\), on a \(\alpha-1 \le s-1\), donc cette
+    occurrence de \(-1\) est bien détectée par le test de Miller--Rabin, et
+    \(a\) est un menteur de type « apparition de \(-1\) ».
+\end{itemize}
+
+Cela achève la preuve.
+\end{proof}
+
+\subsubsection*{B.0.3. Comptage explicite des menteurs}
+
+On va maintenant exploiter la structure cyclique de \(G\) pour compter
+explicitement les éléments \(a\) satisfaisant les conditions du
+lemme~\ref{lem:B0-ordre-liar}.
+
+\begin{lemma}
+\label{lem:B0-nb-ordres}
+Soit \(G\) un groupe cyclique d'ordre \(2^t m\) avec \(m\) impair. Pour tout
+entier \(0 \le \alpha \le t\) et tout diviseur impair \(\beta\) de \(m\), le
+nombre d'éléments de \(G\) d'ordre exactement \(2^\alpha \beta\) est
+\[
+  \varphi(2^\alpha \beta) = \varphi(2^\alpha)\,\varphi(\beta),
+\]
+où \(\varphi\) désigne l'indicatrice d'Euler.
+\end{lemma}
+
+\begin{proof}
+C'est une propriété bien connue des groupes cycliques : si \(G = \langle g\rangle\)
+est d'ordre \(N\), alors, pour chaque diviseur \(d\) de \(N\), il y a exactement
+\(\varphi(d)\) éléments d'ordre \(d\), à savoir les puissances \(g^{N/d}\),
+\(g^{2N/d}, \dots, g^{(d-1)N/d}\). La formule de multiplicativité
+\(\varphi(uv) = \varphi(u)\varphi(v)\) pour \(\gcd(u,v)=1\) donne
+\(\varphi(2^\alpha \beta) = \varphi(2^\alpha)\varphi(\beta)\) puisque \(\beta\)
+est impair.
+\end{proof}
+
+Appliquons ceci à notre situation. D'après le lemme~\ref{lem:B0-ordre-liar},
+un élément \(a \in G\) est menteur si et seulement si \(\ord(a) = 2^\alpha \beta\)
+avec
+\[
+  0 \le \alpha \le \min(s,t)
+  \quad\text{et}\quad
+  \beta\ \text{diviseur impair de } d.
+\]
+Mais \(\beta\) doit aussi diviser la partie impaire \(m\) de \(|G|\); on a donc
+nécessairement
+\[
+  \beta \mid \gcd(m,d).
+\]
+Posons
+\[
+  \Delta = \gcd(m,d)
+  \qquad\text{et}\qquad
+  u_0 = \min(s,t).
+\]
+
+\begin{proposition}
+\label{prop:B0-card-Ln-general}
+Dans le cas \(n = p^k\), on a
+\[
+  |L(n)|
+  = \Delta \cdot 2^{u_0},
+\]
+où \(\Delta = \gcd(m,d)\) et \(u_0 = \min(s,t)\) sont définis comme ci-dessus.
+\end{proposition}
+
+\begin{proof}
+D'après le lemme~\ref{lem:B0-ordre-liar}, on doit compter les paires
+\((\alpha,\beta)\) avec \(0 \le \alpha \le u_0\) et \(\beta\) diviseur impair de
+\(\Delta\). Pour une telle paire, le nombre d'éléments d'ordre \(2^\alpha \beta\)
+est \(\varphi(2^\alpha \beta) = \varphi(2^\alpha)\varphi(\beta)\). On obtient
+donc
+\[
+  |L(n)| = \sum_{\alpha=0}^{u_0} \sum_{\beta \mid \Delta}
+           \varphi(2^\alpha)\,\varphi(\beta)
+         = \Bigl( \sum_{\beta \mid \Delta} \varphi(\beta) \Bigr)
+           \Bigl( \varphi(1) + \sum_{\alpha=1}^{u_0} \varphi(2^\alpha) \Bigr).
+\]
+Or \(\sum_{\beta \mid \Delta} \varphi(\beta) = \Delta\), et
+\(\varphi(1) = 1\), \(\varphi(2^\alpha) = 2^{\alpha-1}\) pour \(\alpha \ge 1\). Il
+vient
+\[
+  |L(n)| = \Delta \Bigl( 1 + \sum_{\alpha=1}^{u_0} 2^{\alpha-1} \Bigr)
+         = \Delta \Bigl( 1 + (2^{u_0}-1) \Bigr)
+         = \Delta \cdot 2^{u_0},
+\]
+comme annoncé.
+\end{proof}
+
+\subsubsection*{B.0.4. Application au cas \(n = p^k\)}
+
+Revenons au cas particulier \(n = p^k\), \(p\) impair, \(k \ge 2\). D'après le
+lemme~\ref{lem:B0-gcd-md}, on a \(\Delta = A = (p-1)/2^t\). De plus,
+\(n-1 = (p-1)(1+p+\dots+p^{k-1})\) possède une valuation \(2\)-adique
+\(s = t + \mu\) avec \(\mu \ge 0\). Ainsi
+\[
+  s \ge t,\qquad u_0 = \min(s,t) = t.
+\]
+La proposition~\ref{prop:B0-card-Ln-general} donne donc
+\[
+  |L(n)| = \Delta \cdot 2^{u_0}
+         = \frac{p-1}{2^t} \cdot 2^t
+         = p-1.
+\]
+
+\begin{corollary}
+\label{cor:B0-Ln-prime-power}
+Soit \(n = p^k\) avec \(p\) premier impair et \(k \ge 2\). Alors
+\[
+  |L(n)| = p-1.
+\]
+En particulier,
+\[
+  \frac{|L(n)|}{\varphi(n)}
+  = \frac{p-1}{(p-1)p^{k-1}}
+  = \frac{1}{p^{k-1}}.
+\]
+\end{corollary}
+
+\begin{proof}
+La formule \(|L(n)| = p-1\) vient du calcul précédent, et
+\(\varphi(n) = (p-1)p^{k-1}\).
+\end{proof}
+
+On remarque que cette proportion de menteurs est toujours \(\le 1/4\) dès que
+\[
+  \frac{1}{p^{k-1}} \le \frac{1}{4}
+  \quad\Longleftrightarrow\quad
+  p^{k-1} \ge 4.
+\]
+Il y a donc un seul cas exceptionnel à exclure :
+
+\begin{itemize}
+  \item si \(p=3\) et \(k=2\), i.e.\ \(n=9\), alors
+    \(|L(9)| = 2\), \(\varphi(9) = 6\) et
+    \(|L(9)|/\varphi(9) = 1/3 > 1/4\) ;
+  \item pour tout autre couple \((p,k)\) avec \(p\) impair, \(k \ge 2\), on a
+    \(|L(n)|/\varphi(n) \le 1/4\).
+\end{itemize}
+
+\begin{remark}[Lien avec le théorème principal]
+Pour le théorème~\ref{thm:MR-borne}, on a supposé que \(n\) n'était pas une
+puissance d'un nombre premier. La preuve donnée dans les sections B.1 à B.7
+fournit alors la borne
+\[
+  |L(n)| \le \frac{\varphi(n)}{4}.
+\]
+Le corollaire~\ref{cor:B0-Ln-prime-power} montre que, pour \(n = p^k\) avec
+\(p\) impair, on a
+\[
+  |L(n)| = p-1 \le \frac{\varphi(n)}{4}
+\]
+sauf pour le seul cas \(n=9\). En pratique cryptographique (par exemple pour des
+moduli de 2048 bits), ce cas minuscule est totalement hors d'atteinte, et la
+borne de probabilité « au plus \(1/4\) par base indépendante » reste donc
+valable, même si l'on ne filtre pas explicitement les puissances de premiers.
+\end{remark}
+
+
+
 
 \subsection*{B.1. Rappel du test de Miller--Rabin}
 
@@ -4176,7 +4521,7 @@ ce qui est exactement l'énoncé du théorème~\ref{thm:MR-borne}.
 \subsection*{B.7. Commentaires}
 
 La démonstration ci-dessus établit le théorème~\ref{thm:MR-borne} de manière
-rigoureuse, en suivant la stratégie de Conrad~\cite{Conrad-MR} :
+rigoureuse, en suivant la stratégie de Conrad :
 \begin{itemize}
   \item définition de l'exposant maximal \(i_0\) pour lequel \(-1\) apparaît
     globalement dans la suite~\eqref{eq:MR-suite},
