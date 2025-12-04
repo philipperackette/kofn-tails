@@ -1861,13 +1861,12 @@ et donc
 \]
 Autrement dit, si l'on se contentait de choisir $p$ et $q$ de 2048 bits puis de prendre $n = pq$, on obtiendrait un module de 4096 bits dans un peu plus de 60\,\% des cas.
 
-Pour garantir que le module a bien 4096 bits, deux stratégies standard sont utilisées :
+Pour garantir que le module a bien 4096 bits, on utilise en pratique l'une des deux stratégies suivantes :
 \begin{itemize}
   \item soit on applique un \emph{rejection sampling} : on génère $p$ et $q$ (premiers de 2048 bits), on calcule $n = pq$, puis on rejette les couples pour lesquels $n$ n'a que 4095 bits, jusqu'à obtenir un $n$ vérifiant $\lfloor \log_2 n \rfloor + 1 = 4096$ ;
-  \item soit on contraint légèrement la forme de $p$ et de $q$ (en fixant quelques bits de poids fort) de manière à ce que le produit $pq$ soit automatiquement dans l'intervalle $[2^{4095},2^{4096}[$.
+  \item soit on contraint légèrement la forme de $p$ et de $q$ (en fixant notamment quelques bits de poids fort et la taille minimale) de manière à ce que le produit $pq$ soit, sauf cas exceptionnel, automatiquement dans l'intervalle $[2^{4095},2^{4096})$, tout en rejetant les rares cas restants où la longueur ne serait pas exactement 4096 bits.
 \end{itemize}
-Dans les deux cas, la taille annoncée de la clé (4096 bits) correspond effectivement à la taille mathématique du module.
-
+Dans les deux cas, la taille annoncée de la clé (4096 bits) correspond effectivement à la taille mathématique du module. Dans notre implémentation, qui s'appuie sur la bibliothèque Python \texttt{cryptography} et donc sur OpenSSL, c'est essentiellement la seconde stratégie qui est utilisée : $p$ et $q$ sont générés avec une forme légèrement contrainte, puis la génération est répétée tant que le module $n = pq$ n'a pas exactement 4096 bits.
 
 
 
