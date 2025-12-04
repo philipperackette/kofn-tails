@@ -1876,7 +1876,7 @@ En pratique, les bibliothèques cryptographiques génèrent $p$ et $q$ de la man
 \begin{enumerate}
   \item \emph{Tirage d'un candidat impair de 2048 bits.} On tire aléatoirement un entier $N$ de 2048 bits à l'aide d'un générateur pseudo-aléatoire cryptographiquement sûr, on force le bit de poids fort à $1$ (pour garantir la taille) et le bit de poids faible à $1$ (pour que $N$ soit impair).
   \item \emph{Filtrage par petits premiers.} On élimine rapidement les candidats manifestement composés en testant la divisibilité de $N$ par une liste de petits nombres premiers (par exemple les premiers $\leq 1000$).
-  \item \emph{Test de primalité probabiliste (Miller--Rabin).} Pour les candidats survivants, on applique plusieurs itérations du test de Miller--Rabin. On écrit $N-1 = 2^s d$ avec $d$ impair, puis, pour chaque base $a$ choisie (aléatoire ou selon une liste standard), on examine la suite
+  \item \emph{Test de primalité probabiliste (Miller--Rabin voir \ref{sec:annexe-miller-rabin}).} Pour les candidats survivants, on applique plusieurs itérations du test de Miller--Rabin. On écrit $N-1 = 2^s d$ avec $d$ impair, puis, pour chaque base $a$ choisie (aléatoire ou selon une liste standard), on examine la suite
   \[
     a^d,\; a^{2d},\; a^{4d},\; \dots,\; a^{2^{s-1}d} \pmod{N}.
   \]
@@ -3581,460 +3581,632 @@ et l'on peut le noter sans ambiguïté $\F_{p^n}$.
 
 \newpage
 
-% ============================
-% Annexe : Borne probabiliste du test de Miller--Rabin
-% ============================
 
-% ==========================================================
-% Annexe B — Le test de Miller–Rabin et sa borne probabiliste
-% ==========================================================
 
-\section*{Annexe B — Le test de Miller--Rabin et sa borne probabiliste}
-\addcontentsline{toc}{section}{Annexe B — Le test de Miller--Rabin et sa borne probabiliste}
+%=========================================================
+% Annexe B : Borne probabiliste du test de Miller--Rabin
+%=========================================================
 
-Dans cette annexe, on rappelle le test de primalité probabiliste de Miller--Rabin
-et on justifie rigoureusement la borne classique sur sa probabilité d'erreur :
-si $n > 1$ est impair et composé, alors la proportion de bases « menteuses »
-(ou non-témoins) est \emph{au plus} $1/4$. Autrement dit, pour une base $a$
-choisie uniformément au hasard, la probabilité que le test déclare à tort
-« $n$ est premier » est $\le 1/4$.
+%=========================================================
+% Annexe B : Borne probabiliste du test de Miller--Rabin
+%=========================================================
 
-On commence par définir précisément le test et les notions de témoin et de
-non-témoin, puis on démontre d'abord une borne plus simple (probabilité
-d'erreur $\le 1/2$) avant d'esquisser la preuve complète de la borne
-$\le 1/4$ due à Monier et Rabin.
+\section{Annexe B --- Borne probabiliste du test de Miller--Rabin}
+\label{sec:annexe-miller-rabin}
+
+Dans cette annexe, on donne une preuve détaillée de la borne classique suivante
+pour le test de primalité probabiliste de Miller--Rabin, dans le cas
+cryptographiquement pertinent.
+
+\begin{theorem}[Borne de Miller--Rabin]
+\label{thm:MR-borne}
+Soit \(n \ge 3\) un entier impair, composite, qui n'est pas une puissance d'un
+nombre premier. On note
+\[
+  n-1 = 2^s d,\qquad s \ge 1,\ d\ \text{impair}.
+\]
+On considère le test de Miller--Rabin appliqué à \(n\), pour des bases \(a\)
+premières avec \(n\). On appelle \emph{menteur} (ou \emph{strong liar}) toute
+base \(a \in (\Z/n\Z)^\times\) pour laquelle le test déclare à tort que \(n\) est
+« probablement premier ».
+
+On note \(L(n)\) l'ensemble des menteurs :
+\[
+  L(n) = \{ a \in (\Z/n\Z)^\times \mid
+    \text{\(a\) passe le test de Miller--Rabin pour le module \(n\)} \}.
+\]
+Alors on a la borne
+\[
+  |L(n)| \le \frac{\varphi(n)}{4},
+\]
+où \(\varphi\) désigne l'indicatrice d'Euler. En particulier, si \(a\) est choisi
+aléatoirement et uniformément dans \((\Z/n\Z)^\times\), la probabilité que
+\(a \in L(n)\) est au plus \(1/4\).\qedhere
+\end{theorem}
+
+Le cas \(n = p^k\), puissance d'un premier impair, est plus facile et mène en
+fait à une borne strictement meilleure que \(1/4\). Pour ne pas alourdir
+inutilement, nous ne le traitons pas ici : dans les applications de type RSA,
+on travaille précisément avec des modules possédant au moins deux facteurs
+premiers distincts.
 
 \subsection*{B.1. Rappel du test de Miller--Rabin}
 
-Soit $n > 1$ un entier impair. On écrit sa décomposition
+On prend \(n\) impair, \(n \ge 3\), et on écrit
 \[
-n-1 = 2^s d, \qquad s \ge 1,\quad d \text{ impair}.
+  n-1 = 2^s d,\qquad s \ge 1,\ d\ \text{impair}.
 \]
-Le test de Miller--Rabin, pour une base $a \in \{2,\dotsc,n-2\}$, procède
-comme suit.
+Soit \(a\) un entier premier à \(n\). On considère la suite
+\begin{equation}
+\label{eq:MR-suite}
+  a^d,\ a^{2d},\ a^{4d},\ \dots,\ a^{2^{s-1}d} \pmod{n}.
+\end{equation}
 
-\begin{enumerate}[label=\arabic*)]
-  \item Calculer $x_0 = a^d \bmod n$.
-  \item Si $x_0 \equiv 1 \pmod n$ ou $x_0 \equiv -1 \pmod n$, alors le test
-        \emph{accepte} la base $a$ (on ne détecte pas que $n$ est composé).
-  \item Sinon, pour $r = 1,2,\dotsc,s-1$, calculer récursivement
-        \[
-          x_r = x_{r-1}^2 \bmod n.
-        \]
-        Si, pour un certain $r$, on a $x_r \equiv -1 \pmod n$, alors
-        le test accepte la base $a$.
-  \item Si aucun des $x_r$ n'est congru à $-1 \pmod n$ et que l'on
-        n'a jamais vu $1$ avant un éventuel $-1$, alors le test \emph{rejette}
-        la base $a$ en concluant que $n$ est composé.
-\end{enumerate}
-
-Intuitivement, quand $n$ est premier, le théorème de Fermat assure que
-\[
-a^{n-1} \equiv 1 \pmod n
-\]
-pour tout $a$ non multiple de $n$, donc la suite
-\[
-x_0 = a^d,\quad x_1 = a^{2d},\quad x_2 = a^{4d},\ \dots,\ x_{s-1}=a^{2^{s-1}d}
-\]
-doit finir par $1$, et la première occurrence de $1$ dans la suite ne peut pas
-« arriver par surprise » : juste avant, on doit avoir $-1$.
-Quand $n$ est composé, cette structure se casse souvent, et l'on essaie
-de détecter cette anomalie.
-
-\begin{definition}[Témoins et non-témoins de Miller--Rabin]
-Soit $n>1$ impair, avec $n-1 = 2^s d$ ($d$ impair), et soit $a$ un entier tel que
-$1 \le a \le n-1$.
-
+\begin{definition}[Témoins et menteurs]
+\label{def:MR-temoin-menteur}
+On dit que \(a\) est un \emph{témoin de composition} (ou \emph{strong witness})
+pour \(n\) si l'une des deux conditions suivantes est vérifiée :
 \begin{itemize}
-  \item On dit que $a$ est un \emph{non-témoin de Miller--Rabin} (ou
-        \emph{menteur}) pour $n$ si au moins une des congruences suivantes est
-        satisfaite :
-        \[
-          a^d \equiv 1 \pmod n
-          \quad\text{ou}\quad
-          a^{2^r d} \equiv -1 \pmod n \text{ pour un certain } r\in\{0,\dotsc,s-1\}.
-        \]
-        Dans ce cas, le test (pour la base $a$) ne détecte pas que $n$ est
-        composé.
-
-  \item On dit que $a$ est un \emph{témoin de Miller--Rabin} pour $n$ si
-        \emph{aucune} de ces congruences n'est satisfaite :
-        \[
-          a^d \not\equiv 1 \pmod n
-          \quad\text{et}\quad
-          a^{2^r d} \not\equiv -1 \pmod n
-          \text{ pour tout } r\in\{0,\dotsc,s-1\}.
-        \]
-        Dans ce cas, le test affirme que $n$ est composé, et cette conclusion
-        est correcte.
+  \item[(i)] \(a^d \not\equiv 1 \pmod{n}\) \emph{et}
+  \item[(ii)] pour tout \(r \in \{0,1,\dots,s-1\}\),
+    on a \(a^{2^r d} \not\equiv -1 \pmod{n}\).
 \end{itemize}
+Dans ce cas, le test Miller--Rabin détecte que \(n\) est composé.
+
+On dit que \(a\) est un \emph{menteur} (ou \emph{strong liar}) pour \(n\) si
+l'une des conditions suivantes est satisfaite :
+\begin{itemize}
+  \item \(a^d \equiv 1 \pmod{n}\); ou
+  \item il existe \(r \in \{0,1,\dots,s-1\}\) tel que
+    \(a^{2^r d} \equiv -1 \pmod{n}\).
+\end{itemize}
+Dans ce cas, le test de Miller--Rabin déclare « premier » un entier en réalité
+composé.\qedhere
 \end{definition}
 
-On vérifie immédiatement que si $n$ est premier, il n'existe
-\emph{aucun} témoin pour $n$ : tous les entiers $a$ premiers à $n$
-sont des non-témoins (cela se déduit du théorème de Fermat et de la
-structure des racines carrées de $1$ modulo un nombre premier).
+Par définition, \(L(n)\) est l'ensemble des menteurs, i.e.\ des bases qui passent
+le test malgré la composité de \(n\).
 
-En revanche, pour $n$ \emph{composé} et impair, il peut y avoir :
+\begin{remark}
+Si \(\gcd(a,n) \ne 1\), le test de Miller--Rabin peut (et doit) commencer par
+calculer \(\gcd(a,n)\) : si ce pgcd n'est pas \(1\), on a trouvé un facteur non
+trivial de \(n\) et l'algorithme s'arrête en déclarant « composé ». Dans toute
+la suite, on ne considère donc que des \(a\) dans le groupe des unités
+\((\Z/n\Z)^\times\).
+\end{remark}
 
-\begin{itemize}
-  \item des \emph{témoins} (qui prouvent que $n$ est composé) ;
-  \item des \emph{non-témoins} (qui « imitent » le comportement d'un nombre
-        premier et font échouer le test).
-\end{itemize}
+\subsection*{B.2. Sous-groupes associés au test}
 
-Le but de ce qui suit est de montrer que, pour tout $n$ impair composite,
-les non-témoins sont \emph{rares}.
-
-\subsection*{B.2. Le cas composite et l'objectif probabiliste}
-
-Dans les applications de cryptographie, on applique le test de Miller--Rabin
-à un entier impair $n$ dont on ne connaît pas encore la factorisation.
-On choisit des bases $a_1,\dotsc,a_t$ uniformément au hasard (ou selon une
-distribution suffisamment étalée), et on applique le test pour chacune.
-
-\begin{itemize}
-  \item Si, pour au moins une base, le test déclare « composite », alors $n$
-        est \emph{sûrement} composé.
-  \item Si, pour toutes les bases testées, le test « accepte », alors on
-        considère $n$ comme probablement premier.
-\end{itemize}
-
-Pour Majorer la probabilité d'erreur, on fixe un entier impair $n>1$ que l'on
-suppose cette fois \emph{composé}, et on étudie la proportion de bases
+On va exprimer la condition « être menteur » en termes de sous-groupes de
+\((\Z/n\Z)^\times\). Pour tout entier \(r \ge 0\), on pose
 \[
-a \in \{2,\dotsc,n-2\}
+  H_r = \{ a \in (\Z/n\Z)^\times \mid a^{2^r d} \equiv 1 \pmod{n} \}.
 \]
-qui sont des non-témoins de Miller--Rabin. Si cette proportion est $\leq \alpha$,
-alors, en répétant le test sur $t$ bases indépendantes, la probabilité que
-\emph{toutes} les bases soient des non-témoins est $\leq \alpha^t$.
+C'est clairement un sous-groupe de \((\Z/n\Z)^\times\). En particulier,
+\[
+  H_0 = \{ a \mid a^d \equiv 1 \},\qquad
+  H_1 = \{ a \mid a^{2d} \equiv 1 \},\quad \dots,\quad
+  H_s = \{ a \mid a^{2^s d} \equiv 1 \}.
+\]
+Mais \(2^s d = n-1\), donc par le théorème d'Euler, \(a^{2^s d} \equiv 1\) pour
+tout \(a \in (\Z/n\Z)^\times\), et ainsi
+\[
+  H_s = (\Z/n\Z)^\times.
+\]
+On a donc une suite croissante de sous-groupes :
+\[
+  H_0 \subseteq H_1 \subseteq \dots \subseteq H_s = (\Z/n\Z)^\times.
+\]
 
-Nous allons montrer successivement :
-
-\begin{itemize}
-  \item une borne simple mais déjà très utile : proportion de non-témoins
-        $\leq 1/2$ ;
-  \item le théorème optimal de Monier--Rabin : proportion de non-témoins
-        $\leq 1/4$.
-\end{itemize}
-
-La première borne se prouve avec des arguments de théorie des groupes
-relativement élémentaires et donne déjà un test très efficace. La seconde
-borne est plus subtile et demande une analyse fine de la structure des
-séquences de Miller--Rabin modulo chaque facteur premier de $n$.
-
-\subsection*{B.3. Une borne simple : au plus la moitié de non-témoins}
-
-On commence par une borne plus facile :
-
-\begin{theorem}[Borne $1/2$]
-\label{thm:MR-12}
-Soit $n>1$ un entier impair \emph{composé}, et écrivons $n-1 = 2^s d$ avec
-$d$ impair. Alors la proportion de non-témoins de Miller--Rabin pour $n$ dans
-$\{2,\dotsc,n-2\}$ est strictement inférieure à $1/2$.
-\end{theorem}
-
-L'idée de la preuve est la suivante : les non-témoins de Miller--Rabin
-appartenant à $(\Z/n\Z)^\times$ (c'est-à-dire premiers avec $n$) sont contenus
-dans un \emph{sous-groupe propre} du groupe multiplicatif
-$(\Z/n\Z)^\times$. Un sous-groupe propre d'un groupe fini a un cardinal au
-plus égal à la moitié du groupe, ce qui fournit la borne.
+Pour chaque \(r \ge 0\), on introduit aussi l'ensemble
+\[
+  C_r = \{ a \in (\Z/n\Z)^\times \mid a^{2^r d} \equiv -1 \pmod{n} \}.
+\]
 
 \begin{lemma}
-\label{lem:noninv-temoins}
-Soit $n>1$ impair et composite. Si $a \in \{1,\dotsc,n-1\}$ n'est pas premier
-avec $n$ (c'est-à-dire $\gcd(a,n) > 1$), alors $a$ est un témoin pour $n$
-dans le test de Miller--Rabin.
+\label{lem:Cr-coset}
+Pour tout \(r \ge 0\), soit \(C_r\) est vide, soit \(C_r\) est une classe
+latérale de \(H_r\). En particulier, si \(C_r\) est non vide, on a
+\(|C_r| = |H_r|\).
 \end{lemma}
 
 \begin{proof}
-Si $\gcd(a,n) > 1$, le test de Miller--Rabin commence par demander de calculer
-$x_0 = a^d \bmod n$ et, en pratique, on aurait déjà détecté le facteur
-$\gcd(a,n)$ en calculant ce reste ou en effectuant des opérations intermédiaires.
-Du point de vue purement théorique, on peut conventionnellement décider que
-toute base non première avec $n$ est traitée comme « témoin » : elle fournit
-un certificat immédiat de composité (un diviseur non trivial de $n$).
+Si \(C_r\) est vide il n'y a rien à prouver. Sinon, soit \(b \in C_r\) un
+élément fixé. On vérifie alors que
+\[
+  C_r = b H_r = \{ b h \mid h \in H_r \}.
+\]
+En effet, si \(h \in H_r\), alors
+\[
+  (b h)^{2^r d} \equiv b^{2^r d} h^{2^r d} \equiv (-1)\cdot 1 \equiv -1 \pmod{n},
+\]
+donc \(b h \in C_r\). Réciproquement, si \(a \in C_r\), on peut écrire
+\(a = b h\) avec \(h = b^{-1} a\), et
+\[
+  h^{2^r d} \equiv b^{-2^r d} a^{2^r d} \equiv (-1)^{-1} \cdot (-1) \equiv 1
+  \pmod{n},
+\]
+donc \(h \in H_r\). Ainsi \(C_r = b H_r\), donc \(|C_r| = |H_r|\).
 \end{proof}
 
-Ainsi, les \emph{non-témoins} de Miller--Rabin se trouvent nécessairement dans
-le groupe des unités
-\[
-G := (\Z/n\Z)^\times.
-\]
-
-\begin{definition}
-On note $L(n)$ l'ensemble des non-témoins de Miller--Rabin de $n$ dans $G$ :
-\[
-L(n) := \left\{ a \in G \ \middle|\ a^d \equiv 1 \pmod n
-\text{ ou } a^{2^r d} \equiv -1 \pmod n \text{ pour un certain } r \right\}.
-\]
-\end{definition}
-
-On va montrer que $L(n)$ est contenu dans un sous-groupe propre de $G$.
-On commence par un lemme classique.
-
 \begin{lemma}
-\label{lem:solutions-am}
-Soit $n>1$ impair, et soit $m\ge 1$. Le nombre de solutions
-$a \in G$ de la congruence
-\[
-a^m \equiv 1 \pmod n
-\]
-est égal au cardinal du sous-groupe
-\[
-\{a \in G \mid a^m = 1\} \subseteq G,
-\]
-et ce cardinal est un diviseur de $|G| = \varphi(n)$.
+\label{lem:Cr-disjoints}
+Pour \(r \ne r'\), les ensembles \(C_r\) et \(C_{r'}\) sont disjoints. De plus,
+pour tout \(r\), on a \(H_r \cap C_r = \varnothing\).
 \end{lemma}
 
 \begin{proof}
-Dans un groupe fini $G$, l'ensemble des éléments $a$ tels que $a^m = 1$
-est toujours un sous-groupe de $G$ (stabilité par produit et inverse).
-Son cardinal divise donc $|G|$ par le théorème de Lagrange.
+Si \(a \in H_r \cap C_r\), alors on aurait à la fois \(a^{2^r d} \equiv 1\) et
+\(a^{2^r d} \equiv -1\), ce qui est impossible. Donc \(H_r \cap C_r =
+\varnothing\).
+
+Pour la disjonction des \(C_r\), supposons qu'il existe \(a\) dans
+\(C_r \cap C_{r'}\) avec \(r < r'\). Alors
+\[
+  a^{2^r d} \equiv -1 \pmod{n}
+  \quad\text{et}\quad
+  a^{2^{r'} d} = \bigl(a^{2^r d}\bigr)^{2^{r'-r}}
+  \equiv (-1)^{2^{r'-r}} \equiv 1 \pmod{n}.
+\]
+Donc \(a \in H_{r'}\), ce qui contredit \(a \in C_{r'}\). Ainsi
+\(C_r \cap C_{r'} = \varnothing\) si \(r \ne r'\).
 \end{proof}
 
-On pose maintenant
-\[
-H := \{a \in G \mid a^d \equiv 1 \pmod n\}.
-\]
-C'est un sous-groupe de $G$ (car la condition $a^d = 1$ est stable par
-produit et inverse). De même, pour chaque $r \in \{0,\dotsc,s-1\}$, on pose
-\[
-H_r := \{a \in G \mid a^{2^r d} \equiv 1 \pmod n\},
-\]
-qui est aussi un sous-groupe de $G$, et on a $H = H_0 \subseteq H_1 \subseteq
-\cdots \subseteq H_{s-1}$.
+Avec ces notations, la définition des menteurs se réécrit :
 
 \begin{proposition}
-\label{prop:L-subgroup}
-Soit $n>1$ impair et composite. Les non-témoins de Miller--Rabin pour $n$
-appartenant à $G=(\Z/n\Z)^\times$ sont contenus dans un sous-groupe propre de $G$.
+\label{prop:decomp-Ln}
+L'ensemble des menteurs s'écrit
+\[
+  L(n) = H_0 \;\cup\; \bigcup_{r=0}^{s-1} C_r,
+\]
+union disjointe.
 \end{proposition}
 
 \begin{proof}
-On distingue deux cas, comme dans la démonstration classique (voir par exemple
-Conrad, \emph{The Miller--Rabin Test}, Section 4).
-
-\medskip
-
-\noindent\emph{Cas 1 : $n$ est une puissance d'un nombre premier impair.}
-
-Écrivons $n = p^\alpha$ avec $p$ impair et $\alpha \ge 2$ (puisque $n$ est composé).
-Dans ce cas, on peut montrer que les non-témoins de Miller--Rabin sont exactement
-les solutions de
+Par la définition~\ref{def:MR-temoin-menteur}, un élément \(a\) est menteur si
+et seulement si
 \[
-a^{p-1} \equiv 1 \pmod{p^\alpha},
+  a^d \equiv 1 \pmod{n}
+  \quad\text{ou}\quad
+  \exists r \in \{0,\dots,s-1\},\ a^{2^r d} \equiv -1 \pmod{n},
 \]
-ce qui forme un sous-groupe de $G$ de cardinal $p-1$ (on peut le voir par
-induction sur $\alpha$ en relevant les solutions modulo $p$). Or
-\[
-|G| = \varphi(p^\alpha) = p^{\alpha-1}(p-1),
-\]
-donc ce sous-groupe a un indice $p^{\alpha-1} \ge 3$. Il est donc \emph{propre}.
-
-\medskip
-
-\noindent\emph{Cas 2 : $n$ n'est pas une puissance d'un nombre premier.}
-
-Alors $n$ a au moins deux facteurs premiers distincts, et $G$ se décompose,
-par le théorème des restes chinois, comme produit direct de groupes
-cycliques :
-\[
-G \simeq (\Z/p_1^{\alpha_1}\Z)^\times \times \cdots \times (\Z/p_t^{\alpha_t}\Z)^\times,
-\]
-où $t\ge 2$ et les $p_i$ sont des premiers distincts.
-On montre (voir Conrad, Theorem 4.1) qu'en ce cas les non-témoins
-de Miller--Rabin forment un sous-ensemble inclus dans un \emph{sous-groupe
-propre} $H'$ de $G$ : intuitivement, la condition
-\[
-a^d \equiv 1 \pmod n
-\quad\text{ou}\quad
-\exists r,\ a^{2^r d} \equiv -1 \pmod n
-\]
-contraint fortement chaque composante modulo $p_i^{\alpha_i}$, et le pattern
-autorisant un non-témoin ne peut pas remplir tout $G$ ; on obtient un sous-groupe
-de cardinal au plus $|G|/2$.
-\medskip
-
-Dans les deux cas, les non-témoins dans $G$ sont contenus dans un sous-groupe
-propre de $G$.
+c'est-à-dire \(a \in H_0 \cup \bigcup_{r=0}^{s-1} C_r\). La disjonction vient du
+lemme~\ref{lem:Cr-disjoints}.
 \end{proof}
 
-On peut maintenant démontrer le théorème~\ref{thm:MR-12}.
+\subsection*{B.3. Exposant maximal pour l'apparition de $-1$}
 
-\begin{proof}[Démonstration du théorème~\ref{thm:MR-12}]
-Par le lemme~\ref{lem:noninv-temoins}, tout entier $a$ entre $1$ et $n-1$
-qui n'est pas premier avec $n$ est un \emph{témoin} (il donne immédiatement
-un diviseur non trivial de $n$). Les non-témoins doivent donc appartenir
-à $G = (\Z/n\Z)^\times$.
+Pour contrôler la taille de \(L(n)\), nous devons identifier le plus grand
+niveau auquel $-1$ peut apparaître dans la suite~\eqref{eq:MR-suite}.
 
-D'après la proposition~\ref{prop:L-subgroup}, ces non-témoins appartiennent
-à un sous-groupe propre $H'$ de $G$, donc
+\begin{definition}
+\label{def:i0}
+Soit \(n\) un entier impair composé, non puissance d'un premier, et soit
+\(n-1 = 2^s d\) avec \(d\) impair. On définit \(i_0\) comme le plus grand entier
+\(i \in \{0,1,\dots,s-1\}\) tel qu'il existe \(a \in (\Z/n\Z)^\times\) vérifiant
+\(a^{2^i d} \equiv -1 \pmod{n}\).
+
+En d'autres termes,
 \[
-|H'| \le \frac{|G|}{2} = \frac{\varphi(n)}{2}.
+  i_0 = \max\{ i \in \{0,\dots,s-1\} \mid C_i \neq \varnothing \}.
 \]
-Ainsi, il y a au plus $\varphi(n)/2$ non-témoins dans $\{1,\dotsc,n-1\}$.
-Comme $n$ est composé, on a $\varphi(n) \le n-2$, donc
-\[
-\frac{\varphi(n)/2}{n-1} < \frac{1}{2}.
-\]
-En restreignant l'intervalle à $\{2,\dotsc,n-2\}$, on ne fait que diminuer
-le dénominateur (on retire $1$ et $n-1$, qui ne sont jamais des témoins),
-donc la proportion de non-témoins dans $\{2,\dotsc,n-2\}$ reste strictement
-inférieure à $1/2$.
+\end{definition}
+
+\begin{lemma}
+\label{lem:i0-existe}
+L'entier \(i_0\) est bien défini et vérifie \(i_0 \ge 0\). De plus, pour tout
+menteur \(a \in L(n)\), si \(a \in C_r\) pour un certain \(r\), alors
+\(r \le i_0\).
+\end{lemma}
+
+\begin{proof}
+Puisque \(d\) est impair, on a \((-1)^d \equiv -1 \pmod{n}\), donc \(-1 \in C_0\).
+Ainsi \(C_0 \neq \varnothing\), donc l'ensemble des \(i\) tel que \(C_i \neq
+\varnothing\) est non vide et majoré par \(s-1\), ce qui garantit l'existence
+du maximum \(i_0\) avec \(i_0 \ge 0\).
+
+Si \(a \in C_r\), alors par définition de \(i_0\) comme maximum, on a
+nécessairement \(r \le i_0\).
 \end{proof}
 
-\begin{remark}
-La borne $1/2$ est déjà suffisante pour obtenir dans la pratique un test
-extrêmement fiable : après $t$ essais indépendants, la probabilité que $n$
-soit composite et que le test accepte toutes les bases est $\le 2^{-t}$.
-Avec $t=40$, on tombe déjà sous $10^{-12}$.
-\end{remark}
+\subsection*{B.4. Sous-groupes locaux et morphisme de signes}
 
-\subsection*{B.4. Le théorème de Monier--Rabin et la borne $1/4$}
-
-On énonce maintenant le \emph{théorème optimal} sur la proportion de
-non-témoins de Miller--Rabin.
-
-\begin{theorem}[Monier--Rabin]
-\label{thm:MR-14}
-Soit $n > 1$ un entier impair composite. Alors la proportion de non-témoins
-de Miller--Rabin pour $n$ dans $\{2,\dotsc,n-2\}$ est strictement inférieure
-à $1/4$. Autrement dit, la proportion de témoins est $> 3/4$.
-\end{theorem}
-
-Ce résultat est dû indépendamment à Monier et Rabin dans les années 1980.
-Une présentation moderne détaillée (et très pédagogique) se trouve par exemple
-dans l'article de Keith Conrad \emph{The Miller–Rabin test}.
-
-Nous n'allons pas redonner ici la preuve complète, qui est assez longue et
-technique, mais en esquisser les grandes lignes pour donner une idée des idées
-en jeu.
-
-\begin{proof}[Idée de la démonstration]
-On travaille à nouveau avec un entier impair $n>1$ composite, et on écrit
-$n-1=2^s d$ avec $d$ impair. On note toujours $G = (\Z/n\Z)^\times$ et
-$L(n)$ l'ensemble des non-témoins dans $G$.
-
-La stratégie, inspirée de Monier et Rabin, est la suivante.
-
-\medskip
-
-\noindent\emph{1) Réduction au cas des non-témoins dans $G$.}
-
-Comme précédemment, les entiers $a$ non premiers avec $n$ sont toujours
-des témoins (ils révèlent un facteur non trivial), donc tous les non-témoins
-sont dans $G$.
-
-On montre ensuite qu'il suffit de majorer
+Écrivons la décomposition de \(n\) en facteurs premiers :
 \[
-\frac{|L(n)|}{|G|}
+  n = \prod_{j=1}^r p_j^{e_j}, \qquad r \ge 2,
 \]
-par $1/4$, car on passe sans difficulté de la proportion dans $G$ à la
-proportion dans $\{2,\dotsc,n-2\}$.
-
-\medskip
-
-\noindent\emph{2) Cas $n = p^\alpha$ puissance d'un nombre premier impair.}
-
-Dans ce cas, on montre que les non-témoins de Miller--Rabin coïncident
-avec les solutions de
+où les \(p_j\) sont des nombres premiers impairs distincts. Par le théorème
+des restes chinois, on a un isomorphisme
 \[
-a^{p-1} \equiv 1 \pmod{p^\alpha},
-\]
-qui forment un sous-groupe de $G$ de cardinal $p-1$ (induction sur $\alpha$,
-comme évoqué plus haut). On en déduit
-\[
-\frac{|L(n)|}{|G|} = \frac{p-1}{p^{\alpha-1}(p-1)} = \frac{1}{p^{\alpha-1}}
-\le \frac{1}{3} \le \frac{1}{4}
-\]
-dès que $p^{\alpha-1} \ge 4$ (ce qui est vrai sauf pour $n=9$ et $n=25$,
-que l'on traite séparément et qui donnent aussi une proportion $\le 1/4$).
-
-\medskip
-
-\noindent\emph{3) Cas général : $n$ a au moins deux facteurs premiers distincts.}
-
-On écrit
-\[
-n = p_1^{\alpha_1} \cdots p_t^{\alpha_t}, \qquad t \ge 2,
-\]
-et on utilise à fond le théorème des restes chinois
-\[
-G \simeq G_1 \times \cdots \times G_t,
-\qquad
-G_i = (\Z/p_i^{\alpha_i}\Z)^\times.
-\]
-Autrement dit, un élément $a$ de $G$ peut être identifié à un $t$-uplet
-$(a_1,\dotsc,a_t)$ où chaque $a_i$ est pris modulo $p_i^{\alpha_i}$.
-
-Pour chaque composante $G_i$, on considère la \emph{suite de Miller--Rabin}
-générée par $a_i$ :
-\[
-a_i^d,\ a_i^{2d},\ a_i^{4d},\ \dots,\ a_i^{2^{s-1}d}.
-\]
-Quand $n$ est \emph{premier}, cette suite doit contenir $1$ à la fin et
-un (et un seul) $-1$ juste avant la première occurrence de $1$. Pour des
-entiers composés, on analyse finement les motifs possibles modulo chaque
-$p_i^{\alpha_i}$.
-
-Le point clé est que, pour un non-témoin global $a \in G$, la suite
-multidimensionnelle formée de ces suites coordonnées doit présenter
-un motif très contraint (un certain « alignement » des $-1$ et des $1$
-dans chaque composante). En examinant toutes les possibilités et en les
-classant, on montre que l'ensemble $L(n)$ est contenu soit dans un
-\emph{sous-groupe} $S$ de $G$ d'indice au moins $4$, soit dans une
-\emph{union de deux classes latérales} d'un sous-groupe $S$ d'indice au
-moins $8$.
-
-Dans le premier cas, on a
-\[
-\frac{|L(n)|}{|G|} \le \frac{|S|}{|G|} \le \frac{1}{4},
-\]
-et dans le second cas
-\[
-\frac{|L(n)|}{|G|} \le \frac{2|S|}{|G|} \le \frac{2}{8} = \frac{1}{4}.
+  (\Z/n\Z)^\times \simeq \prod_{j=1}^r (\Z/p_j^{e_j}\Z)^\times.
 \]
 
-\medskip
+Pour chaque \(j\), le groupe \((\Z/p_j^{e_j}\Z)^\times\) est cyclique d'ordre
+\(\varphi(p_j^{e_j}) = (p_j-1)p_j^{e_j-1}\). Notons
+\[
+  \varphi(p_j^{e_j}) = 2^{s_j} m_j,\qquad s_j \ge 1,\ m_j\ \text{impair}.
+\]
 
-La classification complète des motifs possibles et la construction explicite
-du sous-groupe $S$ sont techniques : elles utilisent la structure détaillée
-des solutions de $x^2 \equiv 1 \pmod{p_i^{\alpha_i}}$ et des valuations 2-adiques
-des ordres des éléments dans chaque $G_i$. On renvoie pour ces détails à Monier
-et Rabin, ou à l'exposé moderne de Conrad.
+\begin{definition}[Sous-groupe \(H\)]
+\label{def:H}
+On définit le sous-groupe \(H\) de \((\Z/n\Z)^\times\) par
+\[
+  H = \{ a \in (\Z/n\Z)^\times \mid \forall j,\ a^{2^{i_0} d} \equiv \pm 1 \pmod{p_j^{e_j}} \}.
+\]
+\end{definition}
+
+\begin{lemma}
+\label{lem:H-sous-groupe}
+L'ensemble \(H\) est un sous-groupe de \((\Z/n\Z)^\times\).
+\end{lemma}
+
+\begin{proof}
+Soient \(a,b \in H\). Pour chaque \(j\), on a
+\(a^{2^{i_0} d} \equiv \varepsilon_j \pmod{p_j^{e_j}}\) et
+\(b^{2^{i_0} d} \equiv \varepsilon_j' \pmod{p_j^{e_j}}\) avec
+\(\varepsilon_j, \varepsilon_j' \in \{\pm 1\}\). Alors
+\((ab)^{2^{i_0} d} \equiv \varepsilon_j \varepsilon_j' \in \{\pm 1\}\).
+De même, \((a^{-1})^{2^{i_0} d} \equiv \varepsilon_j^{-1} = \varepsilon_j\).
+Enfin, \(1 \in H\). Donc \(H\) est un sous-groupe.
 \end{proof}
 
-\begin{remark}
-Le théorème~\ref{thm:MR-14} est \emph{optimal} au sens suivant :
-Monier a montré que l'on peut construire une suite d'entiers impairs
-composés $n$ pour lesquels la proportion de non-témoins de Miller--Rabin
-tend vers $1/4$ quand $n \to \infty$. Autrement dit, on ne peut pas
-améliorer la borne $1/4$ en une borne universelle plus petite.
-\end{remark}
+\begin{definition}[Morphisme de signes]
+\label{def:psi}
+On définit l'homomorphisme \(\psi : H \to \{\pm 1\}^r\) par
+\[
+  \psi(a) = \bigl( \varepsilon_1(a), \dots, \varepsilon_r(a) \bigr),
+\]
+où \(\varepsilon_j(a)\) est l'unique élément de \(\{\pm 1\}\) tel que
+\(a^{2^{i_0} d} \equiv \varepsilon_j(a) \pmod{p_j^{e_j}}\).
+\end{definition}
 
-\subsection*{B.5. Conséquence pratique pour le test}
+\begin{lemma}
+\label{lem:psi-surjectif}
+L'homomorphisme \(\psi\) est surjectif.
+\end{lemma}
 
-En combinant le théorème~\ref{thm:MR-14} avec le fait que les bases non
-premières à $n$ sont toujours des témoins, on obtient l'énoncé suivant :
+\begin{proof}
+Il suffit de montrer que pour chaque \(j\), il existe un élément \(a^{(j)} \in H\)
+tel que \(\psi(a^{(j)})\) ait un \(-1\) en position \(j\) et des \(+1\) ailleurs.
+Par symétrie, montrons-le pour \(j=1\).
+
+Par définition de \(i_0\), il existe \(b \in (\Z/n\Z)^\times\) tel que
+\(b^{2^{i_0} d} \equiv -1 \pmod{n}\). En particulier,
+\(b^{2^{i_0} d} \equiv -1 \pmod{p_1^{e_1}}\). Par le théorème des restes
+chinois, on peut construire \(a^{(1)}\) tel que
+\[
+  a^{(1)} \equiv b \pmod{p_1^{e_1}},\qquad
+  a^{(1)} \equiv 1 \pmod{p_j^{e_j}}\ (j \ge 2).
+\]
+Alors \(a^{(1)} \in H\) et \(\psi(a^{(1)}) = (-1, 1, \dots, 1)\).
+
+En prenant des produits de tels éléments, on engendre tous les vecteurs de
+\(\{\pm 1\}^r\). Ainsi \(\psi\) est surjectif.
+\end{proof}
+
+Le noyau de \(\psi\) est
+\[
+  \ker(\psi) = \{ a \in H \mid a^{2^{i_0} d} \equiv 1 \pmod{p_j^{e_j}} \ \forall j \}
+             = \{ a \in H \mid a^{2^{i_0} d} \equiv 1 \pmod{n} \}.
+\]
+Notons \(K = \ker(\psi)\). Par le premier théorème d'isomorphisme,
+\(H/K \simeq \{\pm 1\}^r\), donc
+\[
+  |H| = |K| \cdot 2^r.
+\]
+
+\subsection*{B.5. Sous-groupe \(S\) contenant les menteurs}
+
+\begin{definition}[Sous-groupe \(S\)]
+\label{def:S}
+On définit le sous-groupe \(S\) de \(H\) par
+\[
+  S = \{ a \in (\Z/n\Z)^\times \mid a^{2^{i_0} d} \equiv \pm 1 \pmod{n} \}.
+\]
+\end{definition}
+
+\begin{lemma}
+\label{lem:S-sous-groupe}
+L'ensemble \(S\) est un sous-groupe de \(H\) (donc de \((\Z/n\Z)^\times\)).
+\end{lemma}
+
+\begin{proof}
+Si \(a,b \in S\), alors \(a^{2^{i_0} d} \equiv \varepsilon\) et
+\(b^{2^{i_0} d} \equiv \varepsilon'\) avec \(\varepsilon, \varepsilon' \in \{\pm 1\}\).
+Alors \((ab)^{2^{i_0} d} \equiv \varepsilon \varepsilon' \in \{\pm 1\}\), et
+\((a^{-1})^{2^{i_0} d} \equiv \varepsilon^{-1} = \varepsilon\). De plus,
+\(1 \in S\). Donc \(S\) est un sous-groupe.
+\end{proof}
+
+\begin{lemma}
+\label{lem:L-in-S}
+On a l'inclusion \(L(n) \subseteq S\).
+\end{lemma}
+
+\begin{proof}
+Soit \(a \in L(n)\). Deux cas se présentent.
+
+\textit{Cas 1 :} \(a \in H_0\), i.e. \(a^d \equiv 1 \pmod{n}\). Alors pour tout
+\(i \ge 0\), \(a^{2^i d} \equiv 1 \pmod{n}\), donc en particulier
+\(a^{2^{i_0} d} \equiv 1\) et \(a \in S\).
+
+\textit{Cas 2 :} \(a \in C_r\) pour un certain \(r \in \{0,\dots,s-1\}\).
+Par le lemme~\ref{lem:i0-existe}, on a \(r \le i_0\). Si \(r = i_0\), alors
+\(a^{2^{i_0} d} \equiv -1 \pmod{n}\) donc \(a \in S\). Si \(r < i_0\), alors
+\[
+  a^{2^{i_0} d} = (a^{2^r d})^{2^{i_0 - r}} \equiv (-1)^{2^{i_0 - r}} \equiv 1 \pmod{n},
+\]
+donc \(a \in S\).
+
+Dans les deux cas, \(a \in S\).
+\end{proof}
+
+\begin{lemma}
+\label{lem:psi-S}
+L'image de \(S\) par \(\psi\) est exactement le sous-groupe
+\[
+  \psi(S) = \{ (1,\dots,1), (-1,\dots,-1) \} \subseteq \{\pm 1\}^r,
+\]
+qui est de cardinal \(2\).
+\end{lemma}
+
+\begin{proof}
+Soit \(a \in S\). Par définition, \(a^{2^{i_0} d} \equiv \pm 1 \pmod{n}\).
+Ainsi, modulo chaque \(p_j^{e_j}\), on a soit \(+1\) partout, soit \(-1\) partout.
+Donc \(\psi(a)\) est soit \((1,\dots,1)\), soit \((-1,\dots,-1)\).
+
+Réciproquement, l'élément \(1\) donne \((1,\dots,1)\). Pour obtenir
+\((-1,\dots,-1)\), on prend l'élément \(b\) de la définition de \(i_0\), qui
+vérifie \(b^{2^{i_0} d} \equiv -1 \pmod{n}\) et donc \(\psi(b) = (-1,\dots,-1)\).
+\end{proof}
+
+De \(\psi(S) \simeq S/K\) on déduit
+\[
+  |S| = |K| \cdot 2.
+\]
+
+\subsection*{B.6. Indices et fin de la preuve}
+
+On rappelle les notations
+\[
+  G = (\Z/n\Z)^\times,\qquad H \subseteq G,\qquad S \subseteq H,\qquad K = \ker(\psi).
+\]
+
+\begin{lemma}
+\label{lem:H-S-indice}
+On a
+\[
+  H/K \simeq \{\pm1\}^r,\qquad
+  \psi(S) = \{(1,\dots,1),(-1,\dots,-1)\}.
+\]
+En particulier,
+\[
+  [H : S] = 2^{r-1}.
+\]
+\end{lemma}
+
+\begin{proof}
+La surjectivité de \(\psi\) (lemme~\ref{lem:psi-surjectif}) donne
+\(H/K \simeq \{\pm1\}^r\), donc \( |H| = |K| \cdot 2^r\).
+
+Par le lemme~\ref{lem:psi-S}, l'image de \(S\) par \(\psi\) est exactement
+\(\{(1,\dots,1),(-1,\dots,-1)\}\), de cardinal \(2\). La restriction
+\(\psi_{\mid S} : S \to \psi(S)\) est surjective et son noyau est toujours
+\(K\) (puisque \(K \subseteq S\)). Donc \(S/K \simeq \psi(S)\) et
+\(|S| = |K| \cdot 2\). Par conséquent
+\[
+  [H : S] = \frac{|H|}{|S|}
+           = \frac{|K| \cdot 2^r}{|K| \cdot 2}
+           = 2^{r-1}.
+\]
+\end{proof}
+
+On va maintenant montrer que \(S\) est un sous-groupe propre de \(G\), puis
+comparer son indice à celui d'autres sous-groupes naturels.
+
+\begin{lemma}[Propreté de \(S\)]
+\label{lem:S-propre}
+Le sous-groupe \(S\) est propre dans \(G = (\Z/n\Z)^\times\), i.e.\ \(S \neq G\).
+\end{lemma}
+
+\begin{proof}
+Par définition de \(i_0\), il existe \(b \in G\) tel que
+\[
+  b^{2^{i_0} d} \equiv -1 \pmod{n}.
+\]
+Écrivons \(n = p_{j_0}^{e_{j_0}} n_0\) avec \(\gcd(p_{j_0},n_0)=1\) et \(n_0>1\)
+(ceci est possible car \(n\) a au moins deux facteurs premiers distincts).
+
+Considérons le système
+\[
+  a \equiv b \pmod{p_{j_0}^{e_{j_0}}},\qquad
+  a \equiv 1 \pmod{n_0}.
+\]
+Par le théorème des restes chinois, il admet une solution \(a \in \Z/n\Z\),
+et comme les résidus imposés sont premiers à leurs modules respectifs, on a
+\(\gcd(a,n)=1\), donc \(a \in G\).
+
+Alors
+\[
+  a^{2^{i_0} d} \equiv b^{2^{i_0} d} \equiv -1 \pmod{p_{j_0}^{e_{j_0}}}
+\]
+et
+\[
+  a^{2^{i_0} d} \equiv 1^{2^{i_0} d} \equiv 1 \pmod{n_0}.
+\]
+Ainsi, dans la décomposition chinoise, \(a^{2^{i_0} d}\) a une coordonnée
+\(-1\) (sur \(p_{j_0}^{e_{j_0}}\)) et au moins une coordonnée \(+1\)
+(sur un facteur de \(n_0\)). En particulier, \(a^{2^{i_0} d}\) n'est ni \(1\)
+ni \(-1\) modulo \(n\). Donc
+\[
+  a^{2^{i_0} d} \not\equiv \pm 1 \pmod{n},
+\]
+ce qui signifie que \(a \notin S\). On a donc \(S \subsetneq G\).
+\end{proof}
+
+On introduit maintenant le sous-groupe des « non-témoins de Fermat » :
+\[
+  F = \{ a \in G \mid a^{n-1} \equiv 1 \pmod{n} \}.
+\]
+C'est un sous-groupe de \(G\).
+
+\begin{lemma}
+\label{lem:chaines-sous-groupes}
+On a les inclusions
+\[
+  G \supseteq F \supseteq H \supseteq S \supseteq L(n).
+\]
+De plus, tout \(a \in H\) et tout \(a \in S\) vérifient \(a^{n-1} \equiv 1 \pmod{n}\),
+donc \(H \subseteq F\) et \(S \subseteq F\).
+\end{lemma}
+
+\begin{proof}
+L'inclusion \(L(n) \subseteq S\) est le lemme~\ref{lem:L-in-S}.
+
+Soit \(a \in H\). Par définition, pour chaque \(j\),
+\(a^{2^{i_0} d} \equiv \pm 1 \pmod{p_j^{e_j}}\). Donc
+\(a^{2^{i_0+1} d} \equiv 1 \pmod{p_j^{e_j}}\) pour tout \(j\), et comme
+\(2^{i_0+1} d \mid 2^s d = n-1\), on obtient
+\(a^{n-1} \equiv 1 \pmod{p_j^{e_j}}\) pour tout \(j\), donc \(a^{n-1} \equiv 1 \pmod{n}\).
+Ainsi \(a \in F\), ce qui montre \(H \subseteq F\).
+
+De même, si \(a \in S\), on a \(a^{2^{i_0} d} \equiv \pm 1 \pmod{n}\), donc
+\(a^{2^{i_0+1} d} \equiv 1 \pmod{n}\) et, par divisibilité, \(a^{n-1} \equiv 1 \pmod{n}\).
+Donc \(S \subseteq F\). Les autres inclusions sont évidentes.
+\end{proof}
+
+\begin{lemma}
+\label{lem:Fn-propre}
+Si \(n\) n'est pas un nombre de Carmichael, le sous-groupe \(F\) est propre
+dans \(G\) et contient strictement \(S\). En particulier,
+\[
+  [G : F] \ge 2, \qquad [F : S] \ge 2.
+\]
+\end{lemma}
+
+\begin{proof}
+Par définition, \(n\) est un nombre de Carmichael si et seulement si
+\[
+  a^{n-1} \equiv 1 \pmod{n} \quad\text{pour tout } a \in G.
+\]
+Donc si \(n\) n'est pas de Carmichael, il existe un \(a_0 \in G\) tel que
+\(a_0^{n-1} \not\equiv 1 \pmod{n}\). Cet élément n'appartient pas à \(F\),
+et comme \(F\) est un sous-groupe de \(G\), cela implique \(F \neq G\),
+donc \([G : F] \ge 2\).
+
+Pour voir que \(S\) est strictement contenu dans \(F\), utilisons l'élément
+\(a\) construit dans la preuve du lemme~\ref{lem:S-propre} : on a
+\(a^{2^{i_0} d} \not\equiv \pm 1 \pmod{n}\), donc \(a \notin S\). En revanche,
+\(a^{2^{i_0+1} d} \equiv 1 \pmod{n}\), et comme \(2^{i_0+1} d \mid n-1\),
+on obtient \(a^{n-1} \equiv 1 \pmod{n}\), donc \(a \in F \setminus S\).
+Ainsi \(S \subsetneq F\) et \([F : S] \ge 2\).
+\end{proof}
+
+\begin{lemma}
+\label{lem:carmichael-r>=3}
+Si \(n\) est un nombre de Carmichael impair, alors \(n\) possède au moins
+trois facteurs premiers distincts, i.e.\ \(r \ge 3\).
+\end{lemma}
+
+\begin{proof}
+C'est une conséquence du critère de Korselt : un entier composé impair
+\(n\) est de Carmichael si et seulement s'il est sans facteur carré
+(\(p^2 \nmid n\) pour tout premier \(p\)) et si, pour tout premier \(p \mid n\),
+on a \(p-1 \mid n-1\). En particulier, un nombre de Carmichael ne peut pas
+être le produit de seulement deux nombres premiers, d'où \(r \ge 3\).
+\end{proof}
 
 \begin{corollary}
-Soit $n>1$ impair. On applique le test de Miller--Rabin à $n$ pour des
-bases $a_1,\dotsc,a_t$ choisies indépendamment, chacune uniformément
-dans $\{2,\dotsc,n-2\}$.
-\begin{itemize}
-  \item Si le test rejette au moins une base (c'est-à-dire trouve un témoin),
-        alors $n$ est certainement composé.
-  \item Si le test accepte toutes les bases et que $n$ est en réalité composé,
-        alors la probabilité d'une telle « mésaventure » est majorée par $4^{-t}$.
-\end{itemize}
+\label{cor:indice-G-S}
+On a toujours
+\[
+  [G : S] \ge 4.
+\]
 \end{corollary}
 
-En pratique, on choisit $t$ suffisamment grand (par exemple $t=40$ ou $t=64$)
-pour que cette probabilité d'erreur soit négligeable, même si l'on répète
-le test un grand nombre de fois ou sur de très nombreux entiers.
-Le test de Miller--Rabin est ainsi l'un des piliers des algorithmes de
-génération de nombres premiers en cryptographie moderne.
+\begin{proof}
+On distingue deux cas.
+
+\medskip\noindent
+\emph{Premier cas : \(n\) n'est pas un nombre de Carmichael.}
+Par le lemme~\ref{lem:Fn-propre}, on a \([G : F] \ge 2\) et \([F : S] \ge 2\).
+Comme \(F\) et \(S\) sont des sous-groupes de \(G\),
+\[
+  [G : S] = [G : F] \cdot [F : S] \ge 2 \cdot 2 = 4.
+\]
+
+\medskip\noindent
+\emph{Second cas : \(n\) est un nombre de Carmichael.}
+Par le lemme~\ref{lem:carmichael-r>=3}, on a \(r \ge 3\). Le lemme~\ref{lem:H-S-indice}
+donne
+\[
+  [H : S] = 2^{r-1} \ge 2^{3-1} = 4.
+\]
+Comme \(H\) est un sous-groupe de \(G\),
+\[
+  [G : S] = [G : H] \cdot [H : S] \ge [H : S] \ge 4,
+\]
+puisque \([G : H] \ge 1\).
+
+Dans tous les cas, on a bien \([G : S] \ge 4\).
+\end{proof}
+
+\begin{corollary}
+\label{cor:borne-Ln}
+On a
+\[
+  |L(n)| \le \frac{\varphi(n)}{4}.
+\]
+\end{corollary}
+
+\begin{proof}
+Par le lemme~\ref{lem:L-in-S}, on a \(L(n) \subseteq S\).
+Comme \(S\) est un sous-groupe de \(G = (\Z/n\Z)^\times\), on a
+\[
+  |S| = \frac{\varphi(n)}{[G : S]}.
+\]
+Le corollaire~\ref{cor:indice-G-S} donne \([G : S] \ge 4\), donc
+\[
+  |L(n)| \le |S| \le \frac{\varphi(n)}{4},
+\]
+ce qui est exactement l'énoncé du théorème~\ref{thm:MR-borne}.
+\end{proof}
+
+\subsection*{B.7. Commentaires}
+
+La démonstration ci-dessus établit le théorème~\ref{thm:MR-borne} de manière
+rigoureuse, en suivant la stratégie de Conrad~\cite{Conrad-MR} :
+\begin{itemize}
+  \item définition de l'exposant maximal \(i_0\) pour lequel \(-1\) apparaît
+    globalement dans la suite~\eqref{eq:MR-suite},
+  \item introduction du sous-groupe \(H\) des éléments qui sont \(\pm 1\)
+    modulo chaque facteur premier à l'exposant \(2^{i_0} d\),
+  \item construction du morphisme de signes \(\psi : H \to \{\pm 1\}^r\),
+  \item étude du sous-groupe \(S\) (contenant les menteurs) et calcul de
+    son indice en distinguant le cas Carmichael/non-Carmichael.
+\end{itemize}
+
+\begin{remark}[Cas RSA]
+Pour un module RSA \(n = pq\) (produit de deux nombres premiers impairs distincts),
+on a \(r = 2\). Dans ce cas, la preuve montre que \([G : S] \ge 4\) et
+\(|L(n)| \le \varphi(n)/4\). Dans beaucoup de situations « génériques », on a même
+\([G : S] = 4\), ce qui montre que la borne \(1/4\) est essentiellement optimale
+pour cette classe d'entiers.
+\end{remark}
+
+\begin{remark}[Généralisation]
+Si \(n\) possède plus de deux facteurs
+premiers distincts (\(r \ge 3\)), le lemme~\ref{lem:H-S-indice} donne
+\([H : S] = 2^{r-1} \ge 4\), et on obtient une borne plus forte :
+\(|L(n)| \le \varphi(n)/2^r \le \varphi(n)/8\).
+Pour l'application cryptographique usuelle (RSA), la borne \(1/4\) reste
+toutefois la référence standard.
+\end{remark}
+
+
+
+
 
 \newpage
 
@@ -4090,6 +4262,13 @@ FIPS PUB 180-4.
 Dworkin, M. (2007).
 \textit{Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC}.
 NIST Special Publication 800-38D.
+
+
+\bibitem{Conrad-MR}
+K.~Conrad,
+\emph{The Miller--Rabin primality test},\\
+\url{https://kconrad.math.uconn.edu/blurbs/ugradnumthy/millerrabin.pdf}.
+
 
 \end{thebibliography}
 
