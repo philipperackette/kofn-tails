@@ -8,7 +8,7 @@
 \usepackage[french]{babel}
 
 \usepackage{geometry}
-\geometry{margin=2.5cm}
+\geometry{margin=2.2cm}
 
 % ============================
 % Maths et mise en forme
@@ -599,7 +599,7 @@ Soit $p$ un nombre premier. Alors :
 \begin{proof}
 (1) Puisque $p$ est premier, tout élément non nul de $\Z/p\Z$ est inversible modulo $p$, donc $\Z/p\Z$ est un corps.
 
-(2) Soit $K$ un corps de cardinal $p$. Puisque $K$ est fini, sa caractéristique est un nombre premier. Comme $p \cdot 1_K = 0$ (d'après le théorème de Lagrange appliqué au groupe additif), la caractéristique divise $p$, donc est égale à $p$.
+(2) Soit $K$ un corps de cardinal $p$. Puisque $K$ est fini, sa caractéristique est un nombre premier. Comme $p \cdot 1_K = 0$ (d'après le théorème de Lagrange (\ref{thm:lagrange}) appliqué au groupe additif), la caractéristique divise $p$, donc est égale à $p$.
 
 Considérons l'homomorphisme d'anneaux canonique :
 \[
@@ -1527,7 +1527,7 @@ $a^{(p-1)/2} \equiv -1 \pmod{p}$ si et seulement si $a$ n'est pas un carré modu
 \end{theorem}
 
 \begin{proof}
-Si $a$ est un carré modulo $p$, alors $a \equiv b^2 \pmod{p}$ pour un $b$ non divisible par $p$, donc $a^{(p-1)/2} \equiv b^{p-1} \equiv 1 \pmod{p}$ par le théorème de Fermat.
+Si $a$ est un carré modulo $p$, alors $a \equiv b^2 \pmod{p}$ pour un $b$ non divisible par $p$, donc $a^{(p-1)/2} \equiv b^{p-1} \equiv 1 \pmod{p}$ par le théorème de Fermat (\ref{thm:fermat}).
 
 Réciproquement, dans $\F_p^*$ qui est cyclique d'ordre $p-1$, considérons l'homomorphisme $\phi: x \mapsto x^2$. Son noyau est $\{\pm 1\}$ d'ordre 2, donc son image (les carrés) est d'ordre $(p-1)/2$. L'équation $x^{(p-1)/2} = 1$ a au plus $(p-1)/2$ solutions, et tous les carrés la vérifient. Donc les non-carrés vérifient $a^{(p-1)/2} = -1$.
 \end{proof}
@@ -2116,6 +2116,8 @@ k_0 = 512 - 2\times 32 - 2 = 446 \text{ octets}
 \]
 Ce qui est amplement suffisant pour une clé AES-256 de 32 octets, avec une marge importante de 414 octets pour le padding OAEP.
 \end{definition}
+
+\addtocontents{toc}{\protect\newpage}
 
 %=========================================================
 \section{AES-GCM}
@@ -3611,7 +3613,7 @@ nombre premier. On note
 On considère le test de Miller--Rabin appliqué à \(n\), pour des bases \(a\)
 premières avec \(n\). On appelle \emph{menteur} (ou \emph{strong liar}) toute
 base \(a \in (\Z/n\Z)^\times\) pour laquelle le test déclare à tort que \(n\) est
-« probablement premier ».
+\og probablement premier \fg{}.
 
 On note \(L(n)\) l'ensemble des menteurs :
 \[
@@ -3756,7 +3758,7 @@ avec \(\beta/\delta\) impair. Notons
   \ord(x_0) = 2^u v,\qquad u = \alpha,\ v = \frac{\beta}{\delta}\ \text{impair}.
 \]
 
-\emph{(Sens direct).} Supposons que \(a\) soit un menteur.
+\textbf{Sens direct} : Supposons que \(a\) soit un menteur.
 
 \begin{itemize}
   \item Si \(x_0 \equiv 1\), alors \(\ord(x_0) = 1\). Donc \(2^u v = 1\), d'où
@@ -3791,7 +3793,7 @@ Dans tous les cas, on a donc montré que
   a \text{ menteur} \;\Longrightarrow\; \beta \mid d\ \text{et}\ \alpha \le s.
 \]
 
-\emph{(Sens réciproque).} Réciproquement, supposons
+\textbf{Sens réciproque} : Réciproquement, supposons
 \(\beta \mid d\) et \(\alpha \le s\). Écrivons \(d = \beta \cdot d_1\). Alors
 \[
   x_0 = a^d = \bigl(a^\beta\bigr)^{d_1}.
@@ -3802,7 +3804,7 @@ On distingue deux cas.
 \begin{itemize}
   \item Si \(\alpha = 0\), alors \(\ord(a) = \beta\) est impair et \(\beta \mid d\),
     ce qui implique \(\ord(a) \mid d\) et donc \(a^d \equiv 1\). Donc \(a\) est un
-    menteur de type « \(a^d \equiv 1\) ».
+    menteur de type \og \(a^d \equiv 1\) \fg{}.
 
   \item Si \(\alpha \ge 1\), alors \(\ord(a^\beta) = 2^\alpha\), et
     \[
@@ -3817,7 +3819,7 @@ On distingue deux cas.
     qui est d'ordre \(2\), donc égal à \(-1\) (l'unique élément d'ordre \(2\)
     dans \(G\)). Comme \(\alpha \le s\), on a \(\alpha-1 \le s-1\), donc cette
     occurrence de \(-1\) est bien détectée par le test de Miller--Rabin, et
-    \(a\) est un menteur de type « apparition de \(-1\) ».
+    \(a\) est un menteur de type \og apparition de \(-1\) \fg{}.
 \end{itemize}
 
 Cela achève la preuve.
@@ -3968,7 +3970,7 @@ Le corollaire~\ref{cor:B0-Ln-prime-power} montre que, pour \(n = p^k\) avec
 \]
 sauf pour le seul cas \(n=9\). En pratique cryptographique (par exemple pour des
 moduli de 2048 bits), ce cas minuscule est totalement hors d'atteinte, et la
-borne de probabilité « au plus \(1/4\) par base indépendante » reste donc
+borne de probabilité \og au plus \(1/4\) par base indépendante \fg{} reste donc
 valable, même si l'on ne filtre pas explicitement les puissances de premiers.
 \end{remark}
 
@@ -4005,7 +4007,7 @@ l'une des conditions suivantes est satisfaite :
   \item il existe \(r \in \{0,1,\dots,s-1\}\) tel que
     \(a^{2^r d} \equiv -1 \pmod{n}\).
 \end{itemize}
-Dans ce cas, le test de Miller--Rabin déclare « premier » un entier en réalité
+Dans ce cas, le test de Miller--Rabin déclare \og premier \fg{} un entier en réalité
 composé.\qedhere
 \end{definition}
 
@@ -4015,14 +4017,14 @@ le test malgré la composité de \(n\).
 \begin{remark}
 Si \(\gcd(a,n) \ne 1\), le test de Miller--Rabin peut (et doit) commencer par
 calculer \(\gcd(a,n)\) : si ce pgcd n'est pas \(1\), on a trouvé un facteur non
-trivial de \(n\) et l'algorithme s'arrête en déclarant « composé ». Dans toute
+trivial de \(n\) et l'algorithme s'arrête en déclarant \og composé \fg{}. Dans toute
 la suite, on ne considère donc que des \(a\) dans le groupe des unités
 \((\Z/n\Z)^\times\).
 \end{remark}
 
 \subsection*{B.2. Sous-groupes associés au test}
 
-On va exprimer la condition « être menteur » en termes de sous-groupes de
+On va exprimer la condition \og être menteur \fg{} en termes de sous-groupes de
 \((\Z/n\Z)^\times\). Pour tout entier \(r \ge 0\), on pose
 \[
   H_r = \{ a \in (\Z/n\Z)^\times \mid a^{2^r d} \equiv 1 \pmod{n} \}.
@@ -4157,7 +4159,7 @@ nécessairement \(r \le i_0\).
 
 \subsection*{B.4. Sous-groupes locaux et morphisme de signes}
 
-Écrivons la décomposition de \(n\) en facteurs premiers :
+Écrivons la décomposition de \(n\) en facteurs premiers (\ref{lem:thm-fond-arith}) :
 \[
   n = \prod_{j=1}^r p_j^{e_j}, \qquad r \ge 2,
 \]
@@ -4390,7 +4392,7 @@ ni \(-1\) modulo \(n\). Donc
 ce qui signifie que \(a \notin S\). On a donc \(S \subsetneq G\).
 \end{proof}
 
-On introduit maintenant le sous-groupe des « non-témoins de Fermat » :
+On introduit maintenant le sous-groupe des \og non-témoins de Fermat \fg{} :
 \[
   F = \{ a \in G \mid a^{n-1} \equiv 1 \pmod{n} \}.
 \]
@@ -4535,7 +4537,7 @@ rigoureuse, en suivant la stratégie de Conrad :
 \begin{remark}[Cas RSA]
 Pour un module RSA \(n = pq\) (produit de deux nombres premiers impairs distincts),
 on a \(r = 2\). Dans ce cas, la preuve montre que \([G : S] \ge 4\) et
-\(|L(n)| \le \varphi(n)/4\). Dans beaucoup de situations « génériques », on a même
+\(|L(n)| \le \varphi(n)/4\). Dans beaucoup de situations \og génériques \fg{}, on a même
 \([G : S] = 4\), ce qui montre que la borne \(1/4\) est essentiellement optimale
 pour cette classe d'entiers.
 \end{remark}
