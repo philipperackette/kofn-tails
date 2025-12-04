@@ -1864,7 +1864,7 @@ Autrement dit, si l'on se contentait de choisir $p$ et $q$ de 2048 bits puis de 
 Pour garantir que le module a bien 4096 bits, deux stratégies standard sont utilisées :
 \begin{itemize}
   \item soit on applique un \emph{rejection sampling} : on génère $p$ et $q$ (premiers de 2048 bits), on calcule $n = pq$, puis on rejette les couples pour lesquels $n$ n'a que 4095 bits, jusqu'à obtenir un $n$ vérifiant $\lfloor \log_2 n \rfloor + 1 = 4096$ ;
-  \item soit on contraint légèrement la forme de $p$ et de $q$ (en fixant quelques bits de poids fort) de manière à ce que le produit $pq$ soit automatiquement dans l'intervalle $[2^{4095},2^{4096})$.
+  \item soit on contraint légèrement la forme de $p$ et de $q$ (en fixant quelques bits de poids fort) de manière à ce que le produit $pq$ soit automatiquement dans l'intervalle $[2^{4095},2^{4096}[$.
 \end{itemize}
 Dans les deux cas, la taille annoncée de la clé (4096 bits) correspond effectivement à la taille mathématique du module.
 
@@ -3384,9 +3384,7 @@ p^n = \sum_{\substack{d\mid n \\ d<n}} d\, I_d \le \sum_{\substack{d\mid n \\ d<
 ce qui est impossible. Donc $I_n>0$.
 \end{proof}
 
-Le Corollaire~\ref{cor:irreductible-degre-n} redonne l'argument admis dans
-la preuve « courte » du Théorème~\ref{thm:moore} : il existe toujours un
-polynôme irréductible de degré $n$ sur $\F_p$.
+
 
 
 \begin{lemma}[Somme des valeurs de l'indicatrice d'Euler]
