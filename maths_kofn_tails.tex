@@ -3581,6 +3581,463 @@ et l'on peut le noter sans ambiguïté $\F_{p^n}$.
 
 \newpage
 
+% ============================
+% Annexe : Borne probabiliste du test de Miller--Rabin
+% ============================
+
+% ==========================================================
+% Annexe B — Le test de Miller–Rabin et sa borne probabiliste
+% ==========================================================
+
+\section*{Annexe B — Le test de Miller--Rabin et sa borne probabiliste}
+\addcontentsline{toc}{section}{Annexe B — Le test de Miller--Rabin et sa borne probabiliste}
+
+Dans cette annexe, on rappelle le test de primalité probabiliste de Miller--Rabin
+et on justifie rigoureusement la borne classique sur sa probabilité d'erreur :
+si $n > 1$ est impair et composé, alors la proportion de bases « menteuses »
+(ou non-témoins) est \emph{au plus} $1/4$. Autrement dit, pour une base $a$
+choisie uniformément au hasard, la probabilité que le test déclare à tort
+« $n$ est premier » est $\le 1/4$.
+
+On commence par définir précisément le test et les notions de témoin et de
+non-témoin, puis on démontre d'abord une borne plus simple (probabilité
+d'erreur $\le 1/2$) avant d'esquisser la preuve complète de la borne
+$\le 1/4$ due à Monier et Rabin.
+
+\subsection*{B.1. Rappel du test de Miller--Rabin}
+
+Soit $n > 1$ un entier impair. On écrit sa décomposition
+\[
+n-1 = 2^s d, \qquad s \ge 1,\quad d \text{ impair}.
+\]
+Le test de Miller--Rabin, pour une base $a \in \{2,\dotsc,n-2\}$, procède
+comme suit.
+
+\begin{enumerate}[label=\arabic*)]
+  \item Calculer $x_0 = a^d \bmod n$.
+  \item Si $x_0 \equiv 1 \pmod n$ ou $x_0 \equiv -1 \pmod n$, alors le test
+        \emph{accepte} la base $a$ (on ne détecte pas que $n$ est composé).
+  \item Sinon, pour $r = 1,2,\dotsc,s-1$, calculer récursivement
+        \[
+          x_r = x_{r-1}^2 \bmod n.
+        \]
+        Si, pour un certain $r$, on a $x_r \equiv -1 \pmod n$, alors
+        le test accepte la base $a$.
+  \item Si aucun des $x_r$ n'est congru à $-1 \pmod n$ et que l'on
+        n'a jamais vu $1$ avant un éventuel $-1$, alors le test \emph{rejette}
+        la base $a$ en concluant que $n$ est composé.
+\end{enumerate}
+
+Intuitivement, quand $n$ est premier, le théorème de Fermat assure que
+\[
+a^{n-1} \equiv 1 \pmod n
+\]
+pour tout $a$ non multiple de $n$, donc la suite
+\[
+x_0 = a^d,\quad x_1 = a^{2d},\quad x_2 = a^{4d},\ \dots,\ x_{s-1}=a^{2^{s-1}d}
+\]
+doit finir par $1$, et la première occurrence de $1$ dans la suite ne peut pas
+« arriver par surprise » : juste avant, on doit avoir $-1$.
+Quand $n$ est composé, cette structure se casse souvent, et l'on essaie
+de détecter cette anomalie.
+
+\begin{definition}[Témoins et non-témoins de Miller--Rabin]
+Soit $n>1$ impair, avec $n-1 = 2^s d$ ($d$ impair), et soit $a$ un entier tel que
+$1 \le a \le n-1$.
+
+\begin{itemize}
+  \item On dit que $a$ est un \emph{non-témoin de Miller--Rabin} (ou
+        \emph{menteur}) pour $n$ si au moins une des congruences suivantes est
+        satisfaite :
+        \[
+          a^d \equiv 1 \pmod n
+          \quad\text{ou}\quad
+          a^{2^r d} \equiv -1 \pmod n \text{ pour un certain } r\in\{0,\dotsc,s-1\}.
+        \]
+        Dans ce cas, le test (pour la base $a$) ne détecte pas que $n$ est
+        composé.
+
+  \item On dit que $a$ est un \emph{témoin de Miller--Rabin} pour $n$ si
+        \emph{aucune} de ces congruences n'est satisfaite :
+        \[
+          a^d \not\equiv 1 \pmod n
+          \quad\text{et}\quad
+          a^{2^r d} \not\equiv -1 \pmod n
+          \text{ pour tout } r\in\{0,\dotsc,s-1\}.
+        \]
+        Dans ce cas, le test affirme que $n$ est composé, et cette conclusion
+        est correcte.
+\end{itemize}
+\end{definition}
+
+On vérifie immédiatement que si $n$ est premier, il n'existe
+\emph{aucun} témoin pour $n$ : tous les entiers $a$ premiers à $n$
+sont des non-témoins (cela se déduit du théorème de Fermat et de la
+structure des racines carrées de $1$ modulo un nombre premier).
+
+En revanche, pour $n$ \emph{composé} et impair, il peut y avoir :
+
+\begin{itemize}
+  \item des \emph{témoins} (qui prouvent que $n$ est composé) ;
+  \item des \emph{non-témoins} (qui « imitent » le comportement d'un nombre
+        premier et font échouer le test).
+\end{itemize}
+
+Le but de ce qui suit est de montrer que, pour tout $n$ impair composite,
+les non-témoins sont \emph{rares}.
+
+\subsection*{B.2. Le cas composite et l'objectif probabiliste}
+
+Dans les applications de cryptographie, on applique le test de Miller--Rabin
+à un entier impair $n$ dont on ne connaît pas encore la factorisation.
+On choisit des bases $a_1,\dotsc,a_t$ uniformément au hasard (ou selon une
+distribution suffisamment étalée), et on applique le test pour chacune.
+
+\begin{itemize}
+  \item Si, pour au moins une base, le test déclare « composite », alors $n$
+        est \emph{sûrement} composé.
+  \item Si, pour toutes les bases testées, le test « accepte », alors on
+        considère $n$ comme probablement premier.
+\end{itemize}
+
+Pour Majorer la probabilité d'erreur, on fixe un entier impair $n>1$ que l'on
+suppose cette fois \emph{composé}, et on étudie la proportion de bases
+\[
+a \in \{2,\dotsc,n-2\}
+\]
+qui sont des non-témoins de Miller--Rabin. Si cette proportion est $\leq \alpha$,
+alors, en répétant le test sur $t$ bases indépendantes, la probabilité que
+\emph{toutes} les bases soient des non-témoins est $\leq \alpha^t$.
+
+Nous allons montrer successivement :
+
+\begin{itemize}
+  \item une borne simple mais déjà très utile : proportion de non-témoins
+        $\leq 1/2$ ;
+  \item le théorème optimal de Monier--Rabin : proportion de non-témoins
+        $\leq 1/4$.
+\end{itemize}
+
+La première borne se prouve avec des arguments de théorie des groupes
+relativement élémentaires et donne déjà un test très efficace. La seconde
+borne est plus subtile et demande une analyse fine de la structure des
+séquences de Miller--Rabin modulo chaque facteur premier de $n$.
+
+\subsection*{B.3. Une borne simple : au plus la moitié de non-témoins}
+
+On commence par une borne plus facile :
+
+\begin{theorem}[Borne $1/2$]
+\label{thm:MR-12}
+Soit $n>1$ un entier impair \emph{composé}, et écrivons $n-1 = 2^s d$ avec
+$d$ impair. Alors la proportion de non-témoins de Miller--Rabin pour $n$ dans
+$\{2,\dotsc,n-2\}$ est strictement inférieure à $1/2$.
+\end{theorem}
+
+L'idée de la preuve est la suivante : les non-témoins de Miller--Rabin
+appartenant à $(\Z/n\Z)^\times$ (c'est-à-dire premiers avec $n$) sont contenus
+dans un \emph{sous-groupe propre} du groupe multiplicatif
+$(\Z/n\Z)^\times$. Un sous-groupe propre d'un groupe fini a un cardinal au
+plus égal à la moitié du groupe, ce qui fournit la borne.
+
+\begin{lemma}
+\label{lem:noninv-temoins}
+Soit $n>1$ impair et composite. Si $a \in \{1,\dotsc,n-1\}$ n'est pas premier
+avec $n$ (c'est-à-dire $\gcd(a,n) > 1$), alors $a$ est un témoin pour $n$
+dans le test de Miller--Rabin.
+\end{lemma}
+
+\begin{proof}
+Si $\gcd(a,n) > 1$, le test de Miller--Rabin commence par demander de calculer
+$x_0 = a^d \bmod n$ et, en pratique, on aurait déjà détecté le facteur
+$\gcd(a,n)$ en calculant ce reste ou en effectuant des opérations intermédiaires.
+Du point de vue purement théorique, on peut conventionnellement décider que
+toute base non première avec $n$ est traitée comme « témoin » : elle fournit
+un certificat immédiat de composité (un diviseur non trivial de $n$).
+\end{proof}
+
+Ainsi, les \emph{non-témoins} de Miller--Rabin se trouvent nécessairement dans
+le groupe des unités
+\[
+G := (\Z/n\Z)^\times.
+\]
+
+\begin{definition}
+On note $L(n)$ l'ensemble des non-témoins de Miller--Rabin de $n$ dans $G$ :
+\[
+L(n) := \left\{ a \in G \ \middle|\ a^d \equiv 1 \pmod n
+\text{ ou } a^{2^r d} \equiv -1 \pmod n \text{ pour un certain } r \right\}.
+\]
+\end{definition}
+
+On va montrer que $L(n)$ est contenu dans un sous-groupe propre de $G$.
+On commence par un lemme classique.
+
+\begin{lemma}
+\label{lem:solutions-am}
+Soit $n>1$ impair, et soit $m\ge 1$. Le nombre de solutions
+$a \in G$ de la congruence
+\[
+a^m \equiv 1 \pmod n
+\]
+est égal au cardinal du sous-groupe
+\[
+\{a \in G \mid a^m = 1\} \subseteq G,
+\]
+et ce cardinal est un diviseur de $|G| = \varphi(n)$.
+\end{lemma}
+
+\begin{proof}
+Dans un groupe fini $G$, l'ensemble des éléments $a$ tels que $a^m = 1$
+est toujours un sous-groupe de $G$ (stabilité par produit et inverse).
+Son cardinal divise donc $|G|$ par le théorème de Lagrange.
+\end{proof}
+
+On pose maintenant
+\[
+H := \{a \in G \mid a^d \equiv 1 \pmod n\}.
+\]
+C'est un sous-groupe de $G$ (car la condition $a^d = 1$ est stable par
+produit et inverse). De même, pour chaque $r \in \{0,\dotsc,s-1\}$, on pose
+\[
+H_r := \{a \in G \mid a^{2^r d} \equiv 1 \pmod n\},
+\]
+qui est aussi un sous-groupe de $G$, et on a $H = H_0 \subseteq H_1 \subseteq
+\cdots \subseteq H_{s-1}$.
+
+\begin{proposition}
+\label{prop:L-subgroup}
+Soit $n>1$ impair et composite. Les non-témoins de Miller--Rabin pour $n$
+appartenant à $G=(\Z/n\Z)^\times$ sont contenus dans un sous-groupe propre de $G$.
+\end{proposition}
+
+\begin{proof}
+On distingue deux cas, comme dans la démonstration classique (voir par exemple
+Conrad, \emph{The Miller--Rabin Test}, Section 4).
+
+\medskip
+
+\noindent\emph{Cas 1 : $n$ est une puissance d'un nombre premier impair.}
+
+Écrivons $n = p^\alpha$ avec $p$ impair et $\alpha \ge 2$ (puisque $n$ est composé).
+Dans ce cas, on peut montrer que les non-témoins de Miller--Rabin sont exactement
+les solutions de
+\[
+a^{p-1} \equiv 1 \pmod{p^\alpha},
+\]
+ce qui forme un sous-groupe de $G$ de cardinal $p-1$ (on peut le voir par
+induction sur $\alpha$ en relevant les solutions modulo $p$). Or
+\[
+|G| = \varphi(p^\alpha) = p^{\alpha-1}(p-1),
+\]
+donc ce sous-groupe a un indice $p^{\alpha-1} \ge 3$. Il est donc \emph{propre}.
+
+\medskip
+
+\noindent\emph{Cas 2 : $n$ n'est pas une puissance d'un nombre premier.}
+
+Alors $n$ a au moins deux facteurs premiers distincts, et $G$ se décompose,
+par le théorème des restes chinois, comme produit direct de groupes
+cycliques :
+\[
+G \simeq (\Z/p_1^{\alpha_1}\Z)^\times \times \cdots \times (\Z/p_t^{\alpha_t}\Z)^\times,
+\]
+où $t\ge 2$ et les $p_i$ sont des premiers distincts.
+On montre (voir Conrad, Theorem 4.1) qu'en ce cas les non-témoins
+de Miller--Rabin forment un sous-ensemble inclus dans un \emph{sous-groupe
+propre} $H'$ de $G$ : intuitivement, la condition
+\[
+a^d \equiv 1 \pmod n
+\quad\text{ou}\quad
+\exists r,\ a^{2^r d} \equiv -1 \pmod n
+\]
+contraint fortement chaque composante modulo $p_i^{\alpha_i}$, et le pattern
+autorisant un non-témoin ne peut pas remplir tout $G$ ; on obtient un sous-groupe
+de cardinal au plus $|G|/2$.
+\medskip
+
+Dans les deux cas, les non-témoins dans $G$ sont contenus dans un sous-groupe
+propre de $G$.
+\end{proof}
+
+On peut maintenant démontrer le théorème~\ref{thm:MR-12}.
+
+\begin{proof}[Démonstration du théorème~\ref{thm:MR-12}]
+Par le lemme~\ref{lem:noninv-temoins}, tout entier $a$ entre $1$ et $n-1$
+qui n'est pas premier avec $n$ est un \emph{témoin} (il donne immédiatement
+un diviseur non trivial de $n$). Les non-témoins doivent donc appartenir
+à $G = (\Z/n\Z)^\times$.
+
+D'après la proposition~\ref{prop:L-subgroup}, ces non-témoins appartiennent
+à un sous-groupe propre $H'$ de $G$, donc
+\[
+|H'| \le \frac{|G|}{2} = \frac{\varphi(n)}{2}.
+\]
+Ainsi, il y a au plus $\varphi(n)/2$ non-témoins dans $\{1,\dotsc,n-1\}$.
+Comme $n$ est composé, on a $\varphi(n) \le n-2$, donc
+\[
+\frac{\varphi(n)/2}{n-1} < \frac{1}{2}.
+\]
+En restreignant l'intervalle à $\{2,\dotsc,n-2\}$, on ne fait que diminuer
+le dénominateur (on retire $1$ et $n-1$, qui ne sont jamais des témoins),
+donc la proportion de non-témoins dans $\{2,\dotsc,n-2\}$ reste strictement
+inférieure à $1/2$.
+\end{proof}
+
+\begin{remark}
+La borne $1/2$ est déjà suffisante pour obtenir dans la pratique un test
+extrêmement fiable : après $t$ essais indépendants, la probabilité que $n$
+soit composite et que le test accepte toutes les bases est $\le 2^{-t}$.
+Avec $t=40$, on tombe déjà sous $10^{-12}$.
+\end{remark}
+
+\subsection*{B.4. Le théorème de Monier--Rabin et la borne $1/4$}
+
+On énonce maintenant le \emph{théorème optimal} sur la proportion de
+non-témoins de Miller--Rabin.
+
+\begin{theorem}[Monier--Rabin]
+\label{thm:MR-14}
+Soit $n > 1$ un entier impair composite. Alors la proportion de non-témoins
+de Miller--Rabin pour $n$ dans $\{2,\dotsc,n-2\}$ est strictement inférieure
+à $1/4$. Autrement dit, la proportion de témoins est $> 3/4$.
+\end{theorem}
+
+Ce résultat est dû indépendamment à Monier et Rabin dans les années 1980.
+Une présentation moderne détaillée (et très pédagogique) se trouve par exemple
+dans l'article de Keith Conrad \emph{The Miller–Rabin test}.
+
+Nous n'allons pas redonner ici la preuve complète, qui est assez longue et
+technique, mais en esquisser les grandes lignes pour donner une idée des idées
+en jeu.
+
+\begin{proof}[Idée de la démonstration]
+On travaille à nouveau avec un entier impair $n>1$ composite, et on écrit
+$n-1=2^s d$ avec $d$ impair. On note toujours $G = (\Z/n\Z)^\times$ et
+$L(n)$ l'ensemble des non-témoins dans $G$.
+
+La stratégie, inspirée de Monier et Rabin, est la suivante.
+
+\medskip
+
+\noindent\emph{1) Réduction au cas des non-témoins dans $G$.}
+
+Comme précédemment, les entiers $a$ non premiers avec $n$ sont toujours
+des témoins (ils révèlent un facteur non trivial), donc tous les non-témoins
+sont dans $G$.
+
+On montre ensuite qu'il suffit de majorer
+\[
+\frac{|L(n)|}{|G|}
+\]
+par $1/4$, car on passe sans difficulté de la proportion dans $G$ à la
+proportion dans $\{2,\dotsc,n-2\}$.
+
+\medskip
+
+\noindent\emph{2) Cas $n = p^\alpha$ puissance d'un nombre premier impair.}
+
+Dans ce cas, on montre que les non-témoins de Miller--Rabin coïncident
+avec les solutions de
+\[
+a^{p-1} \equiv 1 \pmod{p^\alpha},
+\]
+qui forment un sous-groupe de $G$ de cardinal $p-1$ (induction sur $\alpha$,
+comme évoqué plus haut). On en déduit
+\[
+\frac{|L(n)|}{|G|} = \frac{p-1}{p^{\alpha-1}(p-1)} = \frac{1}{p^{\alpha-1}}
+\le \frac{1}{3} \le \frac{1}{4}
+\]
+dès que $p^{\alpha-1} \ge 4$ (ce qui est vrai sauf pour $n=9$ et $n=25$,
+que l'on traite séparément et qui donnent aussi une proportion $\le 1/4$).
+
+\medskip
+
+\noindent\emph{3) Cas général : $n$ a au moins deux facteurs premiers distincts.}
+
+On écrit
+\[
+n = p_1^{\alpha_1} \cdots p_t^{\alpha_t}, \qquad t \ge 2,
+\]
+et on utilise à fond le théorème des restes chinois
+\[
+G \simeq G_1 \times \cdots \times G_t,
+\qquad
+G_i = (\Z/p_i^{\alpha_i}\Z)^\times.
+\]
+Autrement dit, un élément $a$ de $G$ peut être identifié à un $t$-uplet
+$(a_1,\dotsc,a_t)$ où chaque $a_i$ est pris modulo $p_i^{\alpha_i}$.
+
+Pour chaque composante $G_i$, on considère la \emph{suite de Miller--Rabin}
+générée par $a_i$ :
+\[
+a_i^d,\ a_i^{2d},\ a_i^{4d},\ \dots,\ a_i^{2^{s-1}d}.
+\]
+Quand $n$ est \emph{premier}, cette suite doit contenir $1$ à la fin et
+un (et un seul) $-1$ juste avant la première occurrence de $1$. Pour des
+entiers composés, on analyse finement les motifs possibles modulo chaque
+$p_i^{\alpha_i}$.
+
+Le point clé est que, pour un non-témoin global $a \in G$, la suite
+multidimensionnelle formée de ces suites coordonnées doit présenter
+un motif très contraint (un certain « alignement » des $-1$ et des $1$
+dans chaque composante). En examinant toutes les possibilités et en les
+classant, on montre que l'ensemble $L(n)$ est contenu soit dans un
+\emph{sous-groupe} $S$ de $G$ d'indice au moins $4$, soit dans une
+\emph{union de deux classes latérales} d'un sous-groupe $S$ d'indice au
+moins $8$.
+
+Dans le premier cas, on a
+\[
+\frac{|L(n)|}{|G|} \le \frac{|S|}{|G|} \le \frac{1}{4},
+\]
+et dans le second cas
+\[
+\frac{|L(n)|}{|G|} \le \frac{2|S|}{|G|} \le \frac{2}{8} = \frac{1}{4}.
+\]
+
+\medskip
+
+La classification complète des motifs possibles et la construction explicite
+du sous-groupe $S$ sont techniques : elles utilisent la structure détaillée
+des solutions de $x^2 \equiv 1 \pmod{p_i^{\alpha_i}}$ et des valuations 2-adiques
+des ordres des éléments dans chaque $G_i$. On renvoie pour ces détails à Monier
+et Rabin, ou à l'exposé moderne de Conrad.
+\end{proof}
+
+\begin{remark}
+Le théorème~\ref{thm:MR-14} est \emph{optimal} au sens suivant :
+Monier a montré que l'on peut construire une suite d'entiers impairs
+composés $n$ pour lesquels la proportion de non-témoins de Miller--Rabin
+tend vers $1/4$ quand $n \to \infty$. Autrement dit, on ne peut pas
+améliorer la borne $1/4$ en une borne universelle plus petite.
+\end{remark}
+
+\subsection*{B.5. Conséquence pratique pour le test}
+
+En combinant le théorème~\ref{thm:MR-14} avec le fait que les bases non
+premières à $n$ sont toujours des témoins, on obtient l'énoncé suivant :
+
+\begin{corollary}
+Soit $n>1$ impair. On applique le test de Miller--Rabin à $n$ pour des
+bases $a_1,\dotsc,a_t$ choisies indépendamment, chacune uniformément
+dans $\{2,\dotsc,n-2\}$.
+\begin{itemize}
+  \item Si le test rejette au moins une base (c'est-à-dire trouve un témoin),
+        alors $n$ est certainement composé.
+  \item Si le test accepte toutes les bases et que $n$ est en réalité composé,
+        alors la probabilité d'une telle « mésaventure » est majorée par $4^{-t}$.
+\end{itemize}
+\end{corollary}
+
+En pratique, on choisit $t$ suffisamment grand (par exemple $t=40$ ou $t=64$)
+pour que cette probabilité d'erreur soit négligeable, même si l'on répète
+le test un grand nombre de fois ou sur de très nombreux entiers.
+Le test de Miller--Rabin est ainsi l'un des piliers des algorithmes de
+génération de nombres premiers en cryptographie moderne.
+
+\newpage
+
 \addcontentsline{toc}{section}{Références}
 \begin{thebibliography}{9}
 
