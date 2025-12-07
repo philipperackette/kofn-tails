@@ -1,4 +1,4 @@
-# # Solution en code source ouvert de partage de secret (schéma de Shamir) sur Tails
+# Solution en code source ouvert de partage de secret (schéma de Shamir) sur Tails
 
 Ce dépôt contient une solution de partage de secret **k-sur-n** (schéma de Shamir) fonctionnant sous **Tails**, avec :
 
