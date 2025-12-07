@@ -331,61 +331,107 @@ L'entier $pq$ a été compté deux fois. Par le principe d'inclusion-exclusion :
 
 \begin{theorem}[Théorème de Lagrange pour les groupes finis]
 \label{thm:lagrange-groupes}
-Soit $G$ un groupe fini et $H$ un sous-groupe de $G$. Alors l'ordre de $H$ divise l'ordre de $G$ :
+Soit \( G \) un groupe fini et \( H \) un sous-groupe de \( G \). Alors le cardinal de \( H \) divise le cardinal de \( G \) :
 \[
-|H| \ \big|\ |G|
+|H| \ \big|\ |G|.
 \]
-En particulier, pour tout $g \in G$, l'ordre de $g$ divise $|G|$.
+En particulier, pour tout \( g \in G \), l'ordre de \( g \) (défini comme le plus petit entier \( d > 0 \) tel que \( g^d = e \)) divise le cardinal de \( G \).
 \end{theorem}
 
 \begin{proof}
-Considérons la relation d'équivalence sur $G$ définie par
+La démonstration se décompose en trois parties distinctes.
+
+\paragraph{1. Relation d'équivalence et classes à gauche}
+Pour exploiter la structure de groupe, on définit une relation \(\sim\) sur \( G \) par :
 \[
 x \sim y \quad \Longleftrightarrow \quad x^{-1}y \in H.
 \]
-Vérifions que c'est bien une relation d'équivalence :
+On vérifie aisément qu'il s'agit d'une relation d'équivalence :
 \begin{itemize}
-  \item Réflexivité : $x^{-1}x = e \in H$, donc $x \sim x$.
-  \item Symétrie : si $x \sim y$, alors $x^{-1}y \in H$. Comme $H$ est un sous-groupe, l'inverse $(x^{-1}y)^{-1} = y^{-1}x$ est aussi dans $H$, donc $y \sim x$.
-  \item Transitivité : si $x \sim y$ et $y \sim z$, alors $x^{-1}y \in H$ et $y^{-1}z \in H$. Le produit $(x^{-1}y)(y^{-1}z) = x^{-1}z$ est dans $H$, donc $x \sim z$.
+  \item \textbf{Réflexivité :} Pour tout \( x \in G \), \( x^{-1}x = e \in H \), donc \( x \sim x \).
+  \item \textbf{Symétrie :} Si \( x \sim y \), alors \( x^{-1}y \in H \). Comme \( H \) est un sous-groupe, l'inverse \( (x^{-1}y)^{-1} = y^{-1}x \) appartient à \( H \), donc \( y \sim x \).
+  \item \textbf{Transitivité :} Si \( x \sim y \) et \( y \sim z \), alors \( x^{-1}y \in H \) et \( y^{-1}z \in H \). Le produit \( (x^{-1}y)(y^{-1}z) = x^{-1}z \) est dans \( H \), donc \( x \sim z \).
 \end{itemize}
 
-Les classes d'équivalence pour cette relation sont les \emph{classes à gauche}
+\subparagraph{Description des classes d'équivalence}
+Pour un élément \( g \in G \), la classe d'équivalence de \( g \) est définie par :
 \[
-gH = \{gh : h \in H\}, \quad g \in G.
+[g] = \{ x \in G : g \sim x \} = \{ x \in G : g^{-1}x \in H \}.
 \]
-L'application
+Montrons que cet ensemble coïncide avec l'ensemble
 \[
-\pi : G \longrightarrow G/{\sim}, \quad x \longmapsto [x] = xH,
+gH = \{ gh : h \in H \}.
 \]
-associe à chaque élément de $G$ sa classe d'équivalence modulo $\sim$.
 
-Pour montrer que toutes les classes à gauche ont le même cardinal que $H$, fixons $g \in G$ et considérons l'application
-\[
-f_g : H \longrightarrow gH, \quad h \longmapsto gh.
-\]
-Cette application est :
 \begin{itemize}
-  \item \textbf{Surjective} : par définition de $gH$, tout élément de $gH$ s'écrit $gh$ pour un certain $h \in H$ ;
-  \item \textbf{Injective} : si $gh_1 = gh_2$, alors en multipliant à gauche par $g^{-1}$, on obtient $h_1 = h_2$.
+  \item Si \( x \in [g] \), alors \( g^{-1}x \in H \). Notons \( h = g^{-1}x \in H \). En multipliant à gauche par \( g \), on obtient \( x = gh \), ce qui montre que \( x \in gH \).
+  \item Réciproquement, si \( x \in gH \), il existe \( h \in H \) tel que \( x = gh \). Alors \( g^{-1}x = g^{-1}gh = h \in H \), donc \( g \sim x \) et \( x \in [g] \).
 \end{itemize}
-Ainsi, $f_g$ est une bijection et donc $|gH| = |H|$ pour tout $g \in G$.
-Puisque les classes d'équivalence forment une partition de $G$, on a :
+
+Ainsi, \( [g] = gH \). Les classes d'équivalence sont donc exactement les ensembles de la forme \( gH \) pour \( g \in G \). On les appelle les \emph{classes à gauche modulo \( H \)}.
+
+\paragraph{2. Cardinal des classes et partition de \( G \)}
+
+\subparagraph{Même cardinal pour toutes les classes}
+Pour tout \( g \in G \), l'application
 \[
-|G| = \sum_{\text{classes}} |gH| = (\text{nombre de classes}) \times |H|
+f_g : H \longrightarrow gH, \quad h \longmapsto gh
 \]
-Donc $|H|$ divise $|G|$.
+est une bijection :
+\begin{itemize}
+  \item Elle est surjective par définition de \( gH \).
+  \item Elle est injective car \( gh_1 = gh_2 \) implique \( h_1 = h_2 \) (en multipliant à gauche par \( g^{-1} \)).
+\end{itemize}
+Ainsi, \( |gH| = |H| \) pour tout \( g \in G \).
 
-Pour la deuxième partie, si $g \in G$, considérons le sous-groupe engendré par $g$, noté $\langle g \rangle = \{g^n : n \in \Z\}$. 
+\subparagraph{Partition de \( G \)}
+Les classes à gauche forment une partition de \( G \) (propriété générale des relations d'équivalence). Notons \( r \) le nombre de classes distinctes (cet entier est appelé \emph{indice} de \( H \) dans \( G \) et noté \( [G:H] \)).
 
-Puisque $G$ est fini, les puissances successives de $g$ ne peuvent être toutes distinctes. Il existe donc deux entiers $i < j$ tels que $g^i = g^j$, d'où $g^{j-i} = e$. Ainsi, l'ensemble $\{k \in \mathbb{N}^* : g^k = e\}$ est non vide, et par le principe du bon ordre, il possède un plus petit élément, noté $d$. Cet entier $d$ est appelé l'ordre de $g$.
+Puisque chaque classe a pour cardinal \( |H| \) et que ces classes sont disjointes et recouvrent \( G \), on a :
+\[
+|G| = \sum_{i=1}^{r} |g_iH| = \sum_{i=1}^{r} |H| = r \cdot |H|,
+\]
+où \( g_1, \dots, g_r \) sont des représentants des différentes classes.
 
-Montrons que $\langle g \rangle = \{e, g, g^2, \dots, g^{d-1}\}$. Soit $n \in \Z$. Par division euclidienne, on peut écrire $n = qd + r$ avec $0 \le r < d$, et donc $g^n = g^{qd+r} = (g^d)^q \cdot g^r = e^q \cdot g^r = g^r$. Ainsi, tout élément de $\langle g \rangle$ est l'un des $g^r$ avec $0 \le r < d$. Ces éléments sont distincts, car si $g^i = g^j$ avec $0 \le i < j < d$, alors $g^{j-i} = e$ avec $0 < j-i < d$, ce qui contredit la minimalité de $d$.
+Cette égalité montre que \( |H| \) divise \( |G| \), et que plus précisément \( [G:H] = \frac{|G|}{|H|} \).
 
-Donc $\langle g \rangle = \{e, g, g^2, \dots, g^{d-1}\}$ a exactement $d$ éléments, ce qui signifie que le cardinal du sous-groupe $\langle g \rangle$ est égal à l'ordre de $g$.
+\paragraph{3. Application au cas particulier d'un élément}
+Pour tout \( g \in G \), considérons l'ensemble des puissances de \( g \) :
+\[
+\langle g \rangle = \{ g^n : n \in \mathbb{Z} \}.
+\]
 
-Par la première partie du théorème, l'ordre de $\langle g \rangle$ (c'est-à-dire son cardinal) divise $|G|$, donc l'ordre de $g$ divise $|G|$.
+\subparagraph{Finitude et définition de l'ordre}
+Comme \( G \) est fini, les puissances \( g^0, g^1, g^2, \dots \) ne peuvent être toutes distinctes. Il existe donc des entiers \( i < j \) tels que \( g^i = g^j \). En multipliant par \( g^{-i} \), on obtient \( g^{j-i} = e \) avec \( j-i > 0 \).
+
+L'ensemble des entiers strictement positifs \( k \) tels que \( g^k = e \) est donc non vide. Soit \( d \) son plus petit élément (par le principe du bon ordre). Cet entier \( d \) est appelé \emph{ordre de \( g \)}.
+
+\subparagraph{Structure de \( \langle g \rangle \)}
+Montrons que \( \langle g \rangle = \{ e, g, g^2, \dots, g^{d-1} \} \) et que ces éléments sont distincts.
+
+Pour tout entier \( n \), effectuons la division euclidienne de \( n \) par \( d \) :
+\[
+n = qd + r, \quad \text{avec } 0 \leq r < d.
+\]
+Alors
+\[
+g^n = g^{qd+r} = (g^d)^q \cdot g^r = e^q \cdot g^r = g^r.
+\]
+Ainsi, toute puissance de \( g \) coïncide avec l'un des éléments \( g^r \) où \( 0 \leq r < d \).
+
+De plus, ces éléments sont distincts : si \( g^i = g^j \) avec \( 0 \leq i < j < d \), alors \( g^{j-i} = e \) avec \( 0 < j-i < d \), ce qui contredit la minimalité de \( d \).
+
+Par conséquent, \( \langle g \rangle \) possède exactement \( d \) éléments, c'est-à-dire \( |\langle g \rangle| = d \).
+
+\subparagraph{Conclusion}
+L'ensemble \( \langle g \rangle \) est un sous-groupe de \( G \) (c'est le sous-groupe engendré par \( g \)). D'après la première partie du théorème, son cardinal \( |\langle g \rangle| \) divise \( |G| \). Or \( |\langle g \rangle| = d \), qui est précisément l'ordre de \( g \). On en déduit que l'ordre de \( g \) divise le cardinal de \( G \).
 \end{proof}
+
+
+
+
+
+
 
 \begin{theorem}[Théorème d'Euler]
 \label{thm:euler}
