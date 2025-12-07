@@ -339,26 +339,37 @@ En particulier, pour tout $g \in G$, l'ordre de $g$ divise $|G|$.
 \end{theorem}
 
 \begin{proof}
-Considérons la relation d'équivalence sur $G$ définie par :
+Considérons la relation d'équivalence sur $G$ définie par
 \[
-x \sim y \quad \Leftrightarrow \quad x^{-1}y \in H
+x \sim y \quad \Longleftrightarrow \quad x^{-1}y \in H.
 \]
-Vérifions que c'est une relation d'équivalence :
+Vérifions que c'est bien une relation d'équivalence :
 \begin{itemize}
-\item Réflexivité : $x^{-1}x = e \in H$, donc $x \sim x$.
-\item Symétrie : si $x \sim y$, alors $x^{-1}y \in H$. Comme $H$ est un sous-groupe, l'inverse $(x^{-1}y)^{-1} = y^{-1}x$ est aussi dans $H$, donc $y \sim x$.
-\item Transitivité : si $x \sim y$ et $y \sim z$, alors $x^{-1}y \in H$ et $y^{-1}z \in H$. Le produit $(x^{-1}y)(y^{-1}z) = x^{-1}z$ est dans $H$, donc $x \sim z$.
+  \item Réflexivité : $x^{-1}x = e \in H$, donc $x \sim x$.
+  \item Symétrie : si $x \sim y$, alors $x^{-1}y \in H$. Comme $H$ est un sous-groupe, l'inverse $(x^{-1}y)^{-1} = y^{-1}x$ est aussi dans $H$, donc $y \sim x$.
+  \item Transitivité : si $x \sim y$ et $y \sim z$, alors $x^{-1}y \in H$ et $y^{-1}z \in H$. Le produit $(x^{-1}y)(y^{-1}z) = x^{-1}z$ est dans $H$, donc $x \sim z$.
 \end{itemize}
 
-Les classes d'équivalence sont les \emph{classes à gauche} $gH = \{gh : h \in H\}$. 
+Les classes d'équivalence pour cette relation sont les \emph{classes à gauche}
+\[
+gH = \{gh : h \in H\}, \quad g \in G.
+\]
+L'application
+\[
+\pi : G \longrightarrow G/{\sim}, \quad x \longmapsto [x] = xH,
+\]
+associe à chaque élément de $G$ sa classe d'équivalence modulo $\sim$.
 
-Pour montrer que toutes les classes à gauche ont le même cardinal que $H$, considérons l'application $f : H \to gH$ définie par $f(h) = gh$. Cette application est :
+Pour montrer que toutes les classes à gauche ont le même cardinal que $H$, fixons $g \in G$ et considérons l'application
+\[
+f_g : H \longrightarrow gH, \quad h \longmapsto gh.
+\]
+Cette application est :
 \begin{itemize}
-  \item \textbf{Surjective} : Par définition de $gH$
-  \item \textbf{Injective} : Si $gh_1 = gh_2$, alors en multipliant à gauche par $g^{-1}$, on obtient $h_1 = h_2$
+  \item \textbf{Surjective} : par définition de $gH$, tout élément de $gH$ s'écrit $gh$ pour un certain $h \in H$ ;
+  \item \textbf{Injective} : si $gh_1 = gh_2$, alors en multipliant à gauche par $g^{-1}$, on obtient $h_1 = h_2$.
 \end{itemize}
-Ainsi, $|gH| = |H|$ pour tout $g \in G$.
-
+Ainsi, $f_g$ est une bijection et donc $|gH| = |H|$ pour tout $g \in G$.
 Puisque les classes d'équivalence forment une partition de $G$, on a :
 \[
 |G| = \sum_{\text{classes}} |gH| = (\text{nombre de classes}) \times |H|
@@ -2102,7 +2113,7 @@ Pour toute clé $(n,e,d)$ valide, pour tout message $M$ de longueur $8k_0$ bits 
 \end{theorem}
 
 \begin{proof}
-La correction découle de la structure réversible de l'encodage OAEP. Les opérations de masquage utilisant MGF sont réversibles car déterministe, et les vérifications assuren l'intégrité du message.
+La correction découle de la structure réversible de l'encodage OAEP. Les opérations de masquage utilisant MGF sont réversibles car déterministe, et les vérifications assurent l'intégrité du message.
 \end{proof}
 
 \begin{remark}[Propriétés de sécurité]
@@ -2655,11 +2666,14 @@ astronomiquement plus grand que le nombre de clés AES-256 possibles.
 
 Si l'on modélise AES-256 comme une \emph{permutation pseudo-aléatoire} (PRP),
 la probabilité de collision (existence de $K \neq K'$ tels que $E_K = E_{K'}$)
-est d'environ $2^{-\Omega(2^{128})}$, totalement négligeable à toute échelle pratique.
+est majorée par une quantité de l'ordre de
+\[
+  2^{-2^{128}},
+\]
+ce qui est totalement négligeable à toute échelle pratique.
 \end{remark}
 
 %=========================================================
-
 \section{Construction globale du schéma $k$-sur-$n$}
 
 \subsection{Paramètres et constantes}
@@ -2670,7 +2684,7 @@ On fixe :
   \item un entier $n\ge 2$ (nombre de participants) ;
   \item un entier $k$ avec $2\le k\le n$ (seuil) ;
   \item le corps $\F_P$ avec $P=2^{521}-1$ ;
-  \item la fonction de hachage $h$ (par exemple SHA-256) ;
+  \item la fonction de hachage $h$ (SHA-256) ;
   \item les fonctions dérivées $\HMAC_h$, $\HKDF_h$, $\PBKDF_h$ ;
   \item un schéma de signature Ed25519 sur $(E(\F_q),\langle B\rangle)$ ;
   \item un schéma RSA-OAEP pour des modules de taille $4096$ bits ;
@@ -2679,34 +2693,37 @@ On fixe :
 \end{definition}
 
 \begin{definition}[Constantes de contexte et sels]
-On fixe les constantes suivantes :
+On fixe les constantes suivantes une fois pour toutes :
 \begin{itemize}[leftmargin=2em]
-  \item $\mathrm{info}_{\mathrm{Ed}}\in\bin^*$, chaîne ASCII
-        (par exemple \texttt{"ed25519-master-key"}) ;
-  \item $\mathrm{info}_{\mathrm{RSA}}\in\bin^*$,
-        (par exemple \texttt{"rsa-wrap-key"}) ;
+  \item $\mathrm{info}_{\mathrm{Ed}} := \texttt{"ed25519-master-key"} \in\bin^*$ (chaîne ASCII) ;
+  \item $\mathrm{info}_{\mathrm{RSA}} := \texttt{"rsa-wrap-key"} \in\bin^*$ (chaîne ASCII) ;
   \item un sel HKDF public pour Ed25519,
-        $\mathrm{saltEd}\in\bin^*$, typiquement l'ASCII de
-        \texttt{"ed25519-salt"} ;
-  \item pour chaque cérémonie, un sel HKDF public pour RSA,
-        $W\in\bin^{\ell_{\mathrm{wrap}}}$, tiré uniformément ;
-  \item pour chaque participant $i$, un sel PBKDF2 individuel
-        $S_i\in\bin^{\ell_S}$ (avec $\ell_S$ fixé, par exemple 128 bits), tiré uniformément ;
-  \item un nombre d'itérations $c\in\N^*$ pour PBKDF2 ;
-  \item pour RSA-OAEP, un label $L\in\bin^*$ (souvent vide).
+        $\mathrm{saltEd} := \texttt{"ed25519-salt"} \in\bin^*$ (chaîne ASCII) ;
+  \item une longueur de sel pour le \emph{wrap} RSA
+        $\ell_{\mathrm{wrap}} := 128$ bits, et, pour chaque cérémonie,
+        un sel HKDF public pour RSA $W\in\bin^{\ell_{\mathrm{wrap}}}$ tiré uniformément ;
+  \item une longueur de sel PBKDF2 fixée à $\ell_S := 128$ bits et,
+        pour chaque participant $i$, un sel individuel
+        $S_i\in\bin^{\ell_S}$ tiré uniformément ;
+  \item un nombre d'itérations PBKDF2 fixé à $c := 501000$ ;
+  \item pour RSA-OAEP, un label fixé à la chaîne vide
+        $L := \varepsilon \in\bin^*$.
 \end{itemize}
 \end{definition}
 
 \subsection{Cérémonie initiale}
 
 \begin{definition}[Encodage des éléments de $\F_P$]
-Soit $\phi: \F_P \to \bin^{521}$ l'isomorphisme qui à $a \in \F_P$ associe sa représentation binaire big-endian sur $\lceil \log_2 P \rceil = 521$ bits.
+Soit $\phi: \F_P \to \bin^{521}$ l'isomorphisme qui à $a \in \F_P$
+associe sa représentation binaire big-endian sur
+$\lceil \log_2 P \rceil = 521$ bits.
 \end{definition}
 
 \begin{definition}[Étape de génération]
 La cérémonie initiale réalise les étapes suivantes :
 \begin{enumerate}[leftmargin=2em,label=\arabic*)]
-  \item Tirer $S\in\bin^{256}$ uniformément et définir $s = \mathrm{val}_{\mathrm{be}}(S) \bmod P \in \F_P$.
+  \item Tirer $S\in\bin^{256}$ uniformément et définir
+        $s = \mathrm{val}_{\mathrm{be}}(S) \bmod P \in \F_P$.
   \item Appliquer $\mathrm{Share}(s)$ pour obtenir les parts
         $(x_i,y_i)_{1\le i\le n}$.
   \item Dériver la clé
@@ -2723,29 +2740,35 @@ La cérémonie initiale réalise les étapes suivantes :
     \mathrm{info}_{\mathrm{RSA}},L_{\mathrm{RSA}}) \in \bin^{8L_{\mathrm{RSA}}}
   \]
   avec $L_{\mathrm{RSA}}=32$ (clé AES-256 de 32 octets).
-  \item Encoder la clé privée RSA en un mot binaire $M_{\mathrm{RSA}}$ (format PEM ou DER), puis calculer
+  \item Encoder la clé privée RSA en un mot binaire
+        $M_{\mathrm{RSA}}$ au format PEM, puis calculer
   \[
-    (C_{\mathrm{RSA}}, T_{\mathrm{RSA}}) = \AESGCM_{K_{\mathrm{RSA}}}(N_{\mathrm{RSA}}, M_{\mathrm{RSA}})
+    (C_{\mathrm{RSA}}, T_{\mathrm{RSA}}) =
+      \AESGCM_{K_{\mathrm{RSA}}}(N_{\mathrm{RSA}}, M_{\mathrm{RSA}})
   \]
   pour un nonce $N_{\mathrm{RSA}}\in\bin^{96}$.
-  \item Stocker $(W,N_{\mathrm{RSA}},C_{\mathrm{RSA}},T_{\mathrm{RSA}})$ dans \texttt{rsa\_wrapped.json}.
+  \item Stocker $(W,N_{\mathrm{RSA}},C_{\mathrm{RSA}},T_{\mathrm{RSA}})$
+        dans \texttt{rsa\_wrapped.json}.
 \end{enumerate}
 \end{definition}
 
 \subsection{Protection des parts}
 
 \begin{definition}[Sérialisation des parts]
-Pour chaque part $(x_i,y_i)$, on construit un dictionnaire JSON contenant les champs \texttt{x}, \texttt{y}, \texttt{k}, \texttt{n}, et \texttt{pub\_hash}. On encode ce dictionnaire en UTF-8 pour obtenir le message à chiffrer $M_i \in \bin^*$.
+Pour chaque part $(x_i,y_i)$, on construit un dictionnaire JSON
+contenant les champs \texttt{x}, \texttt{y}, \texttt{k}, \texttt{n},
+et \texttt{pub\_hash}. On encode ce dictionnaire en UTF-8 pour obtenir
+le message à chiffrer $M_i \in \bin^*$.
 \end{definition}
 
 \begin{definition}[Dérivation des clés individuelles]
 Pour chaque participant $i$, on fixe un mot de passe $P_i\in\bin^*$ et on
 définit
 \[
-  K_i = \PBKDF_h(P_i,S_i,c,L_i) \in \bin^{8L_i},
+  K_i = \PBKDF_h(P_i,S_i,c,32) \in \bin^{256},
 \]
-où $L_i$ est choisi en fonction de la clé AES à dériver (par exemple
-$L_i=32$ pour une clé AES-256).
+c'est-à-dire une clé AES-256 (32 octets) dérivée par PBKDF2-HMAC-SHA256
+avec $c=501000$ itérations et un sel $S_i$ de 128 bits.
 \end{definition}
 
 \begin{definition}[Chiffrement des parts]
@@ -2766,7 +2789,7 @@ Soit un fichier $F\in\bin^*$. On procède comme suit :
   \item Tirer un nonce $N\in\bin^{96}$.
   \item Calculer $(C,T)=\AESGCM_{K_{\mathrm{AES}}}(N,F)$.
   \item Calculer $E_K = \RSAOAEP_{(n,e)}(K_{\mathrm{AES}};r)$ pour un
-        aléa $r\in\bin^{k_1}$.
+        aléa $r\in\bin^{k_1}$ et le label fixé $L=\varepsilon$.
 \end{enumerate}
 Le quadruplet $(E_K,N,C,T)$ est le chiffrement hybride de $F$.
 \end{definition}
@@ -2774,18 +2797,21 @@ Le quadruplet $(E_K,N,C,T)$ est le chiffrement hybride de $F$.
 %=========================================================
 \section{Correspondance avec les scripts Tails v1}
 
-Cette section établit la correspondance entre les objets formalisés ci-dessus
-et les éléments concrets (scripts, fichiers) de la procédure Tails v1.
+Cette section établit la correspondance entre les objets formalisés
+ci-dessus et les éléments concrets (scripts, fichiers) de la procédure
+Tails v1.
 
 \subsection{Secret maître et partage Shamir}
 
 \begin{itemize}[leftmargin=2em]
-  \item Le secret $S\in\bin^{256}$ est généré par \verb|os.urandom(32)|
-        dans le script \texttt{ceremony\_generate.py} (variable \verb|S_int|).
-  \item La conversion $s = \mathrm{val}_{\mathrm{be}}(S) \bmod P \in \F_P$ est implicite
-        dans l'implémentation Python.
+  \item Le secret $S\in\bin^{256}$ est généré par
+        \verb|os.urandom(32)| dans le script
+        \texttt{ceremony\_generate.py} (variable \verb|S_int|).
+  \item La conversion $s = \mathrm{val}_{\mathrm{be}}(S) \bmod P \in \F_P$
+        est implicite dans l'implémentation Python.
   \item Les partages $(x_i,y_i)$ sont obtenus par évaluation d'un
-        polynôme $f\in\mathcal{P}_{<k}$ via la fonction \verb|shamir_split|.
+        polynôme $f\in\mathcal{P}_{<k}$ via la fonction
+        \verb|shamir_split|.
   \item La reconstruction utilise l'interpolation de Lagrange dans
         \verb|shamir_reconstruct| avec calcul explicite des coefficients
         $\lambda_j$.
@@ -2794,28 +2820,33 @@ et les éléments concrets (scripts, fichiers) de la procédure Tails v1.
 \subsection{Clés dérivées, sels HKDF et Ed25519}
 
 \begin{itemize}[leftmargin=2em]
-  \item La clé $K_{\mathrm{Ed}} = \HKDF_h(S,\mathrm{saltEd},
+  \item La clé
+        $K_{\mathrm{Ed}} = \HKDF_h(S,\mathrm{saltEd},
         \mathrm{info}_{\mathrm{Ed}},32)$ est instanciée via :
 \begin{verbatim}
-HKDF(SHA256, 32, salt=b"ed25519-salt", 
+HKDF(SHA256, 32, salt=b"ed25519-salt",
      info=b"ed25519-master-key")
 \end{verbatim}
-  \item De même, $K_{\mathrm{RSA}} = \HKDF_h(S,W,
-        \mathrm{info}_{\mathrm{RSA}},32)$ utilise \verb|info=b"rsa-wrap-key"|
-        avec un sel aléatoire $W$ stocké dans \texttt{rsa\_wrapped.json}.
-  \item La paire $(a,A)$ est construite via 
+  \item De même,
+        $K_{\mathrm{RSA}} = \HKDF_h(S,W,
+        \mathrm{info}_{\mathrm{RSA}},32)$ utilise
+        \verb|info=b"rsa-wrap-key"| avec un sel aléatoire $W$
+        stocké dans \texttt{rsa\_wrapped.json}.
+  \item La paire $(a,A)$ est construite via
         \verb|Ed25519PrivateKey.from_private_bytes(ed_seed)|,
-        où \texttt{ed\_seed} est $K_{\mathrm{Ed}}$. L'API effectue le clampage
-        et calcule $A=aB$.
+        où \texttt{ed\_seed} est $K_{\mathrm{Ed}}$. L'API effectue le
+        \emph{clampage} et calcule $A=aB$.
 \end{itemize}
 
 \subsection{PBKDF2, sels $S_i$ et chiffrement des parts}
 
 \begin{itemize}[leftmargin=2em]
-  \item Pour chaque participant $i$, le script tire un sel $S_i$ (16 octets)
-        et dérive $K_i = \PBKDF_h(P_i,S_i,c,32)$ avec $c=501000$ itérations.
-  \item Les parts sont sérialisées en JSON avec les champs \texttt{x}, \texttt{y}, 
-        \texttt{k}, \texttt{n}, et \texttt{pub\_hash}, puis chiffrées par AES-GCM.
+  \item Pour chaque participant $i$, le script tire un sel $S_i$
+        de 16 octets (128 bits) et dérive
+        $K_i = \PBKDF_h(P_i,S_i,c,32)$ avec $c=501000$ itérations.
+  \item Les parts sont sérialisées en JSON avec les champs
+        \texttt{x}, \texttt{y}, \texttt{k}, \texttt{n}, et
+        \texttt{pub\_hash}, puis chiffrées par AES-GCM.
   \item L'enveloppe chiffrée inclut les métadonnées nécessaires pour la
         vérification lors de la reconstruction.
 \end{itemize}
@@ -2823,18 +2854,22 @@ HKDF(SHA256, 32, salt=b"ed25519-salt",
 \subsection{RSA, OAEP et chiffrement hybride}
 
 \begin{itemize}[leftmargin=2em]
-  \item La paire RSA $(n,e,d)$ est générée avec $n=4096$ bits et $e=65537$.
-  \item La clé privée RSA est sérialisée en PEM puis chiffrée sous AES-GCM
-        avec $K_{\mathrm{RSA}}$, produisant \texttt{rsa\_wrapped.json}.
-  \item Le script \texttt{rsa\_hybrid\_encrypt.py} implémente le chiffrement
-        hybride : 
+  \item La paire RSA $(n,e,d)$ est générée avec $n=4096$ bits
+        et $e=65537$.
+  \item La clé privée RSA est sérialisée en PEM puis chiffrée sous
+        AES-GCM avec $K_{\mathrm{RSA}}$, produisant
+        \texttt{rsa\_wrapped.json}.
+  \item Le script \texttt{rsa\_hybrid\_encrypt.py} implémente le
+        chiffrement hybride :
         \begin{itemize}
-        \item Génération de $K_{\mathrm{AES}} \in \bin^{256}$ 
-        \item Chiffrement de $F$ par $\AESGCM_{K_{\mathrm{AES}}}(N,F)$
-        \item Chiffrement de $K_{\mathrm{AES}}$ par $\RSAOAEP_{(n,e)}$
+        \item génération de $K_{\mathrm{AES}} \in \bin^{256}$ ;
+        \item chiffrement de $F$ par $\AESGCM_{K_{\mathrm{AES}}}(N,F)$
+              avec un nonce de 96 bits ;
+        \item chiffrement de $K_{\mathrm{AES}}$ par $\RSAOAEP_{(n,e)}$
+              avec $L=\varepsilon$.
         \end{itemize}
-  \item Le déchiffrement dans \texttt{kofn\_rsa\_decrypt.py} inverse ces étapes
-        après reconstruction de $S$ et déverrouillage de la clé RSA.
+  \item Le déchiffrement dans \texttt{kofn\_rsa\_decrypt.py} inverse ces
+        étapes après reconstruction de $S$ et déverrouillage de la clé RSA.
 \end{itemize}
 
 \subsection{Signature Ed25519 avec contexte}
@@ -2842,7 +2877,8 @@ HKDF(SHA256, 32, salt=b"ed25519-salt",
 \begin{itemize}[leftmargin=2em]
   \item Les signatures utilisent un contexte déterministe :
         \[
-        \mathrm{contexte} = \texttt{"kofn-ed25519-v1"} \concat \mathrm{SHA256}(A) \concat M
+        \mathrm{contexte} = \texttt{"kofn-ed25519-v1"} \concat
+        \mathrm{SHA256}(A) \concat M
         \]
         pour éviter la réutilisation hors contexte.
   \item La vérification dans \texttt{verify\_ed25519.py} utilise le même
@@ -2852,7 +2888,7 @@ HKDF(SHA256, 32, salt=b"ed25519-salt",
 \subsection{Gestion sécurisée de la mémoire}
 
 \begin{itemize}[leftmargin=2em]
-  \item Les secrets éphémères ($S$, seeds) sont stockés dans des 
+  \item Les secrets éphémères ($S$, graines Ed25519) sont stockés dans des 
         \texttt{bytearray} pour permettre l'effacement explicite via
         \verb|secure_wipe|.
   \item Cette mesure atténue les risques d'exposition en RAM après usage.
@@ -2863,8 +2899,8 @@ HKDF(SHA256, 32, salt=b"ed25519-salt",
 \begin{itemize}[leftmargin=2em]
   \item Sel HKDF Ed25519 $\mathrm{saltEd}$ :
         \begin{itemize}
-          \item valeur : chaîne ASCII constante (par exemple
-                \verb|"ed25519-salt"|) ;
+          \item valeur : chaîne ASCII constante
+                \verb|"ed25519-salt"| ;
           \item génération : aucun tirage, valeur codée en dur
                 dans le script ;
           \item stockage : implicite dans le code, public et identique
@@ -2872,18 +2908,19 @@ HKDF(SHA256, 32, salt=b"ed25519-salt",
         \end{itemize}
   \item Sel HKDF RSA (wrap salt) $W$ :
         \begin{itemize}
-          \item valeur : bitstring aléatoire \verb|wrap_salt|
-                généré par \verb|os.urandom(WRAP_SALT_SIZE)| ;
+          \item valeur : bitstring aléatoire de 128 bits
+                \verb|wrap_salt| généré par
+                \verb|os.urandom(WRAP_SALT_SIZE)| ;
           \item génération : une fois par cérémonie de génération
                 de la clé RSA ;
-          \item stockage : champ \verb|"salt"| dans \texttt{rsa\_wrapped.json},
-                encodé en Base64, public.
+          \item stockage : champ \verb|"salt"| dans
+                \texttt{rsa\_wrapped.json}, encodé en Base64, public.
         \end{itemize}
   \item Sels PBKDF2 $S_i$ :
         \begin{itemize}
-          \item valeur : bitstrings aléatoires individuels, un par participant,
-                générés par \\
-                 \verb|os.urandom(SALT_SIZE)| ;
+          \item valeur : bitstrings aléatoires individuels
+                de 128 bits, un par participant, générés par
+                \verb|os.urandom(SALT_SIZE)| ;
           \item génération : lors de la création ou de la mise à jour de la
                 protection de la part du participant $i$ ;
           \item stockage : dans la partie personnelle du coffre du participant,
@@ -2897,22 +2934,28 @@ HKDF(SHA256, 32, salt=b"ed25519-salt",
 \begin{definition}[Modèle de sécurité]
 On considère un adversaire $\mathcal{A}$ ayant accès aux oracles :
 \begin{itemize}
-\item $\mathcal{O}_{\mathrm{Share}}$ : renvoie jusqu'à $t < k$ parts
-\item $\mathcal{O}_{\mathrm{Sign}}$ : signe des messages avec la clé Ed25519
-\item $\mathcal{O}_{\mathrm{Decrypt}}$ : déchiffre des textes chiffrés
+\item $\mathcal{O}_{\mathrm{Share}}$ : renvoie jusqu'à $t < k$ parts ;
+\item $\mathcal{O}_{\mathrm{Sign}}$ : signe des messages avec la clé Ed25519 ;
+\item $\mathcal{O}_{\mathrm{Decrypt}}$ : déchiffre des textes chiffrés.
 \end{itemize}
 \end{definition}
 
 \begin{theorem}[Confidentialité conditionnelle]
-Soit $\mathcal{A}$ un adversaire polynomial n'ayant accès qu'à $t < k$ parts. Alors pour toute fonction $f$ calculable en temps polynomial :
+Soit $\mathcal{A}$ un adversaire polynomial n'ayant accès qu'à $t < k$ parts.
+Alors pour toute fonction $f$ calculable en temps polynomial :
 \[
-\left|\mathbb{P}[\mathcal{A}(f(S)) = 1] - \mathbb{P}[\mathcal{A}(f(U)) = 1]\right| \leq \epsilon(\lambda)
+\left|\mathbb{P}[\mathcal{A}(f(S)) = 1] - \mathbb{P}[\mathcal{A}(f(U)) = 1]\right|
+\leq \epsilon(\lambda)
 \]
-où $U$ est uniforme dans $\bin^{256}$ et $\epsilon$ est négligeable dans le paramètre de sécurité $\lambda$.
+où $U$ est uniforme dans $\bin^{256}$ et $\epsilon$ est négligeable dans
+le paramètre de sécurité $\lambda$.
 \end{theorem}
 
 \begin{theorem}[Intégrité des signatures et des chiffrés]
-Sous les hypothèses que HKDF, PBKDF2, AES-GCM et RSA-OAEP sont cryptographiquement sûrs, il est computationnellement difficile pour un adversaire polynomial de forger une signature Ed25519 valide ou de modifier un texte chiffré AES-GCM sans être détecté.
+Sous les hypothèses que HKDF, PBKDF2, AES-GCM et RSA-OAEP sont
+cryptographiquement sûrs, il est computationnellement difficile pour un
+adversaire polynomial de forger une signature Ed25519 valide ou de
+modifier un texte chiffré AES-GCM sans être détecté.
 \end{theorem}
 
 \begin{remark}
