@@ -70,7 +70,7 @@ Il fournit :
 L’objectif pédagogique est de proposer un exemple où la cryptographie n’est pas seulement « vue en théorie », mais devient :
 
 - **manipulable par les étudiants** (scripts, expérimentations, variantes) ;
-- **démontrable au tableau** (maths des corps finis, interpolation, arguments de sécurité informationnelle) ;
+- **démontrable au tableau** (mathématiques des corps finis, interpolation, arguments de sécurité informationnelle) ;
 - **réutilisable** dans des évaluations, projets longs, TIPE ou mémoires.
 
 ### • Chercheurs et passionnés de cryptographie
@@ -104,7 +104,7 @@ Sur le plan technique :
 
 ### 1. Auditabilité complète
 
-Les fichiers clés du dépôt sont :
+Les fichiers du dépôt sont :
 
 - [`procedure_kofn_tails_v1.html`](procedure_kofn_tails_v1.html)  
   *Procédure HTML principale pour conduire la cérémonie, à ouvrir localement sous Tails (hors ligne).*  
@@ -117,7 +117,7 @@ Les fichiers clés du dépôt sont :
 - [`philipperackette-pgp-public.asc`](philipperackette-pgp-public.asc)  
   *Clé PGP publique utilisée pour signer la procédure.*  
 - [`Scripts/`](Scripts/)  
-  *Scripts shell / Python associés, utilisés pour automatiser certaines étapes du protocole.*
+  *Scripts shell / Python associés.*
 
 L’objectif est que **tout soit vérifiable** : depuis les scripts jusqu’au texte mathématique.
 
@@ -137,27 +137,9 @@ L’utilisateur conserve la **maîtrise complète** de son environnement et de s
 
 ---
 
-## 📂 Contenu du dépôt
-
-- [`procedure_kofn_tails_v1.html`](procedure_kofn_tails_v1.html)  
-  Procédure HTML autonome pour conduire la cérémonie k-sur-n sous Tails.  
-- [`procedure_kofn_tails_v1.html.sig`](procedure_kofn_tails_v1.html.sig)  
-  Signature PGP du fichier HTML, pour vérification avec GnuPG.  
-- [`philipperackette-pgp-public.asc`](philipperackette-pgp-public.asc)  
-  Clé PGP publique de l’auteur, à importer pour vérifier les signatures.  
-- [`maths_kofn_tails.tex`](maths_kofn_tails.tex)  
-  Source LaTeX du document mathématique (corps finis, Shamir, HKDF, etc.).  
-- [`maths_kofn_tails.pdf`](maths_kofn_tails.pdf)  
-  Document PDF compilé à partir du LaTeX, destiné à la lecture et à l’utilisation pédagogique.  
-- [`Scripts/`](Scripts/)  
-  Scripts auxiliaires (shell / Python) pouvant être utilisés pendant la cérémonie ou en support de cours.
-
----
-
 ## 🚀 Utilisation (vue d’ensemble)
 
 1. **Démarrer Tails hors ligne.**  
-   - Déconnecter le réseau (Wi-Fi/fil) et s’assurer qu’aucune connexion n’est active.
 
 2. **Copier dans la session Tails au minimum :**
    - [`procedure_kofn_tails_v1.html`](procedure_kofn_tails_v1.html)  
@@ -187,16 +169,7 @@ L’utilisateur conserve la **maîtrise complète** de son environnement et de s
      - répartir physiquement les parts (enveloppes, coffres, personnes de confiance) ;
      - formaliser la **politique de recombinaison** (qui, combien de parts, dans quelles conditions).
 
-6. *(Optionnel, pour l’enseignement ou l’audit)* :  
-   - Lire / projeter [`maths_kofn_tails.pdf`](maths_kofn_tails.pdf) pour relier la pratique aux concepts mathématiques.  
-   - Utiliser les scripts dans [`Scripts/`](Scripts/) comme base de TP, de TIPE ou d’exercices.
 
-### 🩺 Dépannage minimal
-
-- Si `gpg --verify` échoue, vérifier que :
-  - les trois fichiers (`.html`, `.html.sig`, clé PGP) proviennent bien de la même source ;
-  - aucune modification n’a été faite entre-temps (transfert, édition, etc.).  
-- Si le navigateur refuse d’ouvrir le fichier HTML, vérifier que le fichier a été copié **en lecture seule** dans Tails et qu’il n’est pas corrompu.
 
 ---
 
@@ -209,16 +182,6 @@ L’utilisateur conserve la **maîtrise complète** de son environnement et de s
 - pour tout usage **à très forte criticité** (infrastructures vitales, secrets étatiques, etc.), il est recommandé de solliciter un **audit par des équipes spécialisées**.
 
 En revanche, pour des besoins **d’enseignement**, de **sensibilisation**, de **projets étudiants** ou de **sécurisation raisonnable** de secrets sensibles, il fournit une base claire, lisible et auditée.
-
----
-
-## 🎯 Publics cibles (rappel rapide)
-
-- PME / équipes sécurité internes  
-- Enseignants, agrégatifs, étudiants (CPGE, BTS/BUT, IUT, université, écoles d’ingénieurs)  
-- Communauté crypto / sécurité (audit, expérimentations, forks)  
-- Journalistes, ONG, lanceurs d’alerte  
-- Particuliers soucieux de protéger des secrets à forte valeur
 
 ---
 
