@@ -28,9 +28,9 @@ Le projet offre une méthode libre, reproductible et transparente pour réaliser
 ### 🇫🇷 Une démarche francophone, scientifique et souveraine
 
 Le projet *kofn-tails* est né dans un contexte francophone et repose sur une culture scientifique exigeante.  
-Il est développé par un **professeur de mathématiques agrégé**, **ingénieur diplômé de l’ISAE-Supaero** et **agent du service public**, dans une logique de transmission, de rigueur et de souveraineté informatique.
+Il est développé par un **professeur de mathématiques agrégé**, **ingénieur diplômé de l’ISAE-Supaero**, dans une logique de transmission, de rigueur et de souveraineté informatique.
 
-Le dépôt s’inscrit ainsi dans une approche francophone de la sécurité numérique :  
+Le dépôt s’inscrit ainsi dans une approche francophone de la sécurité informatique :  
 transparence, pédagogie, auditabilité et indépendance vis-à-vis d’acteurs privés.
 
 ---
@@ -127,8 +127,6 @@ seulement des briques libres et standard (Tails, GnuPG, primitives classiques).
    - le partager en n parts (schéma k-sur-n),
    - répartir physiquement les parts,
    - documenter la politique de recombinaison.
-
-6. (Optionnel) Utiliser les scripts du répertoire `Scripts/` selon les besoins spécifiques détaillés dans la procédure ou la documentation.
 
 ---
 
