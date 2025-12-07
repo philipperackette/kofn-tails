@@ -1,10 +1,10 @@
-# Solution en code source ouvert de partage de secret (Shamir) sur Tails
+# # Solution en code source ouvert de partage de secret (schéma de Shamir) sur Tails
 
 Ce dépôt contient une solution de partage de secret **k-sur-n** (schéma de Shamir) fonctionnant sous **Tails**, avec :
 
 - une **procédure HTML autonome** sous Tails pour organiser une cérémonie de partage de secret (génération, protection et distribution d’un secret maître : RSA 4096, Ed25519, AES-GCM) ;
 - un **document LaTeX/PDF** expliquant les fondements mathématiques du protocole (corps finis, Shamir, HKDF, PBKDF2, Ed25519, RSA-OAEP, AES-GCM) ;
-- des **scripts** dans [`Scripts/`](Scripts/) pour automatiser certaines étapes ;
+- des **scripts** dans [`Scripts/`](Scripts/) qui sont ceux générés par l'application de la procédure HTML ;
 - la **clé PGP publique** utilisée pour signer la procédure.
 
 **Exemple d’application concrète :**
@@ -35,10 +35,6 @@ Il est développé par un **professeur de mathématiques agrégé**, **ingénieu
 
 Le dépôt reflète une approche francophone de la sécurité informatique :  
 **transparence, pédagogie, auditabilité, indépendance** vis-à-vis d’acteurs privés.
-
-Pour aller plus loin dans cette culture de la sécurité et du libre, on pourra par exemple consulter :
-- les ressources de l’ANSSI sur les bonnes pratiques de sécurité numérique ;
-- les contenus de l’APRIL autour du logiciel libre et de la souveraineté numérique.
 
 ---
 
@@ -87,7 +83,7 @@ Préparer un **testament numérique**, partager un accès critique, protéger de
 
 ## 🔧 Pré-requis
 
-Pour utiliser ce dépôt dans de bonnes conditions, il est recommandé de maîtriser au moins :
+Pour utiliser ce dépôt dans de bonnes conditions, il est conseillé de maîtriser au moins :
 
 - les concepts de base de la **ligne de commande** (copie de fichiers, exécution de scripts) ;
 - les notions élémentaires de **cryptographie symétrique / asymétrique** (clé publique / clé privée, chiffrement, signature) ;
@@ -179,7 +175,7 @@ L’utilisateur conserve la **maîtrise complète** de son environnement et de s
 
 - il est avant tout un **projet pédagogique et d’outillage libre** ;
 - il ne prétend pas couvrir **tous les modèles de menace possibles**, ni remplacer un audit complet pour des systèmes étatiques ou des infrastructures critiques ;
-- pour tout usage **à très forte criticité** (infrastructures vitales, secrets étatiques, etc.), il est recommandé de solliciter un **audit par des équipes spécialisées**.
+- pour tout usage **à très forte criticité** (infrastructures vitales, secrets étatiques, etc.), il est recommandé de solliciter un **audit formel dans le cadre des dispositifs d’audit adéquats**.
 
 En revanche, pour des besoins **d’enseignement**, de **sensibilisation**, de **projets étudiants** ou de **sécurisation raisonnable** de secrets sensibles, il fournit une base claire, lisible et auditée.
 
