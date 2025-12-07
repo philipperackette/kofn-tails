@@ -48,14 +48,17 @@ Sécuriser une clé serveur, un accès critique ou un mot de passe maître **san
 Le mécanisme k-sur-n protège à la fois contre les pertes accidentelles et contre certains abus internes.
 
 ### • Enseignants, étudiants, formations techniques
-C’est l’un des axes majeurs du projet.  
-*kofn-tails* fournit :
 
-- un **cas réel** d’application du schéma de Shamir,
-- une **explication mathématique structurée** (corps finis, interpolation, sécurité informationnelle),
-- des scripts courts et lisibles pouvant servir de support de TP, de TIPE, de projet de cryptographie appliquée ou de cours de cybersécurité.
+*kofn-tails* a été pensé pour un usage direct en classe dans le cadre des programmes de l’Éducation nationale
+(lycée général/technologique, CPGE scientifiques, BTS/BUT, IUT, écoles d’ingénieurs).
 
-L’objectif pédagogique est de rendre les concepts **manipulables, démontrables et compréhensibles**.
+Il fournit :
+
+- un **cas réel et complet** d’application du schéma de Shamir (partage de secret k-sur-n) facilement transposable en activité de classe ;
+- une **présentation mathématique structurée** (corps finis, polynômes, interpolation, sécurité informationnelle) en cohérence avec les attendus des enseignements de mathématiques et d’informatique ;
+- des **scripts courts, commentés et auditables** pouvant servir de support de TP, de TIPE, de projets de spécialité ou de modules de cybersécurité.
+
+L’objectif pédagogique est de proposer un exemple où la cryptographie n’est pas seulement « vue en théorie », mais devient **manipulable par les élèves**, **démontrable au tableau** et **réutilisable dans les évaluations et projets**.
 
 ### • Chercheurs et passionnés de cryptographie
 Le dépôt, intégralement open source, offre un matériau auditable pour tester, adapter ou comparer différents modèles de sécurité.  
