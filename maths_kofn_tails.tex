@@ -8,7 +8,7 @@
 \usepackage[french]{babel}
 
 \usepackage{geometry}
-\geometry{margin=2.2cm}
+\geometry{margin=1.9cm}
 
 % ============================
 % Maths et mise en forme
@@ -1390,31 +1390,55 @@ On définit l'application
 \[
   \mathrm{INT}_4 : \{0,\dots,2^{32}-1\} \to \bin^{32}
 \]
-qui à un entier $i$ associe son encodage big-endian sur 4 octets (32 bits) :
+qui à un entier $i$ associe son encodage big-endian sur 4~octets (32~bits) :
 \[
 \mathrm{INT}_4(i) = (b_{31}b_{30}\dots b_0) \text{ où } i = \sum_{j=0}^{31} b_j 2^{31-j}.
 \]
 \end{definition}
 
+\begin{remark}[Lien avec la RFC~5869]
+Dans la spécification HKDF de la RFC~5869 \cite{rfc5869}, le compteur de bloc $i$ est encodé sur
+\emph{un seul octet} (valeurs $0x01,\dots,0xFF$), noté usuellement $\mathrm{INT}(i)$, et
+l'on impose $L \le 255\cdot\text{hashLen}$.
+
+Dans ce texte, nous écrivons $\mathrm{INT}_4(i)$ comme une formalisation générique
+\og sur 4 octets \fg. Dans le cas concret de HKDF, cela ne change rien au comportement :
+le compteur reste borné par $1 \le i \le 255$, si bien que l'encodage sur 1 octet
+(conforme à la RFC) ou sur 4 octets est conceptuellement équivalent. En pratique,
+l'implémentation Python utilisée suit strictement la RFC et encode $i$ sur un seul octet.
+\end{remark}
+
 \subsection{HKDF}
+\label{sec:hkdf}
 
 \begin{definition}[HKDF (HMAC-based Key Derivation Function) \cite{rfc5869}]
-Soit $h:\bin^*\to\bin^d$ une fonction de hachage. On définit la fonction de dérivation de clé HKDF selon RFC 5869 :
+Soit $h:\bin^*\to\bin^d$ une fonction de hachage. On définit la fonction de dérivation de clé HKDF selon RFC~5869 :
 \[
   \HKDF_h : \bin^* \times \bin^* \times \bin^* \times \N \to \bin^L
 \]
 comme suit. Soient $\mathrm{IKM}\in\bin^*$ (input keying material), $\mathrm{salt}\in\bin^*$, $\mathrm{info}\in\bin^*$, et $L\in\N$ (longueur de sortie en octets). On pose :
 \begin{itemize}
-\item $\mathrm{PRK} = \HMAC_h(\mathrm{salt}, \mathrm{IKM})$ (extraction)
-\item On définit itérativement pour $i=1,2,\dots$ jusqu' à obtenir $L$ octets :
+\item \textbf{Étape d'extraction} : 
+  \[
+    \mathrm{PRK} = \HMAC_h(\mathrm{salt}, \mathrm{IKM}) \in \bin^d.
+  \]
+\item \textbf{Étape d'expansion} : on définit itérativement, pour $i = 1,2,\dots$ jusqu'à obtenir $L$ octets,
   \begin{align*}
-  T_1 &= \HMAC_h(\mathrm{PRK}, \mathrm{info} \concat \mathrm{INT}_4(1)) \\
-  T_2 &= \HMAC_h(\mathrm{PRK}, T_1 \concat \mathrm{info} \concat \mathrm{INT}_4(2)) \\
-  &\vdots \\
-  T_i &= \HMAC_h(\mathrm{PRK}, T_{i-1} \concat \mathrm{info} \concat \mathrm{INT}_4(i))
+  T_1 &= \HMAC_h\bigl(\mathrm{PRK},\ \mathrm{info} \concat \mathrm{INT}_4(1)\bigr), \\
+  T_2 &= \HMAC_h\bigl(\mathrm{PRK},\ T_1 \concat \mathrm{info} \concat \mathrm{INT}_4(2)\bigr), \\
+      &\ \vdots \\
+  T_i &= \HMAC_h\bigl(\mathrm{PRK},\ T_{i-1} \concat \mathrm{info} \concat \mathrm{INT}_4(i)\bigr).
   \end{align*}
-\item La sortie est la troncature aux $L$ octets de $T_1 \concat T_2 \concat \dots$
+\item \textbf{Sortie} : la clé dérivée est le préfixe aux $L$ octets de la concaténation
+  \[
+    T_1 \concat T_2 \concat \dots
+  \]
+  avec la contrainte $L \le 255\cdot d$ comme dans la RFC~5869.
 \end{itemize}
+Dans le cas standard où l'on suit la RFC, le compteur $i$ est encodé sur \emph{un octet}
+($\mathrm{INT}(i)$) et non sur 4~octets ; la notation $\mathrm{INT}_4(i)$ ci-dessus doit se
+lire comme une écriture générique, valable aussi pour d'autres constructions où un
+compteur sur 32~bits est utile.
 \end{definition}
 
 \subsection{PBKDF2}
@@ -1442,9 +1466,28 @@ La sortie de PBKDF2 est le préfixe aux $8L$ bits de la concaténation
 \]
 \end{definition}
 
+\begin{remark}[Résumé des fonctions de hachage utilisées]
+Dans toute la suite, on distingue clairement deux fonctions de hachage :
+
+\begin{itemize}
+  \item $\mathrm{SHA\text{-}256}$ sert de fonction $h$ pour HKDF, PBKDF2, MGF1 et RSA-OAEP
+        (sections~\ref{sec:hkdf} et~\ref{sec:rsa-oaep}), ainsi que pour les empreintes
+        génériques de fichiers et d'identifiants publics.
+  \item $\mathrm{SHA\text{-}512}$ est utilisée exclusivement à l'intérieur du schéma Ed25519
+        (section~\ref{sec:ed25519}) pour dériver la clé privée à partir de $K_{\mathrm{Ed}}$
+        et pour définir les valeurs intermédiaires $r$ et $k$ dans l'algorithme de signature.
+\end{itemize}
+
+Cette séparation évite toute ambiguïté : sauf mention explicite contraire, $h$ désigne
+$\mathrm{SHA\text{-}256}$, tandis que les appels à $\mathrm{SHA\text{-}512}$ sont toujours
+associés à Ed25519.
+\end{remark}
+
+
 %=========================================================
 
 \section{Structure de groupe et signature Ed25519}
+\label{sec:ed25519}
 
 \subsection{Courbe elliptique Ed25519}
 
@@ -2078,6 +2121,7 @@ Sans MGF1, un attaquant pourrait manipuler séparément les différentes parties
 \end{remark}
 
 \subsection{RSA-OAEP}
+\label{sec:rsa-oaep}
 
 \begin{definition}[Paramètres RSA-OAEP (Optimal Asymmetric Encryption Padding) \cite{rfc8017}]
 Soient $k$ la taille en octets du module $n$ (pour $n$ de 4096 bits, $k = 512$), et $hLen$ la taille de sortie de la fonction de hachage en octets (pour SHA-256, $hLen = 32$). On fixe :
@@ -2621,6 +2665,21 @@ Pour $K, N, A, C, T$ :
 \end{enumerate}
 \end{definition}
 
+\begin{remark}[Données associées dans AES-GCM]
+Dans la notation $\AESGCM_K(N, A, M)$, $A$ désigne les \emph{données associées}
+(\emph{Additional Authenticated Data}, AAD) dont l'intégrité est authentifiée
+par le tag GCM mais qui ne sont pas chiffrées.
+
+Dans la procédure Tails étudiée ici, nous prenons systématiquement
+\[
+  A = \varepsilon
+\]
+(le mot vide) pour le chiffrement des parts, pour le chiffrement de la clé RSA
+privée, et pour les autres usages d'AES-GCM. Cette simplification n'affecte pas
+la sécurité du schéma : toute l'authentification repose alors sur le couple
+$(N,C)$ chiffré et sur le tag GCM.
+\end{remark}
+
 \begin{theorem}[Correction d'AES-GCM]
 Pour toute clé $K$, tout nonce $N$, toutes données $A$, et tout message $M$ :
 \[
@@ -2798,33 +2857,89 @@ La cérémonie initiale réalise les étapes suivantes :
 \end{enumerate}
 \end{definition}
 
-\subsection{Protection des parts}
+\subsection{Format des parts chiffrées et champ \texttt{pub\_hash}}
+\label{subsec:format-parts}
 
-\begin{definition}[Sérialisation des parts]
-Pour chaque part $(x_i,y_i)$, on construit un dictionnaire JSON
-contenant les champs \texttt{x}, \texttt{y}, \texttt{k}, \texttt{n},
-et \texttt{pub\_hash}. On encode ce dictionnaire en UTF-8 pour obtenir
-le message à chiffrer $M_i \in \bin^*$.
-\end{definition}
+Les parts Shamir $(x_i,y_i)$ sont finalement encapsulées dans une structure chiffrée à deux niveaux : un objet JSON interne (contenant les métadonnées et la part) est chiffré par AES-GCM, puis placé dans une enveloppe JSON externe contenant les paramètres nécessaires au déchiffrement.
 
-\begin{definition}[Dérivation des clés individuelles]
-Pour chaque participant $i$, on fixe un mot de passe $P_i\in\bin^*$ et on
-définit
+L'objet JSON interne, qui sera chiffré, a la forme suivante :
+
+\begin{itemize}[leftmargin=2em]
+  \item \texttt{"version"} : chaîne de version du format de part (par exemple
+        \texttt{"kofn-shamir-v1"}).
+  \item \texttt{"k"} et \texttt{"n"} : paramètres entiers du schéma de Shamir.
+  \item \texttt{"index"} : entier $i$ identifiant la part $(x_i,y_i)$.
+  \item \texttt{"x"} : entier $i$ identifiant la part, stocké directement comme entier JSON.
+  \item \texttt{"y"} : coordonnée $y_i = f(i) \in \F_P$, encodée en hexadécimal big-endian
+        (chaîne hexadécimale) pour représenter cet élément de $\F_P$ sur 521 bits.
+  \item \texttt{"pub\_hash"} : identifiant public du secret maître, commun à toutes les parts
+        issues d'une même cérémonie (voir ci-dessous).
+  \item \texttt{"holder"} : \emph{(facultatif, purement documentaire)} chaîne libre indiquant
+        le nom du porteur de la part. Ce champ n'intervient dans aucun calcul cryptographique.
+\end{itemize}
+
+\begin{remark}[Structure d'enveloppe chiffrée]
+Dans l'implémentation, l'objet JSON interne est chiffré par AES-GCM avec une clé dérivée du mot de passe du porteur via PBKDF2. Le résultat est ensuite encapsulé dans une enveloppe JSON externe qui contient les éléments nécessaires au déchiffrement, tous en clair (encodés en Base64) :
+
+\begin{itemize}[leftmargin=2em]
+  \item \texttt{"salt"} : le sel $S_i$ utilisé par PBKDF2 pour dériver la clé de chiffrement. Ce sel est stocké en clair car il est nécessaire pour la dérivation de la clé à partir du mot de passe.
+  \item \texttt{"nonce"} : le nonce $N_i$ utilisé par AES-GCM. Il est également en clair, comme requis par le mode GCM.
+  \item \texttt{"ct"} : le texte chiffré AES-GCM, c'est-à-dire l'objet JSON interne chiffré.
+\end{itemize}
+
+Ainsi, lors du déverrouillage d'une part, le script lit d'abord l'enveloppe externe, décode le sel $S_i$ et le nonce $N_i$, dérive la clé AES $K_i = \PBKDF_h(P_i, S_i, c, 32)$ à partir du mot de passe $P_i$ et du sel $S_i$, puis déchiffre le contenu de \texttt{ct} avec $K_i$ et $N_i$ pour obtenir l'objet JSON interne contenant les coordonnées $(x_i, y_i)$ et les métadonnées de la part.
+\end{remark}
+
+\begin{definition}[Empreinte publique \texttt{pub\_hash}]
+Soit $A$ la clé publique Ed25519 du maître (section~\ref{sec:ed25519}). On définit
 \[
-  K_i = \PBKDF_h(P_i,S_i,c,32) \in \bin^{256},
+  \textsf{pub\_hash} = \mathrm{SHA256}(\mathrm{enc}(A)) \in \bin^{256},
 \]
-c'est-à-dire une clé AES-256 (32 octets) dérivée par PBKDF2-HMAC-SHA256
-avec $c=501000$ itérations et un sel $S_i$ de 128 bits.
+et l'on stocke sa représentation hexadécimale dans le champ JSON \texttt{"pub\_hash"}.
+
+Toutes les parts produites lors d'une même cérémonie (c'est-à-dire pour un même secret maître
+$S$ et une même clé publique $A$) portent exactement la même valeur \texttt{pub\_hash}. Ce champ
+permet au code de reconstruction de vérifier rapidement que les parts fournies proviennent bien
+du même secret maître, et de rejeter immédiatement toute combinaison mélangeant des parts
+issues de cérémonies différentes.
 \end{definition}
 
-\begin{definition}[Chiffrement des parts]
-Pour une part sérialisée $M_i$, on calcule
-\[
-  (C_i,T_i) = \AESGCM_{K_i}(N_i, M_i)
-\]
-avec un nonce $N_i\in\bin^{96}$. Le tuple $(S_i,N_i,C_i,T_i)$ est
-stocké dans la partie personnelle du coffre du participant $i$.
-\end{definition}
+Dans le script de reconstruction des signatures (\texttt{kofn\_sign.py}), une vérification
+explicite est effectuée : toutes les valeurs \texttt{pub\_hash} des parts entrantes doivent
+coïncider, faute de quoi la procédure s'arrête avec une erreur. Cette vérification explicite
+complète la sécurité du schéma de Shamir décrite à la Proposition~\ref{prop:perfect-secrecy}.
+
+\subsection{Déverrouillage de la clé RSA privée et cohérence des parts}
+\label{subsec:kofn-rsa-decrypt}
+
+Dans le cas du déchiffrement RSA (script \texttt{kofn\_rsa\_decrypt.py}), les parts Shamir sont
+utilisées pour reconstruire le secret maître $S$, puis pour dériver, via HKDF, la clé symétrique
+$K_{\mathrm{RSA}}$ qui déchiffre la clé RSA privée en AES-256-GCM.
+
+On note que, contrairement au script de signature \texttt{kofn\_sign.py}, le script
+\texttt{kofn\_rsa\_decrypt.py} ne vérifie pas explicitement que toutes les parts d'entrée portent
+le même champ \texttt{pub\_hash}. La cohérence des parts est cependant implicitement contrôlée
+par l'étape de déchiffrement AES-GCM :
+
+\begin{itemize}[leftmargin=2em]
+  \item une combinaison incohérente de parts conduit à une valeur erronée de $S$,
+        donc à une clé dérivée $K_{\mathrm{RSA}}$ incorrecte ;
+  \item le déchiffrement de la clé RSA privée chiffrée échoue alors avec un tag AES-GCM invalide :
+        la sortie est rejetée (symbole $\perp$) et aucune clé RSA privée exploitable n'est produite.
+\end{itemize}
+
+On dispose donc de deux mécanismes logiquement équivalents pour détecter des combinaisons
+de parts incohérentes :
+\begin{enumerate}
+  \item comparaison explicite des champs \texttt{pub\_hash} (cas de \texttt{kofn\_sign.py}) ;
+  \item échec du déverrouillage AES-GCM de la clé RSA privée lorsque $S$ a été mal reconstruit
+        (cas de \texttt{kofn\_rsa\_decrypt.py}).
+\end{enumerate}
+
+Dans les deux cas, aucune combinaison de parts appartenant à des cérémonies différentes
+ne peut passer inaperçue : soit elle est rejetée dès la vérification de \texttt{pub\_hash},
+soit elle conduit à un échec cryptographique explicite (tag AES-GCM invalide) lors de la
+reconstruction de la clé RSA privée.
 
 \subsection{Chiffrement hybride des fichiers}
 
