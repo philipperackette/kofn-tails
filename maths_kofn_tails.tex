@@ -1473,9 +1473,12 @@ Dans toute la suite, on distingue clairement deux fonctions de hachage :
   \item $\mathrm{SHA\text{-}256}$ sert de fonction $h$ pour HKDF, PBKDF2, MGF1 et RSA-OAEP
         (sections~\ref{sec:hkdf} et~\ref{sec:rsa-oaep}), ainsi que pour les empreintes
         génériques de fichiers et d'identifiants publics.
-  \item $\mathrm{SHA\text{-}512}$ est utilisée exclusivement à l'intérieur du schéma Ed25519
-        (section~\ref{sec:ed25519}) pour dériver la clé privée à partir de $K_{\mathrm{Ed}}$
-        et pour définir les valeurs intermédiaires $r$ et $k$ dans l'algorithme de signature.
+  \item $\mathrm{SHA\text{-}512}$ est utilisée exclusivement à l'intérieur du schéma
+        Ed25519 :
+        d'une part pour dériver la clé secrète étendue à partir de $K_{\mathrm{Ed}}$~\ref{sec:init},
+        et d'autre part pour incorporer le message $M$ dans la signature~\ref{sec:sig-ed} via
+        les valeurs intermédiaires $r = \mathrm{SHA\text{-}512}(\text{prefix} \,\|\, M)$
+        et $k = \mathrm{SHA\text{-}512}(R \,\|\, A \,\|\, M)$.
 \end{itemize}
 
 Cette séparation évite toute ambiguïté : sauf mention explicite contraire, $h$ désigne
@@ -1854,6 +1857,7 @@ A = aB \in E(\F_q)
 \end{definition}
 
 \subsection{Algorithme de signature Ed25519}
+\label{sec:sig-ed}
 
 \begin{definition}[Signature Ed25519 \cite{rfc8032}]
 L'algorithme de signature $\mathrm{Sign}: \mathbb{Z}_\ell \times \bin^* \to \bin^{512}$ est défini comme suit :
@@ -2817,6 +2821,7 @@ On fixe les constantes suivantes une fois pour toutes :
 \end{definition}
 
 \subsection{Cérémonie initiale}
+\label{sec:init}
 
 \begin{definition}[Encodage des éléments de $\F_P$]
 Soit $\phi: \F_P \to \bin^{521}$ l'isomorphisme qui à $a \in \F_P$
