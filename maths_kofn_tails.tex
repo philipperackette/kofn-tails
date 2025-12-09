@@ -656,7 +656,7 @@ Soit $p$ un nombre premier. Alors :
 \begin{proof}
 (1) Puisque $p$ est premier, tout élément non nul de $\Z/p\Z$ est inversible modulo $p$, donc $\Z/p\Z$ est un corps.
 
-(2) Soit $K$ un corps de cardinal $p$. Puisque $K$ est fini, sa caractéristique est un nombre premier. Comme $p \cdot 1_K = 0$ (d'après le théorème de Lagrange (\ref{thm:lagrange}) appliqué au groupe additif), la caractéristique divise $p$, donc est égale à $p$.
+(2) Soit $K$ un corps de cardinal $p$. Puisque $K$ est fini, sa caractéristique est un nombre premier. Comme $p \cdot 1_K = 0$ (d'après le théorème de Lagrange (\ref{thm:lagrange-groupes}) appliqué au groupe additif), la caractéristique divise $p$, donc est égale à $p$.
 
 Considérons l'homomorphisme d'anneaux canonique :
 \[
@@ -1842,7 +1842,7 @@ a = \mathrm{val}_{\mathrm{le}}(h_0, h_1, \dots, h_{31}) \bmod \ell.
 \end{definition}
 
 \begin{definition}[Génération de clés Ed25519]
-Soit $K_{\mathrm{Ed}} \in \bin^{256}$. On calcule :
+Soit $K_{\mathrm{Ed}} \in \bin^{256}$ (voir \ref{sec:init}). On calcule :
 \[
 H = \mathrm{SHA\text{-}512}(K_{\mathrm{Ed}}) = H_1 \concat H_2 \quad \text{avec } H_1, H_2 \in \bin^{256}
 \]
@@ -2990,20 +2990,35 @@ Tails v1.
         $K_{\mathrm{Ed}} = \HKDF_h(S,\mathrm{saltEd},
         \mathrm{info}_{\mathrm{Ed}},32)$ est instanciée via :
 \begin{verbatim}
-HKDF(SHA256, 32, salt=b"ed25519-salt",
-     info=b"ed25519-master-key")
+hkdf_ed = HKDF(
+    algorithm=SHA256(),
+    length=32,
+    salt=b"ed25519-salt",
+    info=b"ed25519-master-key",
+)
+K_Ed = hkdf_ed.derive(S)
 \end{verbatim}
+
   \item De même,
         $K_{\mathrm{RSA}} = \HKDF_h(S,W,
         \mathrm{info}_{\mathrm{RSA}},32)$ utilise
         \verb|info=b"rsa-wrap-key"| avec un sel aléatoire $W$
-        stocké dans \texttt{rsa\_wrapped.json}.
+        stocké dans \texttt{rsa\_wrapped.json}. En API, on écrit par exemple :
+\begin{verbatim}
+hkdf_rsa = HKDF(
+    algorithm=SHA256(),
+    length=32,
+    salt=W,
+    info=b"rsa-wrap-key",
+)
+K_RSA = hkdf_rsa.derive(S)
+\end{verbatim}
+
   \item La paire $(a,A)$ est construite via
         \verb|Ed25519PrivateKey.from_private_bytes(ed_seed)|,
         où \texttt{ed\_seed} est $K_{\mathrm{Ed}}$. L'API effectue le
-        \emph{clampage} et calcule $A=aB$.
+        \emph{clampage} et calcule $A = aB$.
 \end{itemize}
-
 \subsection{PBKDF2, sels $S_i$ et chiffrement des parts}
 
 \begin{itemize}[leftmargin=2em]
