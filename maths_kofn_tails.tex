@@ -141,6 +141,7 @@ identifié par l'empreinte SHA-256 ci-dessus.
 x\concat y & Concaténation de mots binaires \\
 x\xor y & XOR bit-à-bit ($x,y$ de même longueur) \\
 \gcd(a,b) & Plus grand commun diviseur de $a$ et $b$ \\
+\ord(x)   & Ordre de l'élément $x$ dans un groupe (plus petit $k \ge 1$ tel que $x^k = e$) \\
 \mathrm{val}_{\mathrm{be}}(b) & Encodage big-endian $b\in\bin^t \to \{0,\dots,2^t-1\}$ \\
 \mathrm{val}_{\mathrm{le}}(b) & Encodage little-endian $b\in\bin^t \to \{0,\dots,2^t-1\}$ \\
 S \in \bin^{256} & Secret maître (32 octets) \\
@@ -154,7 +155,7 @@ q = 2^{255} - 19 & Cardinal du corps de base de Ed25519 \\
 E(\F_q) & Groupe des points de la courbe elliptique \\
 B \in E(\F_q) & Point de base d'ordre premier $\ell$ \\
 \ell & Ordre premier de $B$ ($\approx 2^{252}$) \\
-\Z_\ell & Anneau $\{0,\dots,\ell-1\}$ modulo $\ell$ \\
+\Z_\ell & Groupe additif cyclique $(\{0,\dots,\ell-1\}, + \bmod \ell)$ \\
 a \in \Z_\ell & Clé privée Ed25519 \\
 A = aB & Clé publique Ed25519 \\
 (n,e,d) & Paramètres RSA : module, exposants public/privé \\
@@ -174,8 +175,8 @@ P_i & Mot de passe du participant $i$ \\
 S_i & Sel PBKDF2 individuel \\
 K_i & Clé symétrique pour chiffrer la part $i$ \\
 K_{\mathrm{Ed}} & Graine Ed25519 dérivée de $S$ \\
-K_{\mathrm{RSA}} & Clé pour chiffrer la clé privée RSA \\
-K_{\mathrm{AES}} & Clé de session AES \\
+K_{\mathrm{RSA}} & Clé symétrique AES-256 (dérivée de $S$ par HKDF) pour chiffrer la clé privée RSA \\
+K_{\mathrm{AES}} & Clé AES-256 éphémère (clé de session, générée aléatoirement pour chaque chiffrement hybride) \\
 N,\,N_i & Nonces AES-GCM \\
 \perp & Symbole d'échec/rejet \\
 \bottomrule
@@ -193,10 +194,10 @@ N,\,N_i & Nonces AES-GCM \\
 
 \subsection{Préambule et motivation}
 
-Cette section rassemble les notions d'algèbre et d'arithmétique modulaire utilisées dans la suite du document. Nous suivons une progression logique : 
+Cette section rassemble les notions d'algèbre et d'arithmétique modulaire utilisées dans la suite du document : 
 \begin{itemize}
   \item L'\textbf{arithmétique modulaire} (entiers, pgcd, inverses) définit le socle concret pour l'anneau $\Z/n\Z$ et prépare le corps $\F_p = \Z/p\Z$.
-  \item Les \textbf{théorèmes d'isomorphisme} généralisent ces structures, s'appuyant sur les exemples concrets.
+  \item Les \textbf{théorèmes d'isomorphisme} généralisent ces structures, s'appuyant sur des exemples concrets.
   \item Les \textbf{corps finis et extensions} s'appuient sur les deux précédents (utilisation des isomorphismes pour l'unicité de $\F_p$).
   \item Les \textbf{mots binaires et encodages} formalisent la conversion vers les représentations informatiques.
 \end{itemize}
@@ -286,18 +287,80 @@ auc + bvc = c
 Par hypothèse, $a$ divise $bc$, donc $a$ divise $bvc$. De plus, $a$ divise évidemment $auc$. Donc $a$ divise la somme $auc + bvc = c$.
 \end{proof}
 
-\begin{definition}[Anneau $\Z/n\Z$ et groupe multiplicatif $(\Z/n\Z)^\times$]
-Soit $n \in \N^*$. L'anneau $\Z/n\Z$ est l'ensemble $\{0,1,\dots,n-1\}$ muni des opérations $+$ et $\cdot$ modulo $n$.
-
-Le groupe multiplicatif $(\Z/n\Z)^\times$ est l'ensemble des éléments inversibles de $\Z/n\Z$ :
+\begin{definition}[Anneau $\Z/n\Z$ et groupe multiplicatif $(\Z/n\Z)^\times$]\label{def:Zmodn}
+Soit $n \in \N^*$. On note $\Z/n\Z$ l'ensemble des classes de congruence modulo $n$,
+que l'on identifie à $\{0,1,\dots,n-1\}$.
+On munit $\Z/n\Z$ des opérations
 \[
-(\Z/n\Z)^\times = \{a \in \{0,1,\dots,n-1\} \mid \gcd(a,n)=1\}.
+\bar a + \bar b = \overline{a+b}, \qquad
+\bar a \cdot \bar b = \overline{ab},
+\]
+c'est-à-dire de l'addition et de la multiplication modulo $n$.
+
+\end{definition}
+
+\begin{proposition}\label{prop:Zmodn-anneau}
+Les opérations $+$ et $\cdot$ ainsi définies sont bien définies sur $\Z/n\Z$
+(c'est-à-dire ne dépendent pas du représentant choisi dans la classe),
+et $(\Z/n\Z, +, \cdot)$ est un anneau commutatif unitaire.
+\end{proposition}
+
+\begin{proof}
+Soient $a,a',b,b' \in \Z$ tels que $a \equiv a' \pmod n$ et $b \equiv b' \pmod n$.
+Alors $n \mid (a-a')$ et $n \mid (b-b')$, donc
+\[
+(a+b) - (a'+b') = (a-a') + (b-b') \equiv 0 \pmod n,
+\]
+et
+\[
+ab - a'b' = a(b-b') + b'(a-a') \equiv 0 \pmod n.
+\]
+Ainsi $a+b \equiv a'+b' \pmod n$ et $ab \equiv a'b' \pmod n$, ce qui montre
+que les lois $+$ et $\cdot$ ne dépendent pas du choix des représentants :
+elles sont bien définies sur les classes.
+
+Les axiomes d'anneau (associativité, commutativité de $+$, distributivité,
+existence d'un neutre $0 = \bar 0$ et d'opposés, existence d'un neutre
+multiplicatif $1 = \bar 1$) se déduisent alors directement de ceux de $\Z$,
+dont $\Z/n\Z$ est un quotient. On en conclut que $(\Z/n\Z,+,\cdot)$ est
+un anneau commutatif unitaire.
+\end{proof}
+
+
+\begin{proposition}[Critère d'inversibilité modulo $n$]\label{prop:inv_mod_n}
+Soit $a \in \{0,1,\dots,n-1\}$.  
+La classe $\bar a \in \Z/n\Z$ est inversible dans $\Z/n\Z$ si et seulement si $\gcd(a,n)=1$.
+En particulier,
+\[
+  (\Z/n\Z)^\times
+  = \{\bar a \in \Z/n\Z \mid \gcd(a,n)=1\}
+  \simeq \{a \in \{0,1,\dots,n-1\} \mid \gcd(a,n)=1\}.
+\]
+\end{proposition}
+
+\begin{proof}
+Si $\gcd(a,n)=1$, alors par l'identité de Bézout, il existe $u,v \in \Z$ tels que
+\[
+au + nv = 1.
+\]
+En réduisant modulo $n$, on obtient $au \equiv 1 \pmod n$, donc la classe $\bar a$ est inversible,
+d'inverse $\bar u$.
+
+Réciproquement, si $\bar a$ est inversible, il existe $b \in \Z$ tel que
+\[
+ab \equiv 1 \pmod n,
+\]
+c'est-à-dire $ab - kn = 1$ pour un certain $k \in \Z$. Tout diviseur commun de $a$ et $n$
+divise alors $1$, donc $\gcd(a,n)=1$.
+\end{proof}
+\begin{definition}[Groupe multiplicatif $(\Z/n\Z)^\times$]\label{def:multgrpZnZ}
+Le groupe multiplicatif modulo $n$ est l'ensemble des éléments inversibles de $\Z/n\Z$ :
+\[
+(\Z/n\Z)^\times = \{\bar a \in \Z/n\Z \mid \gcd(a,n)=1\}.
 \]
 \end{definition}
 
-\begin{remark}[Inversibilité modulo $n$]
-L'élément $a \in \Z/n\Z$ est inversible si et seulement si $\gcd(a,n)=1$. En effet, si $\gcd(a,n)=1$, alors par l'identité de Bézout, il existe $u,v$ tels que $au + nv = 1$, donc $au \equiv 1 \pmod{n}$. Réciproquement, si $a$ est inversible, il existe $b$ tel que $ab \equiv 1 \pmod{n}$, donc $ab  -kn = 1$ pour un certain $k$, ce qui implique que tout diviseur commun à $a$ et $n$ divise 1, donc $\gcd(a,n)=1$.
-\end{remark}
+
 
 \begin{definition}[Indicatrice d'Euler]
 L'indicatrice d'Euler $\varphi(n)$ est définie pour tout entier $n \geq 1$ comme le nombre d'entiers compris entre $1$ et $n$ qui sont premiers avec $n$ :
@@ -317,8 +380,8 @@ Si $p$ et $q$ sont deux nombres premiers distincts et $n = pq$, alors :
 \begin{proof}
 Parmi les $n = pq$ entiers de $1$ à $n$, les entiers qui ne sont pas premiers avec $n$ sont :
 \begin{itemize}
-\item Les multiples de $p$ : $p, 2p, 3p, \dots, qp$ → il y en a $q$
-\item Les multiples de $q$ : $q, 2q, 3q, \dots, pq$ → il y en a $p$
+\item Les multiples de $p$ : $p, 2p, 3p, \dots, qp$ $\to$ il y en a $q$
+\item Les multiples de $q$ : $q, 2q, 3q, \dots, pq$ $\to$ il y en a $p$
 \end{itemize}
 L'entier $pq$ a été compté deux fois. Par le principe d'inclusion-exclusion :
 \[
@@ -404,7 +467,7 @@ Pour tout \( g \in G \), considérons l'ensemble des puissances de \( g \) :
 \subparagraph{Finitude et définition de l'ordre}
 Comme \( G \) est fini, les puissances \( g^0, g^1, g^2, \dots \) ne peuvent être toutes distinctes. Il existe donc des entiers \( i < j \) tels que \( g^i = g^j \). En multipliant par \( g^{-i} \), on obtient \( g^{j-i} = e \) avec \( j-i > 0 \).
 
-L'ensemble des entiers strictement positifs \( k \) tels que \( g^k = e \) est donc non vide. Soit \( d \) son plus petit élément (par le principe du bon ordre). Cet entier \( d \) est appelé \emph{ordre de \( g \)}.
+L'ensemble des entiers strictement positifs \( k \) tels que \( g^k = e \) est donc non vide. Soit \( d \) son plus petit élément (par le principe du bon ordre). Cet entier \( d \) est appelé \emph{ordre de \( g \)} et se note $\ord(g)$.
 
 \subparagraph{Structure de \( \langle g \rangle \)}
 Montrons que \( \langle g \rangle = \{ e, g, g^2, \dots, g^{d-1} \} \) et que ces éléments sont distincts.
@@ -442,7 +505,7 @@ a^{\varphi(n)} \equiv 1 \pmod{n}
 \end{theorem}
 
 \begin{proof}
-L'ensemble $(\Z/n\Z)^\times$ est un groupe multiplicatif (définition précédente) d'ordre $\varphi(n)$. Pour tout $a \in (\Z/n\Z)^\times$, par le théorème de Lagrange (Théorème~\ref{thm:lagrange-groupes}) appliqué au sous-groupe $\langle a \rangle$, l'ordre de $a$ divise $\varphi(n)$. Donc $a^{\varphi(n)} = 1$ dans $(\Z/n\Z)^\times$, c'est-à-dire $a^{\varphi(n)} \equiv 1 \pmod{n}$.
+L'ensemble $(\Z/n\Z)^\times$ est, par la Définition~\ref{def:multgrpZnZ}, un groupe multiplicatif d'ordre $\varphi(n)$. Pour tout $a \in (\Z/n\Z)^\times$, par le théorème de Lagrange (Théorème~\ref{thm:lagrange-groupes}) appliqué au sous-groupe $\langle a \rangle$, l'ordre de $a$ divise $\varphi(n)$. Donc $a^{\varphi(n)} = 1$ dans $(\Z/n\Z)^\times$, c'est-à-dire $a^{\varphi(n)} \equiv 1 \pmod{n}$.
 \end{proof}
 
 \begin{theorem}[Petit théorème de Fermat]
@@ -459,84 +522,152 @@ C'est un cas particulier du théorème d'Euler, car pour $p$ premier, $\varphi(p
 
 
 
-\begin{proposition}[Algorithme d'Euclide étendu et inverse modulaire]
-\label{prop:euclide-etendu}
-Soient $a,n\in\mathbb{Z}$ avec $\gcd(a,n)=1$. L'algorithme d'Euclide étendu calcule des entiers $u,v$ tels que
+\begin{proposition}[Algorithme d'Euclide étendu et inverse modulaire]\label{prop:euclide-etendu}
+Soient $a,n \in \Z$ avec $\gcd(a,n)=1$. L'algorithme d'Euclide étendu calcule des entiers
+$u,v$ tels que
 \[
-au + nv = 1.
+  au + nv = 1.
 \]
 En particulier, $u \bmod n$ est l'inverse de $a$ modulo $n$.
 \end{proposition}
 
-\begin{proof}[Algorithme d'Euclide étendu]
-Soient \(a \in \{1, 2, \dots, n-1\}\) et \(n\) premier avec \(a\). L'algorithme calcule l'inverse de \(a\) modulo \(n\).
+\paragraph{Algorithme d'Euclide étendu.}
+Entrée : $n \ge 2$ et $a \in \{1,2,\dots,n-1\}$ avec $\gcd(a,n)=1$.  
+Sortie : un entier $u$ tel que $au \equiv 1 \pmod n$.
 
-\textbf{Initialisation :}  
-Posons \(r_0 \gets n\), \(r_1 \gets a\), \(u_0 \gets 0\), \(u_1 \gets 1\).  
-Par définition, on a :
+\medskip
+\noindent\textbf{Initialisation.}
 \[
-r_0 = n = a \cdot 0 + n \cdot 1 \quad\text{et}\quad r_1 = a = a \cdot 1 + n \cdot 0.
-\]
-Ainsi, en introduisant des coefficients \(v_0 = 1\) et \(v_1 = 0\) (non stockés explicitement), on obtient les relations initiales :
-\[
-r_0 = a u_0 + n v_0, \qquad r_1 = a u_1 + n v_1.
+  r_0 \leftarrow n,\quad r_1 \leftarrow a, \qquad
+  u_0 \leftarrow 0,\quad u_1 \leftarrow 1,\qquad
+  v_0 \leftarrow 1,\quad v_1 \leftarrow 0.
 \]
 
-\textbf{Invariants de boucle :}  
-À chaque étape de l'algorithme, on maintient les deux propriétés suivantes pour les valeurs courantes de \(r_0, r_1, u_0, u_1\) :
+\noindent\textbf{Boucle :} tant que $r_1 \neq 0$ faire
 \begin{enumerate}
-    \item \textbf{Expression linéaire :} Il existe des entiers \(v_0, v_1\) tels que
-          \[
-          r_0 = a u_0 + n v_0 \quad \text{et} \quad r_1 = a u_1 + n v_1.
-          \]
-    \item \textbf{PGCD préservé :} \(\gcd(r_0, r_1) = \gcd(n, a) = 1\).
+  \item Calculer $q \leftarrow \left\lfloor \dfrac{r_0}{r_1} \right\rfloor$ (division euclidienne).
+  \item Mettre à jour :
+  \[
+    r_2 \leftarrow r_0 - q\,r_1,\qquad
+    u_2 \leftarrow u_0 - q\,u_1,\qquad
+    v_2 \leftarrow v_0 - q\,v_1.
+  \]
+  \item Décaler les variables :
+  \[
+    r_0 \leftarrow r_1,\quad r_1 \leftarrow r_2,\qquad
+    u_0 \leftarrow u_1,\quad u_1 \leftarrow u_2,\qquad
+    v_0 \leftarrow v_1,\quad v_1 \leftarrow v_2.
+  \]
+\end{enumerate}
+Fin de boucle.
+
+\noindent\textbf{Résultat.} À la fin, on renvoie
+\[
+  u \equiv u_0 \pmod n
+\]
+(en ramenant $u_0$ dans l'intervalle $\{0,\dots,n-1\}$).
+
+\medskip
+\paragraph{Invariants de boucle.}
+À chaque itération (avant l'étape 1), les variables courantes $r_0,r_1,u_0,u_1,v_0,v_1$
+vérifient :
+\begin{enumerate}
+  \item[(I)] \textbf{Expression linéaire (relation de Bézout).}
+  Il existe des entiers $u_0,u_1,v_0,v_1$ tels que
+  \[
+    r_0 = a u_0 + n v_0,\qquad
+    r_1 = a u_1 + n v_1.
+  \]
+  \item[(II)] \textbf{PGCD préservé.}
+  \[
+    \gcd(r_0,r_1) = \gcd(n,a).
+  \]
 \end{enumerate}
 
-\textbf{Déroulement de la boucle :}  
-Tant que \(r_1 \neq 0\) :
-\begin{enumerate}
-    \item Calculer \(q \gets \lfloor r_0 / r_1 \rfloor\) (division euclidienne).
-    \item Mettre à jour :
-          \[
-          \begin{aligned}
-          r_2 &\gets r_0 - q \cdot r_1, \\
-          u_2 &\gets u_0 - q \cdot u_1.
-          \end{aligned}
-          \]
-    \item Décaler les variables :
-          \[
-          \begin{aligned}
-          r_0 &\gets r_1, & r_1 &\gets r_2, \\
-          u_0 &\gets u_1, & u_1 &\gets u_2.
-          \end{aligned}
-          \]
-\end{enumerate}
-
-\textbf{Preuve de l'invariant (1) :}  
-Supposons qu'avant une itération on ait \(r_0 = a u_0 + n v_0\) et \(r_1 = a u_1 + n v_1\).  
-Alors, après calcul de \(q\) et mise à jour, on a :
+\paragraph{Preuve de l'invariant (I).}
+À l'initialisation,
 \[
-\begin{aligned}
-r_2 &= r_0 - q r_1 \\
-    &= (a u_0 + n v_0) - q (a u_1 + n v_1) \\
-    &= a (u_0 - q u_1) + n (v_0 - q v_1) \\
-    &= a u_2 + n v_2,
-\end{aligned}
+  r_0 = n = a\cdot 0 + n\cdot 1 = a u_0 + n v_0,\qquad
+  r_1 = a = a\cdot 1 + n\cdot 0 = a u_1 + n v_1,
 \]
-en posant \(v_2 = v_0 - q v_1\). Après le décalage, les nouvelles valeurs \(r_0, r_1, u_0, u_1\) vérifient à nouveau la forme linéaire avec les coefficients correspondants.
+donc la propriété (I) est vraie.
 
-\textbf{Preuve de l'invariant (2) :}  
-La propriété \(\gcd(r_0, r_1) = \gcd(r_1, r_0 \bmod r_1)\) assure que le PGCD reste inchangé à chaque itération. Comme initialement \(\gcd(n, a) = 1\), on a \(\gcd(r_0, r_1) = 1\) tout au long.
-
-\textbf{Terminaison et résultat :}  
-La suite \((r_i)\) est strictement décroissante et positive, donc \(r_1\) finit par devenir nul. À la fin, on a \(r_1 = 0\) et \(r_0 = \gcd(n, a) = 1\) (par l'invariant 2).  
-D'après l'invariant 1 appliqué à l'avant-dernière itération, on a alors :
+Supposons-la vraie au début d'une itération, c'est-à-dire
 \[
-1 = r_0 = a u_0 + n v_0.
+  r_0 = a u_0 + n v_0,\qquad
+  r_1 = a u_1 + n v_1.
 \]
-Ainsi, modulo \(n\), on obtient \(a u_0 \equiv 1 \pmod{n}\).  
-L'inverse de \(a\) modulo \(n\) est donc \(u_0\) modulo \(n\) (c'est-à-dire \(u_0 \bmod n\), pour le ramener dans \(\{0,\dots,n-1\}\)).
-\end{proof}
+Après calcul de $q$ et mise à jour, on obtient
+\[
+  r_2 = r_0 - q r_1
+      = (a u_0 + n v_0) - q (a u_1 + n v_1)
+      = a(u_0 - q u_1) + n(v_0 - q v_1)
+      = a u_2 + n v_2.
+\]
+Puis, après le décalage, les nouvelles valeurs $(r_0,r_1,u_0,u_1,v_0,v_1)$ sont
+\[
+  r_0' = r_1 = a u_1 + n v_1,\qquad
+  r_1' = r_2 = a u_2 + n v_2,
+\]
+donc (I) reste vraie à la fin de l'itération. Par récurrence, (I) est donc vérifiée
+à chaque étape de la boucle.
+
+\paragraph{Preuve de l'invariant (II).}
+À l'initialisation,
+\[
+  \gcd(r_0,r_1) = \gcd(n,a).
+\]
+Lors d'une itération, on remplace $(r_0,r_1)$ par $(r_1,r_2)$ avec
+$r_2 = r_0 - q r_1$. Or on sait que
+\[
+  \gcd(r_0,r_1) = \gcd(r_1,r_0 - q r_1) = \gcd(r_1,r_2).
+\]
+Ainsi, le PGCD reste inchangé à chaque itération, et (II) est préservé.
+
+\paragraph{Terminaison et résultat.}
+La suite $(r_i)$ issue de l'algorithme d'Euclide classique est strictement
+décroissante en valeurs absolues et reste positive, donc la boucle finit
+avec $r_1 = 0$. À ce moment-là, on a
+\[
+  r_0 = \gcd(r_0,r_1) = \gcd(n,a).
+\]
+Comme on suppose $\gcd(n,a)=1$, on obtient $r_0 = 1$ à la fin.
+
+Par l'invariant (I), les valeurs finales $r_0,u_0,v_0$ vérifient donc
+\[
+  1 = r_0 = a u_0 + n v_0.
+\]
+En réduisant modulo $n$, on obtient $a u_0 \equiv 1 \pmod n$, ce qui montre
+que $u_0$ (modulo $n$) est l'inverse de $a$ modulo $n$, ce qui prouve
+la Proposition~\ref{prop:euclide-etendu}.
+
+
+\begin{example}[Inverse de $5$ modulo $17$]\label{ex:inv-5-mod-17}
+Appliquons l'algorithme d'Euclide étendu pour trouver l'inverse de $a = 5$
+modulo $n = 17$.
+
+\medskip
+\centerline{
+\begin{tabular}{c|c|c|c|c|c}
+Étape & $q$ & $r_0$ & $r_1$ & $u_0$ & $u_1$ \\ \hline
+Init. &   & $17$ & $5$  & $0$  & $1$ \\ \hline
+1 & $3$ & $5$  & $2$  & $1$  & $-3$ \\
+2 & $2$ & $2$  & $1$  & $-3$ & $7$  \\
+3 & $2$ & $1$  & $0$  & $7$  & $-17$
+\end{tabular}
+}
+
+\medskip
+On obtient $r_0 = 1$ et $u_0 = 7$, avec
+\[
+  1 = 17\cdot(-2) + 5\cdot 7.
+\]
+Ainsi, $5\cdot 7 \equiv 1 \pmod{17}$ et l'inverse de $5$ modulo $17$ est
+\[
+  5^{-1} \equiv 7 \pmod{17}.
+\]
+\end{example}
+
 \begin{remark}[À retenir pour RSA]
 Pour RSA, nous utiliserons :
 \begin{itemize}
@@ -2731,7 +2862,7 @@ Dans notre contexte :
 
 \subsection{Dénombrement des permutations vs. clés}
 
-\begin{remark}[Injectivité pratique de l'application clé→permutation]
+\begin{remark}[Injectivité pratique de l'application clé$\to$permutation]
 L'espace des blocs possibles est $\bin^{128}$, qui contient
 \[
   N = 2^{128}
