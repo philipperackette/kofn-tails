@@ -1601,38 +1601,66 @@ le compteur reste borné par $1 \le i \le 255$, si bien que l'encodage sur 1 oct
 l'implémentation Python utilisée suit strictement la RFC et encode $i$ sur un seul octet.
 \end{remark}
 
+
 \subsection{HKDF}
 \label{sec:hkdf}
 
-\begin{definition}[HKDF (HMAC-based Key Derivation Function) \cite{rfc5869}]
-Soit $h:\bin^*\to\bin^d$ une fonction de hachage. On définit la fonction de dérivation de clé HKDF selon RFC~5869 :
+Dans ce qui suit, on utilise la fonction de dérivation de clés HKDF
+(HMAC \textit{based Key Derivation Function})~\cite{rfc5869}, construite à partir
+de HMAC. Elle sert uniquement à dériver, à partir du secret maître $S$
+et de quelques paramètres de contexte, des clés symétriques destinées
+aux primitives utilisées dans la procédure Tails (AES-GCM, Ed25519,
+chiffrement de la clé RSA).
+
+\begin{definition}[HKDF (HMAC \textit{based Key Derivation Function}) \cite{rfc5869}]
+Soit $h:\bin^*\to\bin^d$ une fonction de hachage. On définit la fonction
+de dérivation de clé HKDF basée sur $h$ par
 \[
-  \HKDF_h : \bin^* \times \bin^* \times \bin^* \times \N \to \bin^L
+  \HKDF_h : \bin^* \times \bin^* \times \bin^* \times \N \to \bin^L,
 \]
-comme suit. Soient $\mathrm{IKM}\in\bin^*$ (input keying material), $\mathrm{salt}\in\bin^*$, $\mathrm{info}\in\bin^*$, et $L\in\N$ (longueur de sortie en octets). On pose :
+comme suit. Soient $\mathrm{IKM}\in\bin^*$ (\emph{input keying material}),
+$\mathrm{salt}\in\bin^*$, $\mathrm{info}\in\bin^*$, et $L\in\N$ (longueur
+de sortie en octets). On pose~:
 \begin{itemize}
-\item \textbf{Étape d'extraction} : 
+  \item \textbf{Extraction}~:
   \[
     \mathrm{PRK} = \HMAC_h(\mathrm{salt}, \mathrm{IKM}) \in \bin^d.
   \]
-\item \textbf{Étape d'expansion} : on définit itérativement, pour $i = 1,2,\dots$ jusqu'à obtenir $L$ octets,
+  \item \textbf{Expansion}~: pour $i = 1,2,\dots$ jusqu'à obtenir $L$~octets,
   \begin{align*}
   T_1 &= \HMAC_h\bigl(\mathrm{PRK},\ \mathrm{info} \concat \mathrm{INT}_4(1)\bigr), \\
   T_2 &= \HMAC_h\bigl(\mathrm{PRK},\ T_1 \concat \mathrm{info} \concat \mathrm{INT}_4(2)\bigr), \\
       &\ \vdots \\
   T_i &= \HMAC_h\bigl(\mathrm{PRK},\ T_{i-1} \concat \mathrm{info} \concat \mathrm{INT}_4(i)\bigr).
   \end{align*}
-\item \textbf{Sortie} : la clé dérivée est le préfixe aux $L$ octets de la concaténation
+  \item \textbf{Sortie}~: la clé dérivée est le préfixe aux $L$~octets
+  de la concaténation
   \[
     T_1 \concat T_2 \concat \dots
   \]
   avec la contrainte $L \le 255\cdot d$ comme dans la RFC~5869.
 \end{itemize}
-Dans le cas standard où l'on suit la RFC, le compteur $i$ est encodé sur \emph{un octet}
-($\mathrm{INT}(i)$) et non sur 4~octets ; la notation $\mathrm{INT}_4(i)$ ci-dessus doit se
-lire comme une écriture générique, valable aussi pour d'autres constructions où un
-compteur sur 32~bits est utile.
+Dans le cas standard où l'on suit la RFC, le compteur $i$ est encodé
+sur \emph{un octet} ($\mathrm{INT}(i)$) et non sur 4~octets~; la notation
+$\mathrm{INT}_4(i)$ ci-dessus doit se lire comme une écriture générique,
+valable aussi pour d'autres constructions où un compteur sur 32~bits
+est utile.
 \end{definition}
+
+Dans la procédure Tails, on utilise HKDF avec SHA-256 comme fonction
+de hachage sous-jacente (c'est-à-dire $h = \text{SHA-256}$) et l'on
+applique $\HKDF_h$ au secret maître $S$ (jouant le rôle de
+$\mathrm{IKM}$) et à des paires $(\mathrm{salt},\mathrm{info})$ fixées
+pour dériver notamment~:
+\begin{itemize}[leftmargin=2em]
+  \item la clé graine $K_{\mathrm{Ed}}$ pour Ed25519 (Section~\ref{sec:ed25519})~;
+  \item la clé symétrique AES-256 $K_{\mathrm{RSA}}$ utilisée pour chiffrer la clé privée RSA dans
+        \texttt{rsa\_wrapped.json} (Section~\ref{sec:rsa-oaep})~;
+
+\end{itemize}
+Toute partie connaissant $S$ et ces paramètres de contexte obtient ainsi
+les mêmes clés dérivées en réappliquant $\HKDF_h$.
+
 
 \subsection{PBKDF2}
 
@@ -1687,7 +1715,7 @@ associés à Ed25519.
 
 \subsection{Courbe elliptique Ed25519}
 
-\begin{definition}[Courbe elliptique Ed25519 (Edwards-curve Digital Signature Algorithm) \cite{rfc8032}]
+\begin{definition}[Courbe elliptique Ed25519 (\textit{Edwards-curve Digital Signature Algorithm}) \cite{rfc8032}]
 Soit $q = 2^{255} - 19$ et $\F_q$ le corps fini correspondant. La courbe elliptique Ed25519 est définie par l'équation de Twisted Edwards :
 \[
 E: -x^2 + y^2 = 1 + dx^2y^2 \quad \text{sur } \F_q
