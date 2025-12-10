@@ -77,51 +77,65 @@
 % ============================
 % Métadonnées
 % ============================
-\title{Schéma $k$-sur-$n$ sous Tails :\\
-formulation mathématique rigoureuse}
-\author{BC69 21A8 5B8D DBB5 F3A6 EB81 9055 4E6A 6924 F3C7}
+\title{\textbf{Contrôle distribué du pouvoir de signature et de déchiffrement dans un environnement sécurisé\\[0.5em]
+\large Implémentation \texttt{Python} clé en main et étude mathématique}}
+\author{Philippe Rackette}
 \date{\centering\today}
 
 % ============================
 \begin{document}
 \maketitle
 
+\vfill
+\begin{center}
+  \includegraphics[width=0.6\textwidth]{cover_image.png}
+\end{center}
+\vfill
+
+\newpage
+
 \begin{abstract}
-Ce texte formalise, dans un cadre entièrement mathématique, le schéma
-$k$-sur-$n$ mis en \oe uvre par la procédure opérationnelle sous Tails
-pour la gestion d'un secret maître, telle qu'elle est décrite dans le
-document \texttt{procedure\_kofn\_tails\_v1.html} du dépôt \cite{git-hub} dont l'empreinte
-SHA-256 est
-\[
-  \texttt{ed223dd055108b0c08cd6d7b3011962d5bdc5f92dd38760c5c6a202982fcde84}
-\]
+Ce texte formalise, dans un cadre mathématique, le schéma de partage
+de secret de Shamir ($k$-sur-$n$)~\cite{shamir1979share} mis en \oe uvre par la
+procédure opérationnelle \textit{k of n Tails}, destinée à être exécutée sous
+\textbf{Tails~OS} pour la gestion d'un secret maître. Cette procédure est décrite
+dans le fichier \texttt{procedure\_kofn\_tails\_v1.html} du dépôt~\cite{git-hub}.
+La version de référence de cette procédure est identifiée par le hachage
+SHA\mbox{-}256 suivant\footnote{La signature OpenPGP de ce fichier doit être vérifiée à l'aide de la clé publique~\cite{rackette-pgp}.} :
+\begin{center}
+  \texttt{ed223dd055108b0c08cd6d7b3011962d5bdc5f92dd38760c5c6a202982fcde84}.
+\end{center}
+
+\medskip\noindent
 Le protocole repose sur les briques cryptographiques suivantes :
 \begin{itemize}[leftmargin=2em]
-  \item le partage de secret de Shamir \cite{shamir1979share} sur un corps fini pour répartir un secret maître $S$ selon un seuil $k$-sur-$n$ ;
-  \item la dérivation de clés symétriques à partir de $S$ et des mots de passe par \textbf{HKDF} (\textbf{HMAC-based Key Derivation Function}) \cite{rfc5869} et \textbf{PBKDF2} (\textbf{Password-Based Key Derivation Function 2}) \cite{rfc8018} ;
-  \item une clé de signature \textbf{Ed25519} (Edwards-curve Digital Signature Algorithm) \cite{rfc8032} dérivée de $S$ (schéma de signature à base de courbe elliptique) ;
-  \item un chiffrement hybride \textbf{RSA-4096} / \textbf{AES-256-GCM} (\textbf{Advanced Encryption Standard} en mode \textbf{Galois/Counter Mode}) \cite{rfc8017, fips197, nist-sp800-38d} pour les fichiers destinés aux membres du groupe $k$-sur-$n$, la clé RSA privée étant elle-même chiffrée par AES-256-GCM à partir de $S$ ;
+  \item le partage de secret de Shamir~\cite{shamir1979share} sur un corps fini pour répartir un secret maître $S$ selon un seuil $k$-sur-$n$~;
+  \item la dérivation de clés symétriques à partir de $S$ et de mots de passe par \textbf{HKDF} (\textbf{HMAC-based Key Derivation Function})~\cite{rfc5869} et \textbf{PBKDF2} (\textbf{Password-Based Key Derivation Function 2})~\cite{rfc8018}~;
+  \item une clé de signature \textbf{Ed25519} (Edwards-curve Digital Signature Algorithm)~\cite{rfc8032} dérivée de $S$ (schéma de signature sur courbe elliptique)~;
+  \item un chiffrement hybride \textbf{RSA-4096} / \textbf{AES-256-GCM} (\textbf{Advanced Encryption Standard} en mode \textbf{Galois/Counter Mode})~\cite{rfc8017,fips197,nist-sp800-38d} pour les fichiers destinés aux membres du groupe $k$-sur-$n$~; la clé RSA privée est elle-même chiffrée par AES-256-GCM à partir de~$S$.
 \end{itemize}
 
 Nous détaillons, pour chaque type d'objet manipulé, les garanties effectives
 en termes de confidentialité, d'intégrité et d'authenticité :
 \begin{itemize}[leftmargin=2em]
-  \item \textbf{Parts de secret} : confidentialité et intégrité assurées par AES-GCM avec une clé dérivée du mot de passe du porteur (PBKDF2) ;
-  \item \textbf{Signatures de fichiers} : intégrité et authenticité cryptographiques assurées par Ed25519 à partir de la clé dérivée de $S$ ;
-  \item \textbf{Fichiers chiffrés hybrides RSA--AES} : confidentialité et intégrité du contenu assurées par AES-GCM ; l'authenticité de la \emph{source} n'est en revanche pas garantie en l'absence de signature dédiée ;
-  \item \textbf{Clés publiques} : leur authenticité doit être vérifiée par des canaux hors-bande (vérification humaine, échange préalable sur canal sécurisé, etc.).
+  \item \textbf{Parts de secret} : confidentialité et intégrité assurées par AES-GCM avec une clé dérivée du mot de passe du porteur (PBKDF2)~;
+  \item \textbf{Signatures de fichiers} : intégrité et authenticité cryptographiques assurées par Ed25519 à partir de la clé dérivée de $S$~;
+  \item \textbf{Fichiers chiffrés hybrides RSA--AES} : confidentialité et intégrité du contenu assurées par AES-GCM~; l'authenticité de la \emph{source} n'est en revanche pas garantie en l'absence de signature dédiée~;
+  \item \textbf{Clés publiques} : leur authenticité doit être vérifiée par des canaux hors bande (vérification humaine, échange préalable sur canal sécurisé, etc.).
 \end{itemize}
 
-Les objets sont définis dans leur structure algébrique naturelle (corps finis,
-groupes, espaces de clés), puis mis en correspondance explicite avec les
-formats de fichiers et les scripts décrits dans \texttt{procedure\_kofn\_tails\_v1.html}, de façon à assurer une traçabilité complète entre le modèle
-mathématique et la mise en \oe uvre opérationnelle. Dans toute la suite,
-l'expression \og procédure Tails\fg{} désigne précisément ce document HTML
-identifié par l'empreinte SHA-256 ci-dessus.
+Les objets sont d'abord définis dans leur structure algébrique naturelle
+(corps finis, groupes, espaces de clés), puis mis en correspondance explicite
+avec les formats de fichiers et les scripts décrits dans
+\texttt{procedure\_kofn\_tails\_v1.html}, afin d'assurer une traçabilité complète
+entre le modèle mathématique et la mise en \oe uvre opérationnelle.
+Dans toute la suite, l'expression \og procédure Tails\fg{} désigne ce document
+HTML identifié par l'empreinte SHA\mbox{-}256 ci-dessus. Ce texte fournit ainsi
+à la fois une preuve mathématique rigoureuse du schéma et une spécification
+directement alignée sur l'implémentation \texttt{Python} fournie.
 \end{abstract}
 
 \newpage
-
 \tableofcontents
 
 %=========================================================
@@ -5021,6 +5035,18 @@ NIST Special Publication 800-38D.
 K.~Conrad,
 \emph{The Miller--Rabin primality test},\\
 \url{https://kconrad.math.uconn.edu/blurbs/ugradnumthy/millerrabin.pdf}.
+
+\bibitem{rackette-pgp}
+Philippe Rackette. (2020).
+\textit{Clé publique OpenPGP personnelle}.\\
+Clé RSA 4096 bits (créée le 23 janvier 2020, expiration le 31 août 2050).\\
+\textsc{Empreinte} (fingerprint) :\\
+\hspace*{1em}\texttt{BC69 21A8 5B8D DBB5 F3A6 EB81 9055 4E6A 6924 F3C7}.\\
+\textsc{Identifiants} (UID) :\\
+\hspace*{1em}\texttt{philippe.rackette@ac-strasbourg.fr}\\
+\hspace*{1em}\texttt{philippe.rackette@cse-strasbourg.com}.\\
+Disponible sur le serveur de clés OpenPGP :\\
+\hspace*{1em}\url{https://keys.openpgp.org/search?q=philippe.rackette%40ac-strasbourg.fr}
 
 
 \end{thebibliography}
