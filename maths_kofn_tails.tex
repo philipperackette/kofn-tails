@@ -109,7 +109,7 @@ Le protocole repose sur les briques cryptographiques suivantes :
   \item le partage de secret de Shamir~\cite{shamir1979share} sur un corps fini pour répartir un secret maître $S$ selon un seuil $k$ sur $n$~;
   \item la dérivation de clés symétriques à partir de $S$ et de mots de passe par \textbf{HKDF} (\textit{HMAC-based Key Derivation Function})~\cite{rfc5869} et \textbf{PBKDF2} (\textit{Password-Based Key Derivation Function 2})~\cite{rfc8018}~;
   \item une clé de signature \textbf{Ed25519} (\textit{Edwards-curve Digital Signature Algorithm})~\cite{rfc8032} dérivée de $S$ (schéma de signature sur courbe elliptique)~;
-  \item un chiffrement hybride \textbf{RSA-4096}/\textbf{AES-256-GCM} (\textit{Advanced Encryption Standard} en mode \textit{Galois/Counter Mode})~\cite{rfc8017,fips197,nist-sp800-38d} pour les fichiers destinés aux membres du groupe $k$ sur $n$~; la clé RSA privée est elle-même chiffrée par AES-256-GCM à partir de~$S$.
+  \item un chiffrement hybride \textbf{RSA-4096} (\textit{Rivest Shamir Adleman})/\textbf{AES-256-GCM} (\textit{Advanced Encryption Standard in Galois/Counter Mode})~\cite{rfc8017,fips197,nist-sp800-38d} pour les fichiers destinés aux membres du groupe $k$ sur $n$~; la clé RSA privée est elle-même chiffrée par AES-256-GCM à partir de~$S$.
 \end{itemize}
 
 Nous détaillons, pour chaque type d'objet manipulé, les garanties effectives
