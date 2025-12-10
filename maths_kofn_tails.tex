@@ -96,10 +96,7 @@
 
 \begin{abstract}
 Ce texte formalise, dans un cadre mathématique, le schéma de partage
-de secret de Shamir ($k$-sur-$n$)~\cite{shamir1979share} mis en \oe uvre par la
-procédure opérationnelle \textit{k of n Tails}, destinée à être exécutée sous
-\textbf{Tails~OS} pour la gestion d'un secret maître. Cette procédure est décrite
-dans le fichier \texttt{procedure\_kofn\_tails\_v1.html} du dépôt~\cite{git-hub}.
+de secret de Shamir ($k$ sur $n$)~\cite{shamir1979share} mis en \oe uvre par la procédure \textit{k of n Tails} pour la gestion d'un secret maître. Cette \textbf{procédure autonome complète et directement opérationnelle sous Tails OS\footnote{\href{https://tails.net/}{Tails} est développé par le \href{https://www.torproject.org/}{Projet Tor}.}} est donnée par le fichier \texttt{procedure\_kofn\_tails\_v1.html} du dépôt~\cite{git-hub}.
 La version de référence de cette procédure est identifiée par le hachage
 SHA\mbox{-}256 suivant\footnote{La signature OpenPGP de ce fichier doit être vérifiée à l'aide de la clé publique~\cite{rackette-pgp} présente dans~\cite{git-hub}.} :
 \begin{center}
@@ -109,10 +106,10 @@ SHA\mbox{-}256 suivant\footnote{La signature OpenPGP de ce fichier doit être v�
 \medskip\noindent
 Le protocole repose sur les briques cryptographiques suivantes :
 \begin{itemize}[leftmargin=2em]
-  \item le partage de secret de Shamir~\cite{shamir1979share} sur un corps fini pour répartir un secret maître $S$ selon un seuil $k$-sur-$n$~;
-  \item la dérivation de clés symétriques à partir de $S$ et de mots de passe par \textbf{HKDF} (\textbf{HMAC-based Key Derivation Function})~\cite{rfc5869} et \textbf{PBKDF2} (\textbf{Password-Based Key Derivation Function 2})~\cite{rfc8018}~;
-  \item une clé de signature \textbf{Ed25519} (Edwards-curve Digital Signature Algorithm)~\cite{rfc8032} dérivée de $S$ (schéma de signature sur courbe elliptique)~;
-  \item un chiffrement hybride \textbf{RSA-4096} / \textbf{AES-256-GCM} (\textbf{Advanced Encryption Standard} en mode \textbf{Galois/Counter Mode})~\cite{rfc8017,fips197,nist-sp800-38d} pour les fichiers destinés aux membres du groupe $k$-sur-$n$~; la clé RSA privée est elle-même chiffrée par AES-256-GCM à partir de~$S$.
+  \item le partage de secret de Shamir~\cite{shamir1979share} sur un corps fini pour répartir un secret maître $S$ selon un seuil $k$ sur $n$~;
+  \item la dérivation de clés symétriques à partir de $S$ et de mots de passe par \textbf{HKDF} (\textit{HMAC-based Key Derivation Function})~\cite{rfc5869} et \textbf{PBKDF2} (\textit{Password-Based Key Derivation Function 2})~\cite{rfc8018}~;
+  \item une clé de signature \textbf{Ed25519} (\textit{Edwards-curve Digital Signature Algorithm})~\cite{rfc8032} dérivée de $S$ (schéma de signature sur courbe elliptique)~;
+  \item un chiffrement hybride \textbf{RSA-4096}/\textbf{AES-256-GCM} (\textit{Advanced Encryption Standard} en mode \textit{Galois/Counter Mode})~\cite{rfc8017,fips197,nist-sp800-38d} pour les fichiers destinés aux membres du groupe $k$ sur $n$~; la clé RSA privée est elle-même chiffrée par AES-256-GCM à partir de~$S$.
 \end{itemize}
 
 Nous détaillons, pour chaque type d'objet manipulé, les garanties effectives
@@ -819,7 +816,7 @@ Soit $f: A \to B$ un homomorphisme d'anneaux. Alors :
 (3) Définissons $\overline{f}: A/\ker(f) \to \mathrm{Im}(f)$ par $\overline{f}(a + \ker(f)) = f(a)$. Cette application est bien définie car si $a + \ker(f) = a' + \ker(f)$, alors $a - a' \in \ker(f)$, donc $f(a - a') = 0_B$, soit $f(a) = f(a')$. C'est un homomorphisme d'anneaux car :
 \begin{align*}
 \overline{f}((a + \ker(f)) + (b + \ker(f))) &= \overline{f}(a + b + \ker(f)) = f(a + b) = f(a) + f(b) \\
-&= \overline{f}(a + \ker(f)) + \overline(f)(b + \ker(f)), \\
+&= \overline{f}(a + \ker(f)) + \overline{f}(b + \ker(f)), \\
 \overline{f}((a + \ker(f)) \cdot (b + \ker(f))) &= \overline{f}(a \cdot b + \ker(f)) = f(a \cdot b) = f(a) \cdot f(b) \\
 &= \overline{f}(a + \ker(f)) \cdot \overline(f)(b + \ker(f)), \\
 \overline{f}(1_A + \ker(f)) &= f(1_A) = 1_B.
@@ -919,7 +916,7 @@ Calcul de l'inverse de 3 modulo 5 : on cherche $x$ tel que $3x \equiv 1 \pmod{5}
 \end{example}
 
 \begin{definition}[Corps $\F_P$ pour le partage de Shamir]
-Dans le cadre du schéma $k$-sur-$n$, on utilise un corps fini premier particulier de cardinal 
+Dans le cadre du schéma $k$ sur $n$, on utilise un corps fini premier particulier de cardinal 
 \[
 P = 2^{521} - 1
 \]
@@ -1053,7 +1050,7 @@ Soit $\mathbb{K}$ un corps commutatif et soit $m(X) \in \Kpolys$ un polynôme ir
 \begin{proof}
 Soit $I = (m(X))$ l'idéal engendré par $m(X)$. 
 
-Puisque $\Kpolys$ est principal (Proposition~\ref{prop:anneau-principal}), et que $m(X)$ est irréductible, l'idéal $I$ est maximal. En effet, soit $J$ un idéal tel que $I \subset J \subset \Kpolys$. Alors $J = (p(X))$ pour un certain $p(X) \in \Kpolys$. Puisque $m(X) \in J$, on a $p(X) \mid m(X)$. Mais $m(X)$ est irréductible, donc soit $p(X)$ est une constante non nulle (auquel cas $J = \mathbb{K[X]}$), soit $p(X)$ est associé à $m(X)$ (auquel cas $J = I$). Ainsi, $I$ est maximal.
+Puisque $\Kpolys$ est principal (Proposition~\ref{prop:anneau-principal}), et que $m(X)$ est irréductible, l'idéal $I$ est maximal. En effet, soit $J$ un idéal tel que $I \subset J \subset \Kpolys$. Alors $J = (p(X))$ pour un certain $p(X) \in \Kpolys$. Puisque $m(X) \in J$, on a $p(X) \mid m(X)$. Mais $m(X)$ est irréductible, donc soit $p(X)$ est une constante non nulle (auquel cas $J = \mathbb{K}[X]$), soit $p(X)$ est associé à $m(X)$ (auquel cas $J = I$). Ainsi, $I$ est maximal.
 
 Par la Proposition~\ref{prop:quotient-maximal}, le quotient $\Kpolys/I$ est un corps.
 \end{proof}
@@ -2107,7 +2104,7 @@ sB &= (r + k \cdot a)B \\
 L'équation de vérification est donc satisfaite.
 \end{proof}
 
-\begin{remark}[Signature contextuelle dans le schéma $k$-sur-$n$]
+\begin{remark}[Signature contextuelle dans le schéma $k$ sur $n$]
 Dans notre implémentation, on signe non pas $M$ directement mais le message contextualisé :
 \[
 M' = \texttt{"kofn-ed25519-v1"} \concat \mathrm{SHA256}(A) \concat M
@@ -2258,7 +2255,7 @@ Bien que théoriquement possible, cette attaque est pratiquement irréalisable :
 En pratique, cette attaque n'est donc pas une préoccupation réaliste pour la sécurité de RSA avec des paramètres standard.
 \end{remark}
 
-\begin{definition}[Paramètres concrets pour le schéma $k$-sur-$n$]
+\begin{definition}[Paramètres concrets pour le schéma $k$ sur $n$]
 Dans notre implémentation :
 \begin{itemize}[leftmargin=2em]
   \item Module $n$ : 4096 bits ;
@@ -2410,7 +2407,7 @@ La correction découle de la structure réversible de l'encodage OAEP. Les opér
 RSA-OAEP offre une sécurité prouvée dans le modèle de l'oracle aléatoire contre les attaques adaptatives à chiffrés choisis (IND-CCA2). Le padding OAEP prévient les attaques par canal auxiliaire et garantit l'intégrité du message.
 \end{remark}
 
-\begin{definition}[Utilisation dans le schéma $k$-sur-$n$]
+\begin{definition}[Utilisation dans le schéma $k$ sur $n$]
 Dans notre contexte, RSA-OAEP est utilisé pour chiffrer des clés AES-256 de 32 octets. Pour un module RSA de 4096 bits ($k=512$) avec SHA-256 ($hLen=32$), on a :
 \[
 k_0 = 512 - 2\times 32 - 2 = 446 \text{ octets}
@@ -2914,7 +2911,7 @@ La sécurité d'AES-GCM repose sur :
 \end{itemize}
 \end{remark}
 
-\begin{remark}[Utilisation dans le schéma $k$-sur-$n$]
+\begin{remark}[Utilisation dans le schéma $k$ sur $n$]
 Dans notre contexte :
 \begin{itemize}
 \item AES-256 est utilisé avec des clés de 256 bits
@@ -2979,7 +2976,7 @@ ce qui est totalement négligeable à toute échelle pratique.
 \end{remark}
 
 %=========================================================
-\section{Construction globale du schéma $k$-sur-$n$}
+\section{Construction globale du schéma $k$ sur $n$}
 
 \subsection{Paramètres et constantes}
 
@@ -4007,11 +4004,6 @@ et l'on peut le noter sans ambiguïté $\F_{p^n}$.
 \newpage
 
 
-
-%=========================================================
-% Annexe B : Borne probabiliste du test de Miller--Rabin
-%=========================================================
-
 %=========================================================
 % Annexe B : Borne probabiliste du test de Miller--Rabin
 %=========================================================
@@ -4020,7 +4012,7 @@ et l'on peut le noter sans ambiguïté $\F_{p^n}$.
 \label{sec:annexe-miller-rabin}
 
 Dans cette annexe, on donne une preuve détaillée de la borne classique suivante
-pour le test de primalité probabiliste de Miller--Rabin, dans le cas
+pour le test de primalité probabiliste de Miller--Rabin \cite{Conrad-MR}, dans le cas
 cryptographiquement pertinent.
 
 \begin{theorem}[Borne de Miller--Rabin]
