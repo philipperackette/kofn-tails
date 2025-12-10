@@ -604,26 +604,77 @@ Après calcul de $q$ et mise à jour, on obtient
       = a(u_0 - q u_1) + n(v_0 - q v_1)
       = a u_2 + n v_2.
 \]
-Puis, après le décalage, les nouvelles valeurs $(r_0,r_1,u_0,u_1,v_0,v_1)$ sont
+
+Puis, après le décalage, les nouvelles valeurs
+\[
+  (r_0',r_1',u_0',u_1',v_0',v_1')
+  = (r_1,r_2,u_1,u_2,v_1,v_2)
+\]
+sont données explicitement par
 \[
   r_0' = r_1 = a u_1 + n v_1,\qquad
   r_1' = r_2 = a u_2 + n v_2,
 \]
-donc (I) reste vraie à la fin de l'itération. Par récurrence, (I) est donc vérifiée
-à chaque étape de la boucle.
+\[
+  u_0' = u_1,\qquad u_1' = u_2,\qquad
+  v_0' = v_1,\qquad v_1' = v_2.
+\]
+
+On retrouve donc encore des écritures de la forme
+\[
+  r_0' = a u_0' + n v_0',\qquad
+  r_1' = a u_1' + n v_1',
+\]
+ce qui montre que (I) reste vraie à la fin de l'itération.
+Par récurrence, (I) est donc vérifiée à chaque étape de la boucle.
 
 \paragraph{Preuve de l'invariant (II).}
 À l'initialisation,
 \[
   \gcd(r_0,r_1) = \gcd(n,a).
 \]
-Lors d'une itération, on remplace $(r_0,r_1)$ par $(r_1,r_2)$ avec
-$r_2 = r_0 - q r_1$. Or on sait que
-\[
-  \gcd(r_0,r_1) = \gcd(r_1,r_0 - q r_1) = \gcd(r_1,r_2).
-\]
-Ainsi, le PGCD reste inchangé à chaque itération, et (II) est préservé.
 
+Lors d'une itération, on remplace $(r_0,r_1)$ par $(r_1,r_2)$ avec
+\[
+  r_2 = r_0 - q r_1.
+\]
+Montrons que
+\[
+  \gcd(r_0,r_1) = \gcd(r_1,r_2).
+\]
+
+Soit $d = \gcd(r_0,r_1)$. Alors $d$ divise $r_0$ et $r_1$, donc
+$d$ divise aussi toute combinaison linéaire de $r_0$ et $r_1$, en
+particulier
+\[
+  r_2 = r_0 - q r_1,
+\]
+de sorte que $d$ divise $r_1$ et $r_2$. Ainsi $d$ est un diviseur
+commun de $r_1$ et $r_2$, donc
+\[
+  d \le \gcd(r_1,r_2).
+\]
+
+Réciproquement, soit $d' = \gcd(r_1,r_2)$. Alors $d'$ divise $r_1$
+et $r_2$, donc divise aussi
+\[
+  r_0 = r_2 + q r_1.
+\]
+Ainsi $d'$ divise $r_0$ et $r_1$, donc $d'$ est un diviseur commun
+de $r_0$ et $r_1$, d'où
+\[
+  d' \le \gcd(r_0,r_1).
+\]
+
+On a donc $d \le d'$ et $d' \le d$, ce qui implique
+\[
+  \gcd(r_0,r_1) = d = d' = \gcd(r_1,r_2).
+\]
+
+Par conséquent, remplacer $(r_0,r_1)$ par $(r_1,r_2)$ laisse le PGCD
+inchangé. Comme à l'initialisation $\gcd(r_0,r_1) = \gcd(n,a)$, cette
+égalité reste vraie à chaque itération, et l'invariant (II) est
+préservé.
 \paragraph{Terminaison et résultat.}
 La suite $(r_i)$ issue de l'algorithme d'Euclide classique est strictement
 décroissante en valeurs absolues et reste positive, donc la boucle finit
