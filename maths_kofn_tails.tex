@@ -895,7 +895,18 @@ Puisque les deux ensembles ont le même cardinal fini $p$, $\overline{\iota}$ es
 
 (3) Soient $\phi_1, \phi_2 : K \to \F_p$ deux isomorphismes. Alors $\psi = \phi_2^{-1} \circ \phi_1$ est un automorphisme de $K$.
 
-Montrons que $K$ est un $\F_p$-espace vectoriel de dimension $1$. D'abord, comme $K$ est de caractéristique $p$, le sous-corps premier (voir \ref{sec:sous-corps-premier}) de $K$ est isomorphe à $\F_p$. On peut donc identifier $\F_p$ au sous-corps de $K$ engendré par $1_K$, et définir une structure de $\F_p$-espace vectoriel sur $K$ par la multiplication interne de $K$.
+Montrons que $K$ est un $\F_p$-espace vectoriel de dimension $1$.
+
+D'abord, comme $K$ est de caractéristique $p$, considérons l'application
+\[
+  \varphi : \F_p \longrightarrow K,\qquad n \longmapsto n \cdot 1_K.
+\]
+On vérifie (voir Annexe~\ref{sec:sous-corps-premier} pour la démonstration détaillée) que $\varphi$
+est un homomorphisme injectif de corps et que son image est un sous-corps
+de $K$, appelé \emph{sous-corps premier} de $K$, isomorphe à $\F_p$.
+On peut donc identifier $\F_p$ à ce sous-corps de $K$ engendré par $1_K$,
+et définir une structure de $\F_p$-espace vectoriel sur $K$ par la
+multiplication interne de $K$.
 
 Pour la dimension : si $\dim_{\F_p} K = d$, alors $K$ est isomorphe à $\F_p^d$ comme espace vectoriel, donc $|K| = p^d$. Or $|K| = p$, donc $p^d = p$ et $d = 1$. Ainsi, $K$ est un $\F_p$-espace vectoriel de dimension $1$.
 
