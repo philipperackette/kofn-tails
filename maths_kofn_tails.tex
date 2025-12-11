@@ -7,8 +7,13 @@
 \usepackage[T1]{fontenc}
 \usepackage[french]{babel}
 
-\usepackage{geometry}
-\geometry{margin=2.1cm}
+\usepackage[a4paper,
+  inner=2.5cm,   % marge intérieure (petit fond, côté reliure)
+  outer=2.0cm,   % marge extérieure
+  top=2.5cm,     % marge haute
+  bottom=2.5cm,  % marge basse
+  includeheadfoot
+]{geometry}
 
 % ============================
 % Maths et mise en forme
@@ -2498,7 +2503,7 @@ k_0 = 512 - 2\times 32 - 2 = 446 \text{ octets}
 Ce qui est amplement suffisant pour une clé AES-256 de 32 octets, avec une marge importante de 414 octets pour le padding OAEP.
 \end{definition}
 
-\addtocontents{toc}{\protect\newpage}
+%\addtocontents{toc}{\protect\newpage}
 
 %=========================================================
 \section{AES-GCM}
@@ -3387,6 +3392,7 @@ K_RSA = hkdf_rsa.derive(S)
 
 %=========================================================
 \section{Résumé des propriétés de sécurité}
+\addtocontents{toc}{\protect\newpage}
 
 \begin{definition}[Modèle de sécurité]
 On considère un adversaire $\mathcal{A}$ ayant accès aux oracles :
@@ -3432,6 +3438,7 @@ pas ici.
 \appendix
 
 \section{Annexe A --- Corps finis et notation $\F_{2^n}$}
+
 \label{sec:annexe-moore}
 Cette annexe rassemble les compléments d'algèbre nécessaires pour justifier entièrement
 l'utilisation de la notation $\F_{2^n}$ (et, plus généralement, $\F_{p^n}$) dans le reste
@@ -4089,7 +4096,7 @@ et l'on peut le noter sans ambiguïté $\F_{p^n}$.
 %=========================================================
 
 \section{Annexe B --- Borne probabiliste du test de Miller--Rabin}
-\addtocontents{toc}{\protect\newpage}
+%\addtocontents{toc}{\protect\newpage}
 \label{sec:annexe-miller-rabin}
 
 Dans cette annexe, on donne une preuve détaillée de la borne classique suivante
