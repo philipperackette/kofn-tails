@@ -64,15 +64,14 @@
   \normalfont
   \topsep6\p@ \@plus6\p@\relax
   \trivlist
-  % titre en italique + deux-points
-  \item[\hskip\labelsep\itshape #1\@addpunct{:}]%
+  % titre souligné + deux-points
+  \item[\hskip\labelsep\underline{\itshape #1\@addpunct{}}]%
   % saut de ligne après le titre
   \mbox{}\par\nobreak\smallskip
 }{%
   \popQED\endtrivlist\@endpefalse
 }
 \makeatother
-
 % ============================
 % Raccourcis usuels
 % ============================
@@ -884,7 +883,7 @@ Son noyau est un idéal de $\Z$. Comme tout idéal de $\Z$ est principal, il exi
 
 Ainsi $\ker\iota = p\Z$. Par le théorème fondamental d'isomorphisme (Théorème~\ref{thm:iso-anneaux}), on obtient un homomorphisme injectif :
 \[
-\overline{\iota} : \Z/p\Z \hookrightarrow K
+\overline{\iota} : \Z/p\Z \rightarrow K
 \]
 Puisque les deux ensembles ont le même cardinal fini $p$, $\overline{\iota}$ est un isomorphisme.
 
