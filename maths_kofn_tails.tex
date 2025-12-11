@@ -1714,7 +1714,7 @@ $\mathrm{IKM}$) et à des paires $(\mathrm{salt},\mathrm{info})$ fixées
 pour dériver notamment~:
 \begin{itemize}[leftmargin=2em]
   \item la clé graine $K_{\mathrm{Ed}}$ pour Ed25519 (Section~\ref{sec:ed25519})~;
-  \item la clé symétrique AES-256 $K_{\mathrm{RSA}}$ utilisée pour chiffrer la clé privée RSA dans
+  \item la clé symétrique AES-256 $K_{\mathrm{RSA}}$ utilisée pour chiffrer la clé privée RSA dans\\
         \texttt{rsa\_wrapped.json} (Section~\ref{sec:rsa-oaep})~;
 
 \end{itemize}
@@ -3371,7 +3371,7 @@ K_RSA = hkdf_rsa.derive(S)
   \item Sel HKDF RSA (wrap salt) $W$ :
         \begin{itemize}
           \item valeur : bitstring aléatoire de 128 bits
-                \verb|wrap_salt| généré par
+                \verb|wrap_salt| généré par\\
                 \verb|os.urandom(WRAP_SALT_SIZE)| ;
           \item génération : une fois par cérémonie de génération
                 de la clé RSA ;
