@@ -23,6 +23,20 @@
 \usetikzlibrary{arrows.meta,positioning}
 \usepackage{hyperref}
 \usepackage{url}
+
+\usepackage{listings}
+
+% Configuration basique pour l'affichage du code Python
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape,
+  stringstyle=\ttfamily,
+  breaklines=true,
+  columns=fullflexible
+}
+
 \usepackage{thmtools}
 
 % Supprimer l'indentation de tous les paragraphes
@@ -4075,6 +4089,7 @@ et l'on peut le noter sans ambiguïté $\F_{p^n}$.
 %=========================================================
 
 \section{Annexe B --- Borne probabiliste du test de Miller--Rabin}
+\addtocontents{toc}{\protect\newpage}
 \label{sec:annexe-miller-rabin}
 
 Dans cette annexe, on donne une preuve détaillée de la borne classique suivante
@@ -5030,7 +5045,39 @@ toutefois la référence standard.
 \end{remark}
 
 
+\newpage
 
+\section{Annexe C --- Scripts \texttt{Python} de la procédure Tails}
+\label{sec:annexe-python}
+
+Dans cette annexe, nous regroupons les principaux scripts \texttt{Python}
+mentionnés dans la procédure opérationnelle Tails et dans le corps de ce document.
+Ils sont reproduits ici afin de permettre au lecteur de vérifier, ligne par
+ligne, la cohérence entre la formalisation mathématique et l'implémentation.
+
+\subsection{Génération de la cérémonie et des parts de secret}
+
+\lstinputlisting{Scripts/ceremony_generate.py}
+
+\newpage
+\subsection{Chiffrement hybride RSA / AES-GCM}
+
+\lstinputlisting{Scripts/rsa_hybrid_encrypt.py}
+
+\newpage
+\subsection{Déchiffrement hybride et reconstitution du secret maître}
+
+\lstinputlisting{Scripts/kofn_rsa_decrypt.py}
+
+\newpage
+\subsection{Signature et vérification avec Ed25519}
+
+\lstinputlisting{Scripts/kofn_sign.py}
+
+\newpage
+\subsection{Vérification de signatures Ed25519}
+
+\lstinputlisting{Scripts/verify_ed25519.py}
 
 
 \newpage
