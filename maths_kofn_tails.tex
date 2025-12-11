@@ -14,8 +14,6 @@
 % Maths et mise en forme
 % ============================
 \usepackage{amsmath,amssymb,amsthm,mathtools}
-%\usepackage{amsmath} % si pas déjà là
-
 \usepackage{bm}
 \usepackage{mathrsfs}
 \usepackage{enumitem}
@@ -36,8 +34,18 @@
 % ============================
 \numberwithin{equation}{section}
 
-% Style pour les environnements (sans italique)
-\theoremstyle{definition}
+% Style personnalisé pour tous les environnements (titre sur sa propre ligne)
+\newtheoremstyle{kofn}% nom du style
+  {1.2em}   % espace au-dessus
+  {1.2em}   % espace en dessous
+  {\normalfont}% police du corps (roman)
+  {}        % indentation du paragraphe
+  {\bfseries}% police de l’en-tête (gras)
+  {}        % ponctuation après l’en-tête (rien)
+  {\newline}% espace après l’en-tête = retour à la ligne
+  {\thmname{#1}\thmnumber{ #2}\thmnote{ --- #3}}
+
+\theoremstyle{kofn}
 \newtheorem{theorem}{Théorème}[section]
 \newtheorem{lemma}[theorem]{Lemme}
 \newtheorem{proposition}[theorem]{Proposition}
@@ -46,6 +54,24 @@
 \newtheorem{propriete}[theorem]{Propriété}
 \newtheorem{remark}[theorem]{Remarque}
 \newtheorem{example}[theorem]{Exemple}
+
+% Style de preuve : "Démonstration :" sur une ligne, texte sur la suivante
+\renewcommand{\proofname}{Démonstration}
+
+\makeatletter
+\renewenvironment{proof}[1][\proofname]{%
+  \par\pushQED{\qed}%
+  \normalfont
+  \topsep6\p@ \@plus6\p@\relax
+  \trivlist
+  % titre en italique + deux-points
+  \item[\hskip\labelsep\itshape #1\@addpunct{:}]%
+  % saut de ligne après le titre
+  \mbox{}\par\nobreak\smallskip
+}{%
+  \popQED\endtrivlist\@endpefalse
+}
+\makeatother
 
 % ============================
 % Raccourcis usuels
@@ -81,7 +107,6 @@
 \large Implémentation \texttt{Python} clé en main et étude mathématique}}
 \author{Philippe Rackette}
 \date{\centering\today}
-
 % ============================
 \begin{document}
 \maketitle
@@ -3436,7 +3461,7 @@ ce qui montre que $\varphi$ ne dépend pas du représentant choisi.
 
 Pour tout $\overline{n},\overline{m}\in\F_p$, on vérifie directement
 \[
-varphi(\overline{n}+\overline{m})
+\varphi(\overline{n}+\overline{m})
 = (n+m)\cdot 1_K
 = n\cdot 1_K + m\cdot 1_K
 = \varphi(\overline{n}) + \varphi(\overline{m}),
@@ -3506,9 +3531,6 @@ x = \lambda_1 e_1 + \cdots + \lambda_n e_n,\quad \lambda_i \in k.
 Il y a exactement $p^n$ $n$-uplets $(\lambda_1,\dots,\lambda_n)$ puisque
 $|k|=p$. Donc $|K| = p^n$.
 \end{proof}
-
-Cela justifie l'écriture \og $|K|=p^n$ \fg{} et le fait de noter un corps fini
-$K$ de cardinal $p^n$ par $\F_{p^n}$.
 
 \subsection{Frobenius et polynôme $X^{p^n}-X$}
 
