@@ -1,70 +1,74 @@
-# kofn-tails — Partage de secret k-sur-n sur Tails
+# kofn-tails — k-of-n secret sharing on Tails
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Procédure HTML autonome pour mettre en place un **partage de secret k-sur-n** (schéma de Shamir) sur **Tails OS**, avec vérification par signature PGP.
+## English
 
----
+Standalone HTML procedure for implementing **k-of-n secret sharing** (Shamir scheme) on **Tails OS**, with **PGP signature verification** material.
 
-## Contexte
+### Context
 
-Ce dépôt est le compagnon technique du livre **[Quorum Cryptography on Tails OS](https://www.amazon.fr/dp/B0GLGC8GWP)** de Philippe Rackette. Il fournit une procédure clé-en-main utilisable hors ligne dans un environnement Tails, sans dépendance externe.
+This repository is the technical companion to the book **[Quorum Cryptography on Tails OS](https://www.amazon.fr/dp/B0GLGC8GWP)** by Philippe Rackette.
 
-Le principe : un secret (par exemple une phrase de passe, une clé privée) est découpé en *n* parts, dont *k* suffisent pour le reconstituer. Aucune part individuelle ne révèle d'information sur le secret.
+Its goal is to provide a practical, offline-friendly procedure for splitting a secret into *n* shares such that any *k* shares can reconstruct it.
 
----
+### Repository contents
 
-## Cas d'usage
-
-- **Héritage numérique** : distribuer des parts à des proches de confiance.
-- **Sécurité organisationnelle** : protéger une clé maîtresse avec un quorum de détenteurs.
-- **Exercice pédagogique** : illustrer concrètement le schéma de Shamir.
-
----
-
-## Contenu du dépôt
-
-| Fichier | Rôle |
+| File | Role |
 |---|---|
-| `procedure_kofn_tails_v1.html` | Procédure principale (document HTML autonome) |
-| `procedure_kofn_tails_v1.html.sig` | Signature PGP du fichier HTML |
-| `philipperackette-pgp-public.asc` | Clé publique PGP pour vérification |
+| `procedure_kofn_tails_v1.html` | Main standalone procedure |
+| `procedure_kofn_tails_v1.html.sig` | PGP signature for integrity verification |
+| `philipperackette-pgp-public.asc` | Public key used to verify the signature |
 
----
-
-## Vérification d'intégrité (GPG)
-
-Avant d'utiliser la procédure, vérifiez que le fichier n'a pas été altéré :
+### Integrity verification
 
 ```bash
-# Importer la clé publique
 gpg --import philipperackette-pgp-public.asc
-
-# Vérifier la signature
 gpg --verify procedure_kofn_tails_v1.html.sig procedure_kofn_tails_v1.html
 ```
 
-Si la signature est valide, GPG l'indique explicitement.
+### Intended audience
+
+- readers of the book,
+- users interested in threshold cryptography on Tails,
+- technically careful users working offline.
 
 ---
 
-## Utilisation
+## Français
 
-1. Démarrer sur **Tails OS** (recommandé pour l'isolation réseau et l'amnésie).
-2. Copier `procedure_kofn_tails_v1.html` sur le système (clé USB, stockage persistant).
-3. Ouvrir le fichier dans le navigateur Tor de Tails.
-4. Suivre les étapes de la procédure pour découper ou reconstituer un secret.
+Procédure HTML autonome pour mettre en place un **partage de secret k-sur-n** (schéma de Shamir) sur **Tails OS**, avec matériel de **vérification PGP**.
 
-> **Avertissement** : cette procédure est un outil pédagogique et expérimental. Pour un usage à enjeux élevés, faites-la auditer par un professionnel de la sécurité.
+### Contexte
+
+Ce dépôt accompagne techniquement le livre **[Quorum Cryptography on Tails OS](https://www.amazon.fr/dp/B0GLGC8GWP)** de Philippe Rackette.
+
+L'objectif est de fournir une procédure pratique, utilisable hors ligne, pour découper un secret en *n* parts, dont *k* suffisent pour le reconstituer.
+
+### Contenu du dépôt
+
+| Fichier | Rôle |
+|---|---|
+| `procedure_kofn_tails_v1.html` | Procédure principale autonome |
+| `procedure_kofn_tails_v1.html.sig` | Signature PGP de vérification d'intégrité |
+| `philipperackette-pgp-public.asc` | Clé publique de vérification |
+
+### Vérification d'intégrité
+
+```bash
+gpg --import philipperackette-pgp-public.asc
+gpg --verify procedure_kofn_tails_v1.html.sig procedure_kofn_tails_v1.html
+```
+
+### Public visé
+
+- lecteurs du livre,
+- utilisateurs intéressés par la cryptographie à seuil sur Tails,
+- utilisateurs techniquement rigoureux travaillant hors ligne.
 
 ---
 
-## Lien avec le livre
+## Licence / License
 
-La procédure est décrite en détail dans *Quorum Cryptography on Tails OS*, qui couvre la théorie (corps finis, polynômes de Lagrange) et les aspects pratiques (environnement Tails, gestion des parts, menaces). Le dépôt fournit le code ; le livre fournit le raisonnement.
-
----
-
-## Licence
-
-Ce projet est distribué sous licence [MIT](LICENSE).
+Ce projet est distribué sous licence [MIT](LICENSE).  
+This project is distributed under the [MIT License](LICENSE).
